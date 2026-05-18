@@ -82,11 +82,39 @@ async def _draft_one(blind_spot: dict[str, Any], session: aiohttp.ClientSession)
     Returns ``(prefix_hash, markdown_body)`` or ``None`` on failure.
     """
     if config.MOCK_LLM:
-        # Deterministic stub for offline tests.
+        # Deterministic stub for offline tests. Must be ≥200 chars after
+        # frontmatter stripping so the harvester's _looks_useful() filter
+        # doesn't drop it, and rich enough for the extractor LLM to yield
+        # a symptom + fix_pattern the weaver can turn into a cluster.
         prefix_hash = str(blind_spot.get("prefix_hash", "mock"))
+        samples = blind_spot.get("samples") or ["unknown error log"]
+        sample = samples[0] if isinstance(samples, list) else str(samples)
         return prefix_hash, (
-            f"# Auto-drafted gap fill for {prefix_hash}\n\n"
-            "Synthetic body (MOCK_LLM=1). Real run would call DeepSeek.\n"
+            f"# Symptom: Quantum Simulator Decoherence During Variational Optimisation\n\n"
+            f"## Problem Description\n\n"
+            f"When running quantum approximate optimisation algorithm (QAOA) circuits "
+            f"on noisy intermediate-scale quantum (NISQ) hardware, state-vector fidelity "
+            f"degrades monotonically as gate depth increases. After approximately 20 layers, "
+            f"the convergence plateau drops below the classical benchmark, making the "
+            f"quantum advantage vanish. Error-mitigation techniques such as zero-noise "
+            f"extrapolation help marginally but do not restore the original convergence curve.\n\n"
+            f"## Representative Error Log\n\n"
+            f"```\n{sample[:200]}\n```\n\n"
+            f"## Fix Pattern\n\n"
+            f"Reduce the Trotter step size by a factor of 5 (e.g. from 100 steps to 20 steps) "
+            f"and compensate by increasing the number of measurement shots per circuit evaluation "
+            f"from 1024 to 4096. This trades circuit depth for statistical precision, which is "
+            f"the correct optimisation axis on current NISQ devices where gate error dominates "
+            f"over shot noise. Additionally, apply dynamical decoupling sequences between active "
+            f"gates to suppress idle-time decoherence.\n\n"
+            f"## Cross-Domain Analogies\n\n"
+            f"- **Classical Optimisation:** Smaller learning rate plus more epochs stabilises "
+            f"  stochastic gradient descent when gradient noise is high.\n"
+            f"- **Robotics Control:** Reducing control horizon H and increasing sampling frequency "
+            f"  recovers MPC stability when actuator latency is non-negligible.\n\n"
+            f"## Anti-Patterns to Avoid\n\n"
+            f"- Blindly increasing circuit depth hoping for better approximation ratios.\n"
+            f"- Using the same shot budget regardless of circuit depth.\n"
         )
     try:
         body = await deepseek_chat(
@@ -132,19 +160,30 @@ def fetch_blind_spots(url: str = "http://127.0.0.1:8088/wiki/v1/blind_spots") ->
     except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as exc:
         logger.warning("Could not fetch blind_spots from %s: %s", url, exc)
         return []
-    # Tolerate either dict (count by prefix) or list shape.
+    # Tolerate Phase 6 #49 nested shape, plain {prefix: count} map, or list shape.
+    spots: list[dict[str, Any]] = []
     if isinstance(payload, dict):
-        spots = payload.get("spots") or payload.get("blind_spots") or []
-        if not spots and payload:
-            # Plain {prefix: count} map
+        # Phase 6 #49: {"active": [{"prefix_hash", "count", "is_blind_spot", ...}]}
+        if "active" in payload and isinstance(payload["active"], list):
             spots = [
-                {"prefix_hash": k, "count": v if isinstance(v, int) else int(v.get("count", 0)), "samples": v.get("samples", []) if isinstance(v, dict) else []}
-                for k, v in payload.items()
+                {
+                    "prefix_hash": item["prefix_hash"],
+                    "count": item["count"],
+                    "samples": [item.get("sample_excerpt", "")],
+                }
+                for item in payload["active"]
+                if item.get("is_blind_spot")
             ]
+        else:
+            spots = payload.get("spots") or payload.get("blind_spots") or []
+            if not spots and payload:
+                # Plain {prefix: count} map
+                spots = [
+                    {"prefix_hash": k, "count": v if isinstance(v, int) else int(v.get("count", 0)), "samples": v.get("samples", []) if isinstance(v, dict) else []}
+                    for k, v in payload.items()
+                ]
     elif isinstance(payload, list):
         spots = payload
-    else:
-        spots = []
     return [s for s in spots if isinstance(s, dict) and int(s.get("count", 0)) >= MIN_SAMPLE_THRESHOLD]
 
 

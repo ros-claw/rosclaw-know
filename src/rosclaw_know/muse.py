@@ -273,6 +273,7 @@ async def compile_muse_assets(
                 "matched_keywords": _extract_meaningful_keywords(symptom, domain),
                 "cross_domain_analogies": analogies,
                 "associated_patterns": [f"pattern_{slug}"],
+                "priority": 0,  # staging — reviewed by promote.py before production
             }
             pattern_path = _write_pattern_file(node, attr, analogies)
             rel = str(pattern_path.relative_to(config.ASSETS_DIR.parent))

@@ -84,7 +84,17 @@ def _fetch_stats(base: str) -> dict[str, dict[str, Any]]:
     except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as exc:
         logger.error("Could not fetch /stats: %s", exc)
         return {}
-    return payload if isinstance(payload, dict) else {}
+    # Phase 7 #54: /stats returns bucketed shape
+    # {staging: {...}, production: {...}, demoted: {...}, unbucketed: {...}}.
+    # Flatten into a single {pattern_id: stats} dict for the classifier.
+    if not isinstance(payload, dict):
+        return {}
+    flat: dict[str, dict[str, Any]] = {}
+    for bucket in ("staging", "production", "demoted", "unbucketed"):
+        for pid, agg in (payload.get(bucket) or {}).items():
+            if isinstance(agg, dict):
+                flat[str(pid)] = agg
+    return flat
 
 
 def _classify(pid: str, agg: dict[str, Any], priorities: dict[str, int]) -> Candidate | None:
