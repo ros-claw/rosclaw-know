@@ -126,6 +126,10 @@ async def _muse_node(
         "matched_keywords": _extract_meaningful_keywords(symptom, domain),
         "cross_domain_analogies": analogies,
         "associated_patterns": [f"pattern_{slug}"],
+        # Phase 7: brand-new clusters land in staging. Promotion to
+        # production (+1) happens via the rosclaw-how /admin/promote
+        # endpoint after enough positive feedback accrues.
+        "priority": 0,
     }
 
 
