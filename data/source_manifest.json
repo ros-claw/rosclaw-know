@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "files": {
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/phase5_ingest/tpu_xla_fragmentation_phase5_synthetic.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/phase5_ingest/tpu_xla_fragmentation_phase5_synthetic.md",
+      "sha256": "c8c1455ff8b536d0ace932a3fc1f0deb62e562cad54ffa634daae24641149863",
+      "domain": null,
+      "first_processed": "2026-05-18T01:51:28+00:00",
+      "last_processed": "2026-05-18T01:54:00+00:00",
+      "n_clusters_contributed": 0
+    }
+  }
+}

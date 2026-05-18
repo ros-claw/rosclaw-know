@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "elapsed_s": 1.2,
+  "new_cluster_name": "Repeated re-traces of dynamic-shape inputs fragment the HBM pool on TPU, causing allocation failures despite low actual usage.",
+  "reload_response": {
+    "symptoms": 322,
+    "patterns": 325,
+    "demoted_skipped": 3,
+    "symptoms_detail": {
+      "added": 0,
+      "updated": 0,
+      "unchanged": 322,
+      "deleted": 0
+    },
+    "patterns_detail": {
+      "added": 0,
+      "updated": 0,
+      "unchanged": 325,
+      "deleted": 0
+    },
+    "rebuild": false,
+    "duration_ms": 531
+  },
+  "build_response": {
+    "prompt_snippet": "## 🔧 Engineering Heuristics from ROSClaw-How\n**Cross-Domain (Perception_Vision):** Project sensory data into a fixed-shape grid to eliminate dynamic-shape re-traces and prevent HBM fragmentation.\n**Suggested action:** Project sensory data into a bird's-eye-view grid representation, distilled from visual foundation models, to enable structured spatial reasoning for planning.\n**Diff:**\n```diff\n---\n---\n- **Perception_Vision** → Project sensory data into a fixed-shape grid to eliminate dynamic-shape re-traces and prevent HBM fragmentation.\n- **Planning_Decision** → Cross-modal attention aligns fragmented shape traces into coherent memory layouts.\n- **Learning_Training** → Pre-allocating diverse tensor shape templates reduces fragmentation by standardizing memory layouts.\n--- tpu_xla_fragmentation_phase5_synthetic.before.py\n+++ tpu_xla_fragmentation_phase5_synthetic.after.py\n@@ -1,2 +1,4 @@\n-# --- BEFORE (vulnerable to the symptom below) ---\n+# --- AFTER (ROSCLAW heuristic graft) ---\n+# Fix    : Pad batches to a small set of canonical shapes and force a single trace shape via jit with pre-allocated buffers and XLA flags, optionally tuning XLA_TPU_BUFFER_PADDING_RATIO.\n+# Avoid  : Doubling HBM via topology reshape fails because fragmentation re-emerges with long-tail shapes.\n```",
+    "injected": true,
+    "strategy": "CATALYST",
+    "latency_ms": 484,
+    "symptom": "Unknown_Error",
+    "matched_symptom": "Repeated re-traces of dynamic-shape inputs fragment the HBM pool on TPU, causing allocation failures despite low actual usage.",
+    "similarity": 0.6888,
+    "injection_id": "58816dbdb36d4abdb64d200221ca13f3",
+    "pattern_id": "pattern_tpu_xla_fragmentation_phase5_synthetic"
+  },
+  "post_count": 322
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-18T05:37:21.239808+00:00",
+  "snapshots_used": 1,
+  "patterns": {
+    "sliding_window_kv_cache": {
+      "pattern_id": "sliding_window_kv_cache",
+      "samples": 1,
+      "latest_n": 11,
+      "latest_uplift": -0.1035,
+      "latest_win_rate": 0.0,
+      "slope": 0.0,
+      "trend": "insufficient",
+      "last_seen": "2026-05-17T21:00:58+00:00"
+    },
+    "pattern_high_level_planner": {
+      "pattern_id": "pattern_high_level_planner",
+      "samples": 1,
+      "latest_n": 7,
+      "latest_uplift": 0.1776,
+      "latest_win_rate": 1.0,
+      "slope": 0.0,
+      "trend": "insufficient",
+      "last_seen": "2026-05-17T21:00:58+00:00"
+    },
+    "output_saturation_clamp": {
+      "pattern_id": "output_saturation_clamp",
+      "samples": 1,
+      "latest_n": 8,
+      "latest_uplift": 0.1569,
+      "latest_win_rate": 1.0,
+      "slope": 0.0,
+      "trend": "insufficient",
+      "last_seen": "2026-05-17T21:00:56+00:00"
+    },
+    "pattern_deepmind_nfnets": {
+      "pattern_id": "pattern_deepmind_nfnets",
+      "samples": 1,
+      "latest_n": 7,
+      "latest_uplift": -0.1035,
+      "latest_win_rate": 0.0,
+      "slope": 0.0,
+      "trend": "insufficient",
+      "last_seen": "2026-05-17T21:00:58+00:00"
+    },
+    "anti_windup_pid": {
+      "pattern_id": "anti_windup_pid",
+      "samples": 1,
+      "latest_n": 7,
+      "latest_uplift": -0.1205,
+      "latest_win_rate": 0.0,
+      "slope": 0.0,
+      "trend": "insufficient",
+      "last_seen": "2026-05-17T21:00:55+00:00"
+    },
+    "closed_loop_replanning": {
+      "pattern_id": "closed_loop_replanning",
+      "samples": 1,
+      "latest_n": 6,
+      "latest_uplift": 0.1613,
+      "latest_win_rate": 1.0,
+      "slope": 0.0,
+      "trend": "insufficient",
+      "last_seen": "2026-05-17T21:00:57+00:00"
+    },
+    "pattern_tpu_xla_fragmentation_phase5_synthetic": {
+      "pattern_id": "pattern_tpu_xla_fragmentation_phase5_synthetic",
+      "samples": 1,
+      "latest_n": 5,
+      "latest_uplift": 0.1,
+      "latest_win_rate": 1.0,
+      "slope": 0.0,
+      "trend": "insufficient",
+      "last_seen": "2026-05-18T05:36:43+00:00"
+    }
+  }
+}

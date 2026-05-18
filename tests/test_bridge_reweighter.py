@@ -1,0 +1,181 @@
+"""Tests for ``rosclaw_know.bridge_reweighter``.
+
+Exercises the merge logic without any real wiki / SeekDB / asset paths —
+all bridge_index and pattern_metrics fixtures are built in temp dirs.
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+os.environ.setdefault("ROSCLAW_KNOW_MOCK_LLM", "1")
+os.environ.setdefault("DEEPSEEK_API_KEY", "")
+
+SRC = Path(__file__).resolve().parent.parent / "src"
+sys.path.insert(0, str(SRC))
+
+from rosclaw_know.bridge_reweighter import reweight_bridge_index  # noqa: E402
+from rosclaw_know.feedback_distill import MIN_SAMPLE_SIZE  # noqa: E402
+
+
+def _write_bridge(path: Path, clusters: dict) -> None:
+    path.write_text(
+        json.dumps({"symptom_clusters": clusters}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def _write_metrics(path: Path, patterns: dict) -> None:
+    path.write_text(
+        json.dumps({"schema_version": 1, "patterns": patterns}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def _read_bridge(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _metric(pid: str, n: int, uplift: float, win_rate: float, last: str = "2026-05-18T10:00:00Z") -> dict:
+    return {
+        "pattern_id": pid,
+        "n": n,
+        "uplift_mean": uplift,
+        "uplift_std": 0.05,
+        "win_rate": win_rate,
+        "last_seen": last,
+    }
+
+
+class ReweightTest(unittest.TestCase):
+    def test_no_metrics_clears_stale_fields(self) -> None:
+        """If no pattern has samples, any previous uplift fields are stripped."""
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            _write_bridge(bridge, {
+                "c1": {
+                    "standard_name": "stale cluster",
+                    "associated_patterns": ["p1"],
+                    "uplift_mean": 0.42,        # stale
+                    "uplift_n": 9,              # stale
+                    "win_rate": 0.7,            # stale
+                    "priority": -1,             # stale demotion
+                },
+            })
+            _write_metrics(metrics, {})
+            stats = reweight_bridge_index(bridge_path=bridge, metrics_path=metrics)
+            bridge_after = _read_bridge(bridge)
+
+        cluster = bridge_after["symptom_clusters"]["c1"]
+        for stale in ("uplift_mean", "uplift_n", "win_rate", "priority"):
+            self.assertNotIn(stale, cluster)
+        self.assertEqual(stats["clusters_demoted"], 0)
+
+    def test_positive_uplift_merges(self) -> None:
+        """Two contributing patterns produce an n-weighted mean."""
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            _write_bridge(bridge, {
+                "c1": {
+                    "standard_name": "cluster",
+                    "associated_patterns": ["a", "b"],
+                },
+            })
+            _write_metrics(metrics, {
+                "a": _metric("a", n=10, uplift=0.20, win_rate=0.80),
+                "b": _metric("b", n=5,  uplift=0.10, win_rate=0.40),
+            })
+            reweight_bridge_index(bridge_path=bridge, metrics_path=metrics)
+            bridge_after = _read_bridge(bridge)
+
+        c = bridge_after["symptom_clusters"]["c1"]
+        # (10*0.20 + 5*0.10) / 15 = 2.5/15 = 0.1667
+        self.assertAlmostEqual(c["uplift_mean"], 0.1667, places=4)
+        self.assertEqual(c["uplift_n"], 15)
+        # (10*0.80 + 5*0.40) / 15 = 10/15 = 0.6667
+        self.assertAlmostEqual(c["win_rate"], 0.6667, places=4)
+        self.assertNotIn("priority", c)
+
+    def test_demote_when_every_contrib_negative_and_n_sufficient(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            _write_bridge(bridge, {
+                "c1": {
+                    "standard_name": "loser cluster",
+                    "associated_patterns": ["bad1", "bad2"],
+                },
+            })
+            _write_metrics(metrics, {
+                "bad1": _metric("bad1", n=MIN_SAMPLE_SIZE + 5, uplift=-0.20, win_rate=0.10),
+                "bad2": _metric("bad2", n=MIN_SAMPLE_SIZE + 1, uplift=-0.15, win_rate=0.15),
+            })
+            stats = reweight_bridge_index(bridge_path=bridge, metrics_path=metrics)
+            bridge_after = _read_bridge(bridge)
+
+        c = bridge_after["symptom_clusters"]["c1"]
+        self.assertEqual(c["priority"], -1)
+        self.assertEqual(stats["clusters_demoted"], 1)
+
+    def test_partial_loser_not_demoted(self) -> None:
+        """If at least one contributing pattern is still winning, do NOT demote."""
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            _write_bridge(bridge, {
+                "c1": {
+                    "standard_name": "mixed cluster",
+                    "associated_patterns": ["bad", "good"],
+                },
+            })
+            _write_metrics(metrics, {
+                "bad":  _metric("bad",  n=MIN_SAMPLE_SIZE + 5, uplift=-0.20, win_rate=0.10),
+                "good": _metric("good", n=MIN_SAMPLE_SIZE + 5, uplift=+0.15, win_rate=0.65),
+            })
+            reweight_bridge_index(bridge_path=bridge, metrics_path=metrics)
+            bridge_after = _read_bridge(bridge)
+
+        c = bridge_after["symptom_clusters"]["c1"]
+        self.assertNotIn("priority", c)
+
+    def test_idempotent_writes(self) -> None:
+        """Running reweight twice with the same inputs should not touch the file twice."""
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            _write_bridge(bridge, {
+                "c1": {
+                    "standard_name": "cluster",
+                    "associated_patterns": ["a"],
+                },
+            })
+            _write_metrics(metrics, {"a": _metric("a", n=4, uplift=0.20, win_rate=0.50)})
+
+            first = reweight_bridge_index(bridge_path=bridge, metrics_path=metrics)
+            mtime1 = bridge.stat().st_mtime_ns
+            second = reweight_bridge_index(bridge_path=bridge, metrics_path=metrics)
+            mtime2 = bridge.stat().st_mtime_ns
+
+        # First pass writes (positive touch); second pass is a no-op.
+        self.assertGreater(first["clusters_touched"], 0)
+        self.assertEqual(second["clusters_touched"], 0)
+        self.assertEqual(mtime1, mtime2)
+
+    def test_missing_bridge_is_safe(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            stats = reweight_bridge_index(
+                bridge_path=Path(td) / "missing.json",
+                metrics_path=Path(td) / "missing_metrics.json",
+            )
+        self.assertEqual(stats["clusters_total"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,47 @@
+{
+  "captured_at": "2026-05-18T05:37:21.238777+00:00",
+  "stats": {
+    "sliding_window_kv_cache": {
+      "n": 11,
+      "avg_uplift": -0.10345454545454545,
+      "win_rate": 0.0,
+      "last_seen_iso": "2026-05-17T21:00:58+00:00"
+    },
+    "pattern_high_level_planner": {
+      "n": 7,
+      "avg_uplift": 0.17761428571428572,
+      "win_rate": 1.0,
+      "last_seen_iso": "2026-05-17T21:00:58+00:00"
+    },
+    "output_saturation_clamp": {
+      "n": 8,
+      "avg_uplift": 0.156875,
+      "win_rate": 1.0,
+      "last_seen_iso": "2026-05-17T21:00:56+00:00"
+    },
+    "pattern_deepmind_nfnets": {
+      "n": 7,
+      "avg_uplift": -0.10350000000000001,
+      "win_rate": 0.0,
+      "last_seen_iso": "2026-05-17T21:00:58+00:00"
+    },
+    "anti_windup_pid": {
+      "n": 7,
+      "avg_uplift": -0.12049999999999995,
+      "win_rate": 0.0,
+      "last_seen_iso": "2026-05-17T21:00:55+00:00"
+    },
+    "closed_loop_replanning": {
+      "n": 6,
+      "avg_uplift": 0.16133333333333333,
+      "win_rate": 1.0,
+      "last_seen_iso": "2026-05-17T21:00:57+00:00"
+    },
+    "pattern_tpu_xla_fragmentation_phase5_synthetic": {
+      "n": 5,
+      "avg_uplift": 0.09999999999999998,
+      "win_rate": 1.0,
+      "last_seen_iso": "2026-05-18T05:36:43+00:00"
+    }
+  }
+}
