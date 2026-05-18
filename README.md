@@ -1,12 +1,32 @@
 # ROSClaw-Know
 
-**Offline knowledge refinery.** Converts the 6,097 legacy ROSClaw Wiki pages
-(declarative knowledge — paper abstracts, parameter tables) into **procedural
-knowledge** (symptom → fix_pattern pairs + cross-domain analogies) that
-runtime agents can actually act on.
+**Offline knowledge refinery** for the ROSClaw embodied-intelligence stack.
 
-Sister project: **rosclaw-how** (online injection layer that loads these
-assets into SeekDB and serves agents at runtime).
+Converts free-form robotics wiki pages (paper abstracts, design notes, code
+fragments) into **procedural knowledge** — symptom → fix_pattern pairs with
+cross-domain analogies — that runtime agents act on through the sister
+project [`rosclaw-how`](../rosclaw-how).
+
+Phase 1–7 are closed. The system is a self-improving knowledge engine: new
+sources flow in via `scripts/ingest.py`, agent feedback flows back via
+`scripts/distill_feedback.py`, and cold-spots auto-draft patch sources via
+`scripts/autodraft.py`. The full loop is verified end-to-end by
+`scripts/verify_phase7_active.py` (6/6 PASS).
+
+## What's in the box
+
+| Module / script | Phase | Purpose |
+|---|---|---|
+| `pipeline.py` + `run_phase1.py` | 1 | wiki → harvester → weaver → Muse → curated publish |
+| `feedback_distill.py` + `distill_feedback.py` | 4 | outcomes → per-pattern uplift / win-rate / last_seen |
+| `bridge_reweighter.py` + `reweight_bridge.py` | 4 | n-weighted merge of metrics back into `bridge_index.json` |
+| `source_manifest.py` + `incremental_pipeline.py` + `ingest.py` | 5 | content-hash dirty detection, selective Muse, non-destructive merge |
+| `lint_bridge.py` | 5 | orphan / missing / dup / stale-demotion lint |
+| `stats_analyze.py` + `analyze_stats.py` | 6 | snapshot → linear-regression trend → markdown report |
+| `bench_phase6.py` | 6 | p50/p95 SLO benchmark (build / feedback / reload / export) |
+| `active_learning.py` + `autodraft.py` | 7 | poll `/blind_spots` → DeepSeek draft → auto-ingest |
+| `promote.py` | 7 | staging maturation gate (n≥5 + uplift > ±0.05 → priority ±1) |
+| `verify_phase7_active.py` | 7 | 8-step end-to-end joint verify with rosclaw-how |
 
 ## Quick start
 
@@ -17,49 +37,141 @@ pip install -e .
 
 # 2. Configure
 cp .env.example .env
-# edit .env: set DEEPSEEK_API_KEY
+# edit .env: set DEEPSEEK_API_KEY (or ROSCLAW_KNOW_MOCK_LLM=1 for dry runs)
 
-# 3. Run pipeline (small batch first — 200 pages, ~2 RMB, ~10 min)
+# 3. First-time mine (small batch first — 200 pages, ~2 RMB, ~10 min)
 python scripts/run_phase1.py --max-pages 200
 
-# 4. Audit a sample of extractions
+# 4. Audit a sample
 python scripts/inspect_samples.py --n 30
 
 # 5. Full run (after audit passes ≥85%)
 python scripts/run_phase1.py
 
-# 6. Closed-loop A/B verification on Frontier-Engineering
-python scripts/verify_frontier_eng.py
+# 6. Ingest a new paper without re-mining the whole corpus
+python scripts/ingest.py path/to/new_paper.md
+
+# 7. After production traffic accrues, distill + reweight
+python scripts/distill_feedback.py --summary
+python scripts/reweight_bridge.py
+
+# 8. Auto-draft for cold-spots (requires rosclaw-how live on :8088)
+python scripts/autodraft.py --then-ingest
+
+# 9. Promote staging clusters with positive feedback
+python scripts/promote.py --apply
 ```
 
-## Architecture
+## Architecture (Phase 1–7)
 
 ```
-rosclaw-know (offline, Python only)               rosclaw-how (online, SeekDB)
-─────────────────────────────────                 ─────────────────────────────
-Reads  wiki/*.md → SQLite                         Loads assets at startup
-                                                  Reads SeekDB at runtime
-Writes data/assets/bridge_index.json
-       data/assets/code_patterns/*.md
-─────────────────────────────────                 ─────────────────────────────
-                              ▶ ▶ ▶
-                  assets travel from know → how
+                   ┌──────────────┐
+   wiki/*.md ────▶ │  harvester   │ ──▶ extracted_pages
+                   └──────────────┘                 │
+                                                    ▼
+                   ┌──────────────┐         ┌───────────────┐
+   source_manifest │   weaver     │ ──────▶ │ NetworkX graph│
+   tracks dirty    │              │         │  (in-memory)  │
+   files only      └──────────────┘         └───────────────┘
+   (Phase 5)                                       │
+                                                    ▼
+                   ┌──────────────────┐
+                   │  Muse compiler   │ ──▶ bridge_index.json
+                   │  (LLM analogies) │     code_patterns/*.md
+                   └──────────────────┘            │
+                          ▲                        │
+                          │     (Phase 7 staging)  │
+                          │                        ▼
+                          │            ┌────────────────────┐
+                          │            │     rosclaw-how    │
+                          │            │  SeekDB hot path   │
+                          │            └────────────────────┘
+                          │                        │
+                          │  Phase 4 distill       │
+                          ├────────────────────────┤
+                          │  outcomes-*.jsonl      │
+                          │  pattern_metrics.json  │
+                          │                        │
+                          │  Phase 7 autodraft     │
+                          ├────────────────────────┤
+                          │  /blind_spots          │
+                          │  → DeepSeek            │
+                          │  → wiki/auto_drafted/  │
+                          └────────────────────────┘
 ```
 
-The four-stage pipeline:
+## Lifecycle (Phase 7 staging maturation)
 
-1. **Planner** — multi-perspective probe generation (STORM-inspired)
-2. **Harvester** — async LLM extraction of symptom/fix_pattern (Open Deep Research style)
-3. **Weaver** — NetworkX in-memory graph + optional SeekDB entity alignment (GraphRAG)
-4. **Muse Compiler** — BFS radius=2 cross-domain analogies → Unified Diff patches (GBrain)
+```
+            ┌──────────┐  uplift > +0.05  ┌────────────┐
+ingest ───▶ │ staging  │ ────────────────▶│ production │
+            │ priority │                  │ priority+1 │
+            │   = 0    │                  └────────────┘
+            └──────────┘                        │
+                  │   uplift < -0.05            │ uplift < -0.05
+                  │                             ▼
+                  ▼                       ┌────────────┐
+            ┌──────────┐                  │  demoted   │
+            │ demoted  │ ◀────────────────│ priority−1 │
+            │ skipped  │                  │ runtime    │
+            │ in route │                  │  skips it  │
+            └──────────┘                  └────────────┘
+```
 
-See [`docs/architecture.md`](docs/architecture.md) for the full data flow.
+Lifecycle transitions are driven by `scripts/promote.py` which calls
+`POST /wiki/v1/admin/promote` on rosclaw-how. The bridge stores `priority`
+inline; rosclaw-how's asset_loader pushes only `priority ≥ 0` clusters into
+the live SeekDB collection.
+
+## Tests
+
+```bash
+.venv/bin/python -m unittest discover -s tests -p "test_*.py"
+# 63 / 64 pass (one pre-existing test_pipeline mock-LLM stub)
+```
+
+Test coverage:
+
+- `test_feedback_distill.py` — 11 tests, Phase 4 distill logic
+- `test_bridge_reweighter.py` — 6 tests, n-weighted merge + demotion gating
+- `test_source_manifest.py` — 9 tests, content-hash dirty detection
+- `test_incremental_pipeline.py` — 5 tests, non-destructive merge
+- `test_lint_bridge.py` — 11 tests, orphan / missing / dup detection
+- `test_stats_analyze.py` — 14 tests, trend regression + classification
+- `test_active_learning.py` — 6 tests, autodraft + blind-spot adapter
+
+## Joint verification (with rosclaw-how)
+
+```bash
+# Bring rosclaw-how up first
+cd ../rosclaw-how
+ROSCLAW_HOW_ROUTER_BACKEND=seekdb \
+SEEKDB_DATABASE=rosclaw_how SEEKDB_TENANT=mysql \
+.venv/bin/python scripts/run_server.py &
+
+# Then from rosclaw-know
+python scripts/replay_benchmark.py         # Phase 4 — 60-rollout uplift A/B
+python scripts/verify_phase5_ingest.py     # Phase 5 — ingest + hot-reload round-trip
+python scripts/bench_phase6.py             # Phase 6 — SLO benchmark
+python scripts/verify_phase7_active.py     # Phase 7 — end-to-end self-improvement
+```
+
+Latest verified results (`data/benchmarks/`):
+
+- **Phase 4 replay**: 6/6 patterns correctly classified, 3 soft-deprecated
+- **Phase 5 ingest**: PASS — new cluster routable in <1 s after reload
+- **Phase 6 perf**: ALL SLOs MET — build p95 < 400 ms, reload **284 ms delta**
+  (398× faster than full re-encode), feedback p95 < 35 ms
+- **Phase 7 active**: PASS — autodrafted cluster (sim 0.657) promoted to
+  production after 5 positive feedbacks, final /build silently injected
+  with `is_staging` falsy
 
 ## What this replaces
 
-The previous `rosclaw-wiki` project is being decommissioned:
-- Its 6,000+ markdown pages → **raw input** to this pipeline
-- Its online endpoints → reborn as **rosclaw-how**
+The legacy `rosclaw-wiki` project has been retired:
 
-This repository keeps the legacy wiki via symlink (`wiki/` →
-`../rosclaw-wiki/wiki/`) for the duration of Phase 1.
+- 6,097 markdown pages → raw input to this pipeline (symlinked from `wiki/`)
+- Online endpoints → reborn as `rosclaw-how`
+
+See [`../rosclaw-how/README.md`](../rosclaw-how/README.md) for the runtime
+side.

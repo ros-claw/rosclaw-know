@@ -101,6 +101,34 @@ def step2_inspect_blind_spots(base: str) -> dict:
     return {"ok": True, "payload": payload}
 
 
+def _patch_autodraft_priority(project_root: Path) -> None:
+    """Ensure autodrafted clusters have priority=0 (staging) in bridge_index.json.
+
+    The ingest pipeline (harvester → weaver → muse) does not propagate the
+    ``priority: 0`` frontmatter field into the generated cluster. This helper
+    scans bridge_index.json for clusters whose ``associated_patterns`` contain
+    autodrafted patterns and stamps ``priority: 0`` so the how-side runtime
+    treats them as staging.
+    """
+    bridge_path = ASSETS_DIR / "bridge_index.json"
+    if not bridge_path.exists():
+        return
+    data = json.loads(bridge_path.read_text(encoding="utf-8"))
+    clusters = data.get("symptom_clusters", {})
+    patched = 0
+    for cid, cluster in clusters.items():
+        patterns = cluster.get("associated_patterns") or []
+        if any(str(p).startswith("pattern_20260518_") for p in patterns):
+            if "priority" not in cluster:
+                cluster["priority"] = 0
+                patched += 1
+    if patched:
+        tmp = bridge_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(bridge_path)
+        print(f"      patched {patched} autodrafted cluster(s) to priority=0")
+
+
 def step3_autodraft(project_root: Path) -> dict:
     venv_py = project_root / ".venv" / "bin" / "python"
     cmd = [str(venv_py), str(project_root / "scripts" / "autodraft.py"), "--then-ingest"]
@@ -209,6 +237,10 @@ def main() -> int:
         print("[3/8] Running autodraft.py --then-ingest (LLM heavy)...")
         report["autodraft"] = step3_autodraft(PROJECT_ROOT)
         print(f"      autodraft rc={report['autodraft']['returncode']}")
+        # The ingest pipeline (harvester → weaver → muse) does not propagate
+        # priority from autodraft frontmatter into bridge_index.json. Patch it
+        # here so the newly minted cluster lands in staging (priority=0).
+        _patch_autodraft_priority(PROJECT_ROOT)
     else:
         print("[3/8] Skipped autodraft (--skip-autodraft).")
 

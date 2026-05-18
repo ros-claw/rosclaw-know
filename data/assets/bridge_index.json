@@ -3128,7 +3128,8 @@
       ],
       "uplift_mean": 0.1613,
       "uplift_n": 6,
-      "win_rate": 1.0
+      "win_rate": 1.0,
+      "priority": 1
     },
     "exponential_backoff_retry": {
       "standard_name": "Network/RPC timeout cascades cause request storms after a partial outage",
@@ -11998,6 +11999,44 @@
       "associated_patterns": [
         "pattern_realistic_depth_images_synthetic_method"
       ]
+    },
+    "20260518_1bfb99e13c": {
+      "standard_name": "MOCK: # Symptom: Quantum Simulator Decoherence During Variational Optimisation",
+      "domain": "Planning_Decision",
+      "matched_keywords": [
+        "mock",
+        "symptom",
+        "quantum",
+        "simulator",
+        "decoherence",
+        "during",
+        "planning",
+        "navigation"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "humanoid_occupancy_enabling_a_generalized_multimodal_occupancy_perception_system",
+          "insight": "MOCK insight bridging the two domains via shared limiter mechanism.",
+          "action_suggestion": "Propose a multimodal occupancy perception system that fuses vision, depth, and other sensor data into a unified occupancy representation for humanoid robots."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "multifeature_dropout_mfd",
+          "insight": "MOCK insight bridging the two domains via shared limiter mechanism.",
+          "action_suggestion": "Apply dropout operations at multiple feature scales (activations, channels, spatial regions, entire feature maps) to regularize training."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "local_metric_trajectory_control",
+          "insight": "MOCK insight bridging the two domains via shared limiter mechanism.",
+          "action_suggestion": "Closed-loop controller that reconciles a local metric map with high-level navigation commands, generating continuous local trajectories from monocular depth and traversability estimates in real-time."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_20260518_1bfb99e13c"
+      ],
+      "priority": 1
     }
   },
   "safety_label_index": {

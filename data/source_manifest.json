@@ -8,6 +8,14 @@
       "first_processed": "2026-05-18T01:51:28+00:00",
       "last_processed": "2026-05-18T01:54:00+00:00",
       "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/auto_drafted/20260518_1bfb99e13c.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/auto_drafted/20260518_1bfb99e13c.md",
+      "sha256": "9067284a27834cf5f7d22070e949c9cb65e81034ad74933bb5dec576df1eb50f",
+      "domain": null,
+      "first_processed": "2026-05-18T14:45:10+00:00",
+      "last_processed": "2026-05-18T15:04:47+00:00",
+      "n_clusters_contributed": 0
     }
   }
 }
