@@ -9,3 +9,22 @@ data/rosclaw_knowledge.db-shm
 data/benchmarks/frontier_eng_ab/
 .pytest_cache/
 .ruff_cache/
+
+# Local IDE / plugin runtime state (leaks paths and other-project memory)
+.claude-flow/
+
+# Operational state — regeneratable, contains absolute paths
+data/source_manifest.json
+data/benchmarks/
+data/reports/
+data/stats_history/
+data/exports/
+
+# Fetched / drafted corpus — regeneratable via:
+#   scripts/ingest_awesome.py   (Phase 8 sources)
+#   scripts/autodraft.py        (Phase 7 LLM drafts)
+wiki/auto_drafted/
+wiki/awesome_corpus/
+
+# Legacy wiki source corpus — deployer mounts or symlinks it themselves
+wiki/
