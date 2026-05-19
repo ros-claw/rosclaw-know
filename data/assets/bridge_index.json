@@ -12037,6 +12037,272 @@
         "pattern_20260518_1bfb99e13c"
       ],
       "priority": 1
+    },
+    "digital_bonds_ics_enumeration_tools": {
+      "standard_name": "ICS devices are fragile and can crash or respond unexpectedly to unexpected traffic during enumeration",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "devices",
+        "fragile",
+        "crash",
+        "respond",
+        "unexpectedly",
+        "unexpected",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "blind_zones",
+          "insight": "Use predictive reacquisition to re-enumerate ICS devices after unexpected traffic.",
+          "action_suggestion": "Active mitigation strategies such as multi-sensor fusion or predictive reacquisition to handle blind zones"
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "mtu3d_move_to_understand_3d",
+          "insight": "Unified online memory construction and joint optimization for robust traffic handling.",
+          "action_suggestion": "Unified framework that constructs spatial memory online from RGB-D frames, jointly optimizes object grounding and frontier selection, and learns end-to-end trajectories via pre-training on large-scale data."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "simulator_and_dataset",
+          "insight": "Use synthetic traffic generation to augment enumeration robustness testing.",
+          "action_suggestion": "Use large-scale synthetic data generation (e.g., ScaleVLN with 4M+ instructions) to augment training."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_digital_bonds_ics_enumeration_tools"
+      ],
+      "priority": 0
+    },
+    "amerka_gui": {
+      "standard_name": "Unsecured IoT/ICS devices exposed on the internet are easily discoverable and exploitable, posing critical infrastructure risk.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "unsecured",
+        "devices",
+        "exposed",
+        "internet",
+        "easily",
+        "discoverable",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "soon_scenario_oriented_object_navigation_with_graph_based_exploration",
+          "insight": "Use graph-based exploration and semantic priors to prioritize patching high-risk exposed devices.",
+          "action_suggestion": "Scenario-oriented object navigation with graph-based exploration: build a semantic graph of explored regions, use a high-level policy to select frontier nodes based on object-context priors, and a low-level policy to navigate to chosen nodes."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "driving_videos",
+          "insight": "Use diverse real-world telemetry data to automatically generate synthetic attack scenarios for training intrusion detection systems.",
+          "action_suggestion": "Use driving videos to automatically generate navigation instructions and action labels for data augmentation."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "reflections_of_a_process_control_practitioner",
+          "insight": "Use dead-time dominant tuning to anchor exposure thresholds for IoT/ICS devices.",
+          "action_suggestion": "Use dead-time dominant tuning rules (e.g., Cohen-Coon, Lambda tuning) and apply gain-anchored tuning for integrating processes."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_amerka_gui"
+      ],
+      "priority": 0
+    },
+    "isef": {
+      "standard_name": "Industrial control systems (PLCs) are vulnerable to unauthorized start/stop commands via network protocols like Modbus and S7.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "industrial",
+        "control",
+        "systems",
+        "plcs",
+        "vulnerable",
+        "unauthorized",
+        "compute",
+        "cuda"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "sim_to_real_gap_in_depth_perception",
+          "insight": "Train control systems on simulated network traffic with injected anomalies and adversarial commands.",
+          "action_suggestion": "Generate synthetic depth images with simulated sensor noise, self-occlusion, and lighting effects to match real sensor distribution."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "direct_action_prediction",
+          "insight": "Use hierarchical decomposition to validate commands via step-by-step subgoal checks.",
+          "action_suggestion": "Use chain-of-thought reasoning to decompose tasks into step-by-step subgoals before predicting actions."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "deepmind_counterfactual_fairness",
+          "insight": "Use causal intervention to block unauthorized commands' influence on control logic.",
+          "action_suggestion": "Use causal counterfactual reasoning to remove the influence of sensitive attributes on predictions by intervening on the causal graph."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_isef"
+      ],
+      "priority": 0
+    },
+    "ics_mem_collect": {
+      "standard_name": "Industrial control system devices lack APIs for programmatic memory access, forcing manual probing for anomalies or malware.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "industrial",
+        "control",
+        "system",
+        "devices",
+        "lack",
+        "apis",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "embodiedocc_scannet",
+          "insight": "Derive labeled memory-access datasets from existing control-system logs to train anomaly detectors.",
+          "action_suggestion": "EmbodiedOcc-ScanNet: a large-scale egocentric occupancy dataset derived from ScanNet with voxel-level occupancy labels from first-person perspective."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "chain_of_thought_cot_prompting",
+          "insight": "Hierarchical decomposition of high-level queries into stepwise subgoal probes for memory access.",
+          "action_suggestion": "Use Hierarchical Chain-of-Thought (H-CoT) prompting to decompose high-level goals into stepwise subgoals (e.g., region → furniture → object), enabling compositional reasoning for navigation and manipulation."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "realistic_depth_images_synthetic_method",
+          "insight": "Model industrial device behavior with occlusion-aware ray casting to infer hidden memory states from observable signals.",
+          "action_suggestion": "Synthetic depth image generation with self-occlusion-aware ray casting and noise-aware modeling calibrated from real depth sensor characteristics."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_ics_mem_collect"
+      ],
+      "priority": 0
+    },
+    "apmonitor": {
+      "standard_name": "Dynamic optimization and control of differential-algebraic systems is computationally expensive and lacks accessible tools for real-time applications.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "dynamic",
+        "optimization",
+        "control",
+        "differential-algebraic",
+        "systems",
+        "computationally",
+        "locomotion",
+        "pid"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "slam",
+          "insight": "Use SLAM-derived trajectories as ground-truth references to supervise reduced-order DAE models for real-time control.",
+          "action_suggestion": "Use SLAM-derived trajectories as ground-truth motion tendency references to supervise or condition video world model predictions."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "end_to_end_trajectory_learning",
+          "insight": "Learn a direct mapping from system state to control actions via offline simulation pre-training.",
+          "action_suggestion": "End-to-end trajectory learning with Vision-Language-Exploration pre-training over a million diverse RGB-D trajectories, directly mapping raw sensor observations to continuous commands."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "minivln_efficient_vision_and_language_navigation_by_progressive_knowledge_distil",
+          "insight": "Hierarchical decomposition: distill complex dynamics into a medium-fidelity model, then a reduced-order real-time controller.",
+          "action_suggestion": "Two-stage progressive knowledge distillation: first distill from large teacher to medium student, then from medium to small student, achieving 1/7 model size with same accuracy."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_apmonitor"
+      ],
+      "priority": 0
+    },
+    "reflections_of_a_process_control_practitioner": {
+      "standard_name": "PID controller tuning is inconsistent or suboptimal due to process dead time, inverse response, or slow response, leading to poor loop performance.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "controller",
+        "tuning",
+        "inconsistent",
+        "suboptimal",
+        "process",
+        "dead",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "deformable_cross_attention",
+          "insight": "Use learned sampling points to selectively attend to critical error dynamics, ignoring dead-time regions.",
+          "action_suggestion": "Use deformable cross-attention with learned sampling points to selectively attend to relevant image features instead of the entire grid."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "waypoint_predictor",
+          "insight": "Augment PID with predictive state features to filter or score control actions.",
+          "action_suggestion": "Augment waypoint predictor with semantic and passibility features from the environment (e.g., obstacle labels, terrain traversability) to filter or score candidate waypoints."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "self_supervised_learning",
+          "insight": "Pre-train a PID with diverse system dynamics using self-supervised tuning to transfer robustly across dead-time and inverse-response loops.",
+          "action_suggestion": "Pre-train on large-scale image-text-action triplets using self-supervised pretext tasks to learn generic representations that transfer to new navigation tasks."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_reflections_of_a_process_control_practitioner"
+      ],
+      "priority": 0
+    },
+    "isf": {
+      "standard_name": "ICS/SCADA devices lack security hardening, making them vulnerable to remote exploitation via standard protocols like Modbus, S7comm, and Profinet.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "scada",
+        "devices",
+        "lack",
+        "security",
+        "hardening",
+        "making",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "panoramic_augmentation_aug",
+          "insight": "Cross-view consistency enforcement via lightweight augmentation to harden protocol parsing against injection attacks.",
+          "action_suggestion": "Panoramic Augmentation (AUG): a lightweight, plug-and-play data augmentation block combining cross-view transformations and semantic alignment to enforce BEV-panoramic feature consistency during training, with no trainable parameters."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "lane_graph_connectivity",
+          "insight": "Use lane-graph-like hierarchical partitioning to segment ICS network zones, bridging device-level protocols with topological security boundaries.",
+          "action_suggestion": "Use lane graph connectivity to partition the environment into hierarchically organized regions, bridging object-level maps with topological structure."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "multifeature_dropout_mfd",
+          "insight": "Apply dropout-like random deactivation of protocol layers to prevent co-adapted exploit chains.",
+          "action_suggestion": "Apply dropout operations at multiple feature scales (activations, channels, spatial regions, entire feature maps) to regularize training."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_isf"
+      ],
+      "priority": 0
     }
   },
   "safety_label_index": {

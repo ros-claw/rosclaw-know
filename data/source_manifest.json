@@ -16,6 +16,118 @@
       "first_processed": "2026-05-18T14:45:10+00:00",
       "last_processed": "2026-05-18T15:04:47+00:00",
       "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/apmonitor.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/apmonitor.md",
+      "sha256": "f1f374b48c80999f0d3ce90e15b296ddcac430cc9753f5e86368168835fc4494",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/brian_douglas_engineering_media.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/brian_douglas_engineering_media.md",
+      "sha256": "3d69277355e22e966ce03896156bf2276d28f63297ed71976749cd05eed540a4",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/matthew_kellys_tutorials.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/matthew_kellys_tutorials.md",
+      "sha256": "452808e89dbb239e91dda41de1c9d2193a4ac49997aed940e8b12cb928d7f7f0",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/reflections_of_a_process_control_practitioner.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/reflections_of_a_process_control_practitioner.md",
+      "sha256": "2abea93dddcdc1fabc9635a02bad8e4d0624737d068d5e3227f66d83e20e4462",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/steve_brunton.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-control-theory/steve_brunton.md",
+      "sha256": "308981f8b5ba81ff16a65def96f085736bc9d43c6c36adc59b28c3959a40c0e4",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/amerka_gui.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/amerka_gui.md",
+      "sha256": "d18df36e6c2bbe8ad3ae69d7be46aa66373c304c434264cef2185b02d321d1bc",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/attkfinder.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/attkfinder.md",
+      "sha256": "e3792f8470efde3eea6ac583c6ad8f0c2a0908ad5b1b55b16fe1e21e3af77a95",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/cset.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/cset.md",
+      "sha256": "5282666e24a5e398cbd9fa82acd5cc1f943c50db7a882f726287f76f963a4fcf",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/digital_bonds_3s_codesys_tools.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/digital_bonds_3s_codesys_tools.md",
+      "sha256": "f284219875dfa68a5ff8164988b39d142994746b2cb072979592372aca39f61f",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/digital_bonds_ics_enumeration_tools.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/digital_bonds_ics_enumeration_tools.md",
+      "sha256": "e8b7ba971fd917fe45391d78c6b825de0e36d200c91b40c9dbc25482718b5da1",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/grassmarlin.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/grassmarlin.md",
+      "sha256": "5c8d3b3ba3e194ebde1e9c92a311217a31232ad68f8795d5d70fd90915e6f5aa",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/ics_mem_collect.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/ics_mem_collect.md",
+      "sha256": "c6dc9d0913347c46852e3d9c4f35b6750612b69a06ea23507645c06aa097175e",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/isef.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/isef.md",
+      "sha256": "2beb3ef494347c465cab8c3a8de46fea088a07384fa26f03f25f8a1e70a569d3",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
+    },
+    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/isf.md": {
+      "abs_path": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-wiki/wiki/awesome_corpus/awesome-industrial-control-system-security/isf.md",
+      "sha256": "ad4d591346e2d373d4f08eb69974aba9a7363a95a6915a3e3c22242faf8924eb",
+      "domain": null,
+      "first_processed": "2026-05-19T01:38:41+00:00",
+      "last_processed": "2026-05-19T01:38:45+00:00",
+      "n_clusters_contributed": 0
     }
   }
 }
