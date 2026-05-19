@@ -164,11 +164,10 @@ def _write_pattern_file(
     body.append("")
     body.append(attr["fix"] or "_(no fix recorded)_")
     body.append("")
-    if attr.get("failed"):
-        body.append("## Anti-pattern")
-        body.append("")
-        body.append(attr["failed"])
-        body.append("")
+    body.append("## Anti-pattern")
+    body.append("")
+    body.append(attr.get("failed") or "_(no anti-pattern documented in source)_")
+    body.append("")
     if analogies:
         body.append("## Cross-domain analogies")
         body.append("")

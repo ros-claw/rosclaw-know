@@ -12,6 +12,10 @@ domain: Systems_Compute
 
 Use the ISF framework to send crafted PLC control commands (e.g., Schneider_CPU_Command, Siemens_300_400_CPU_Control) for security testing and exploitation.
 
+## Anti-pattern
+
+_(no anti-pattern documented in source)_
+
 ## Cross-domain analogies
 
 - **Perception_Vision** → Train control systems on simulated network traffic with injected anomalies and adversarial commands.
