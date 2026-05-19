@@ -6,23 +6,23 @@
   ],
   "new_staging_clusters": [],
   "reload_response": {
-    "symptoms": 330,
-    "patterns": 333,
+    "symptoms": 346,
+    "patterns": 349,
     "demoted_skipped": 3,
     "symptoms_detail": {
       "added": 0,
       "updated": 0,
-      "unchanged": 330,
+      "unchanged": 346,
       "deleted": 0
     },
     "patterns_detail": {
       "added": 0,
       "updated": 0,
-      "unchanged": 333,
+      "unchanged": 349,
       "deleted": 0
     },
     "rebuild": false,
-    "duration_ms": 187
+    "duration_ms": 368
   },
   "probes": [
     {
@@ -31,11 +31,11 @@
         "prompt_snippet": "## 🔧 Engineering Heuristics from ROSClaw-How\n**Cross-Domain (Perception_Vision):** Use learned sampling points to selectively attend to critical error dynamics, ignoring dead-time regions.\n**Suggested action:** Use deformable cross-attention with learned sampling points to selectively attend to relevant image features instead of the entire grid.\n**Diff:**\n```diff\n---\n---\n- **Perception_Vision** → Use learned sampling points to selectively attend to critical error dynamics, ignoring dead-time regions.\n- **Planning_Decision** → Augment PID with predictive state features to filter or score control actions.\n- **Learning_Training** → Pre-train a PID with diverse system dynamics using self-supervised tuning to transfer robustly across dead-time and inverse-response loops.\n--- reflections_of_a_process_control_practitioner.before.py\n+++ reflections_of_a_process_control_practitioner.after.py\n@@ -1,2 +1,4 @@\n-# --- BEFORE (vulnerable to the symptom below) ---\n+# --- AFTER (ROSCLAW heuristic graft) ---\n+# Fix    : Use dead-time dominant tuning rules (e.g., Cohen-Coon, Lambda tuning) and apply gain-anchored tuning for integrating processes.\n+# Avoid  : Quarter amplitude damping or Ziegler-Nichols tuning without considering dead time or process characteristics.\n```",
         "injected": true,
         "strategy": "CATALYST",
-        "latency_ms": 342,
+        "latency_ms": 478,
         "symptom": "Unknown_Error",
         "matched_symptom": "PID controller tuning is inconsistent or suboptimal due to process dead time, inverse response, or slow response, leading to poor loop performance.",
         "similarity": 0.8245,
-        "injection_id": "21e47283af07418caa697c5f11d2538f",
+        "injection_id": "4cea3525cf6641bd84d38037e0c4f831",
         "pattern_id": "pattern_reflections_of_a_process_control_practitioner",
         "is_staging": true
       },
@@ -44,15 +44,15 @@
     {
       "probe": "Industrial PLC accepting unauthenticated start/stop commands over Modbus; the SC",
       "resp": {
-        "prompt_snippet": "## 🔧 Engineering Heuristics from ROSClaw-How\n**Cross-Domain (Perception_Vision):** Train control systems on simulated network traffic with injected anomalies and adversarial commands.\n**Suggested action:** Generate synthetic depth images with simulated sensor noise, self-occlusion, and lighting effects to match real sensor distribution.\n**Diff:**\n```diff\n---\n---\n- **Perception_Vision** → Train control systems on simulated network traffic with injected anomalies and adversarial commands.\n- **Planning_Decision** → Use hierarchical decomposition to validate commands via step-by-step subgoal checks.\n- **Learning_Training** → Use causal intervention to block unauthorized commands' influence on control logic.\n--- isef.before.py\n+++ isef.after.py\n@@ -1,2 +1,3 @@\n-# --- BEFORE (vulnerable to the symptom below) ---\n+# --- AFTER (ROSCLAW heuristic graft) ---\n+# Fix    : Use the ISF framework to send crafted PLC control commands (e.g., Schneider_CPU_Command, Siemens_300_400_CPU_Control) for security testing and exploitation.\n```",
+        "prompt_snippet": "## 🔧 Engineering Heuristics from ROSClaw-How\n**Cross-Domain (Perception_Vision):** Hierarchical open-vocabulary verification segments controller commands into authenticated, semantically validated layers.\n**Suggested action:** Open-vocabulary hierarchical 3D graph representation combining VLM-based instance/caption extraction from images, incremental LiDAR projection, and lane graph connectivity segmentation.\n**Diff:**\n```diff\n---\n---\n- **Perception_Vision** → Hierarchical open-vocabulary verification segments controller commands into authenticated, semantically validated layers.\n- **Planning_Decision** → State-adaptive expert selection could authenticate SCADA commands per context to block unauthorized actions.\n- **Learning_Training** → Pretrain a secure baseline controller on benign traffic data, then fine-tune on authenticated SCADA protocols.\n--- scadashutdowntool.before.py\n+++ scadashutdowntool.after.py\n@@ -1,2 +1,4 @@\n-# --- BEFORE (vulnerable to the symptom below) ---\n+# --- AFTER (ROSCLAW heuristic graft) ---\n+# Fix    : Use SCADAShutdownTool in safe-mode (read-only) for security testing; for production, enforce authentication and access controls on Modbus/TCP registers.\n+# Avoid  : Relying on default or unprotected controller registers without security measures.\n```",
         "injected": true,
         "strategy": "CATALYST",
-        "latency_ms": 381,
+        "latency_ms": 538,
         "symptom": "Unknown_Error",
-        "matched_symptom": "Industrial control systems (PLCs) are vulnerable to unauthorized start/stop commands via network protocols like Modbus and S7.",
-        "similarity": 0.531,
-        "injection_id": "2f2bfda5ff93489da6f34c56ef6b9677",
-        "pattern_id": "pattern_isef",
+        "matched_symptom": "SCADA controllers can be maliciously scanned, fuzzed, and rewritten without authentication, leading to potential shutdown or damage.",
+        "similarity": 0.5354,
+        "injection_id": "63201a25231f477fbefb1cf1c696b72c",
+        "pattern_id": "pattern_scadashutdowntool",
         "is_staging": true
       },
       "ok": true

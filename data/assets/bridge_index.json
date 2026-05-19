@@ -12303,6 +12303,614 @@
         "pattern_isf"
       ],
       "priority": 0
+    },
+    "pcs7-hardening-tool": {
+      "standard_name": "Siemens Simatic PCS 7 stations have insecure configurations (weak GPO, permissive folder sharing, short passwords, no password complexity) that expose industrial control systems to cyber attacks.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "siemens",
+        "simatic",
+        "stations",
+        "insecure",
+        "configurations",
+        "weak",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "visual_imagination_in_vln",
+          "insight": "Use synthetic adversarial network traffic to train a closed-loop verification agent that enforces secure configurations.",
+          "action_suggestion": "Generate synthetic images from landmark text descriptions via a text-to-image diffusion model, and train the agent with an auxiliary grounding loss that aligns instruction representations with imagination embeddings"
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "disentangled_reasoning",
+          "insight": "Hierarchical decomposition of security into goal setting, access alignment, and action enforcement.",
+          "action_suggestion": "Decompose navigation decision into three stages: imagination (generate goal representation), observation selection (align goal with sensory input), and action determination (compute motor commands)."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "counterfactual_inverse_reinforcement_learning_irl",
+          "insight": "Use counterfactual configuration audits contrasting secure and insecure states to highlight critical hardening gaps.",
+          "action_suggestion": "Use counterfactual trajectory demonstrations: generate and analyze alternative paths that could have been taken, then contrast them with expert trajectories to focus learning on the most critical features for navigation cost inference."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_pcs7-hardening-tool"
+      ],
+      "priority": 0
+    },
+    "the_industrial_control_system_cyber_kill_chain": {
+      "standard_name": "Industrial control systems are vulnerable to multi-stage cyber attacks that can disrupt critical infrastructure.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "industrial",
+        "control",
+        "systems",
+        "vulnerable",
+        "multi-stage",
+        "cyber",
+        "compute",
+        "cuda"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "deepmind_mmv",
+          "insight": "Use shared transformer layers with modality-specific encoders to detect multi-stage attack patterns across diverse control signals.",
+          "action_suggestion": "Use a multimodal versatile network (MMV) with shared transformer layers and modality-specific encoders to learn joint embeddings across modalities."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "semantic_reasoning",
+          "insight": "Use closed-loop verification benchmarks to detect multi-stage attack patterns in control systems.",
+          "action_suggestion": "Use Target-Bench benchmark to evaluate and improve semantic reasoning by measuring target-approaching metrics in path planning tasks."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "data_augmentation_via_speaker_model",
+          "insight": "Use synthetic attack trajectory generation from unlabeled system logs to augment training data for anomaly detection.",
+          "action_suggestion": "Train a speaker model to generate synthetic instruction–trajectory pairs from unannotated visual paths, then augment the original training set with these synthetic pairs."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_the_industrial_control_system_cyber_kill_chain"
+      ],
+      "priority": 0
+    },
+    "modbuspal": {
+      "standard_name": "Simulating realistic Modbus slave behavior is difficult with predefined functions alone, especially for custom device logic and dynamic environments.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "simulating",
+        "realistic",
+        "modbus",
+        "slave",
+        "behavior",
+        "difficult",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "birds_eye_view_bev_perceptual_representations",
+          "insight": "Project sensory data into a structured top-down grid to enable flexible, dynamic Modbus logic simulation.",
+          "action_suggestion": "Project sensory data into a bird's-eye-view grid representation, distilled from visual foundation models, to enable structured spatial reasoning for planning."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "r2r_last_dataset",
+          "insight": "Use atomic-concept learning to isolate and predict discrete Modbus commands from device logic.",
+          "action_suggestion": "Use R2R-Last benchmark to isolate last-action prediction from full path, training with Actional Atomic-Concept Learning (AACL) to align language tokens with discrete navigational commands."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "data_augmentation_via_speaker_model",
+          "insight": "Use a generative model to produce synthetic Modbus slave behaviors from unlabeled device logs.",
+          "action_suggestion": "Train a speaker model to generate synthetic instruction–trajectory pairs from unannotated visual paths, then augment the original training set with these synthetic pairs."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_modbuspal"
+      ],
+      "priority": 0
+    },
+    "modbus_penetration_testing_framework": {
+      "standard_name": "Modbus/TCP protocol in SCADA systems lacks security, making them vulnerable to cyber attacks due to open-source adoption and TCP/IP exposure.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "modbus",
+        "protocol",
+        "scada",
+        "systems",
+        "lacks",
+        "security",
+        "compute",
+        "cuda"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "sensing_intelligence",
+          "insight": "Fuse multi-layer security checks with attention-based anomaly detection to prioritize critical threats.",
+          "action_suggestion": "Implement a sensing intelligence pipeline that fuses multiple sensor modalities (e.g., vision, depth, IMU) into a coherent representation, with attention mechanisms to prioritize salient input."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "navila_legged_robot_vision_language_action_model_for_navigation",
+          "insight": "Hierarchical decomposition isolates critical low-level execution from high-level exposure.",
+          "action_suggestion": "Two-stage architecture: VLM outputs mid-level action tokens (e.g., 'move forward 0.5m') which are then executed by a separate RL-based locomotion policy that maps visual observations to motor commands."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "counterfactual_inverse_reinforcement_learning_irl",
+          "insight": "Use counterfactual network traffic analysis to contrast normal and attack paths, highlighting critical security features.",
+          "action_suggestion": "Use counterfactual trajectory demonstrations: generate and analyze alternative paths that could have been taken, then contrast them with expert trajectories to focus learning on the most critical features for navigation cost inference."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_modbus_penetration_testing_framework"
+      ],
+      "priority": 0
+    },
+    "minicps": {
+      "standard_name": "CPS security research lacks realistic simulation environments for testing attacks and defenses.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "security",
+        "research",
+        "lacks",
+        "realistic",
+        "simulation",
+        "environments",
+        "physics",
+        "contact"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "amerka_gui",
+          "insight": "Use passive reconnaissance and geolocation APIs to map real-world CPS assets into simulation environments.",
+          "action_suggestion": "Use Shodan, BinaryEdge, and WHOISXMLAPI to passively scan for ICS/IoT devices, geolocate them via Google Maps and device indicators, and report to CERT."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "legged_robots",
+          "insight": "Use sequential decision-making to balance information gain, safety, and cost in CPS attack-defense simulation.",
+          "action_suggestion": "Use Decision-Driven Semantic Object Exploration (DD-SOE) algorithm, which provides a sequential decision-making framework that balances semantic information gain, localization cost, and safety to guide exploration behavior."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "imitation_learning",
+          "insight": "Generate synthetic attack-defense scenarios at scale using a transformer model.",
+          "action_suggestion": "Train a transformer agent on 4.2 million synthetic instruction-trajectory pairs generated at scale, reducing reliance on human demonstrations."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_minicps"
+      ],
+      "priority": 0
+    },
+    "s7scan": {
+      "standard_name": "Siemens PLCs in industrial networks are not enumerated for security auditing, leaving unknown firmware versions and protection settings that may be vulnerable.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "siemens",
+        "plcs",
+        "industrial",
+        "networks",
+        "enumerated",
+        "security",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "coarse_to_fine_feature_extraction",
+          "insight": "Hierarchical decomposition: coarse network scans enumerate PLCs, then fine-grained audits verify firmware and settings.",
+          "action_suggestion": "Use a coarse-to-fine pyramid (e.g., U-Net or FPN) that downsamples to capture coarse layout and upsamples to recover fine details, then fuse or sequentially feed multi-scale features."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "msgnav_unleashing_the_power_of_multi_modal_3d_scene_graph_for_zero_shot_embodied",
+          "insight": "Use a hierarchical 3D scene graph to encode PLC network topology, firmware, and access controls for zero-shot security auditing.",
+          "action_suggestion": "Use a multi-modal 3D scene graph that encodes object categories, spatial relations, and hierarchical structure, combined with a large language model for zero-shot goal reasoning and path planning."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "counterfactual_inverse_reinforcement_learning_irl",
+          "insight": "Use counterfactual network path simulations to contrast with actual PLC enumerations, highlighting critical security gaps.",
+          "action_suggestion": "Use counterfactual trajectory demonstrations: generate and analyze alternative paths that could have been taken, then contrast them with expert trajectories to focus learning on the most critical features for navigation cost inference."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_s7scan"
+      ],
+      "priority": 0
+    },
+    "shunichi09linear_nonlinear_control": {
+      "standard_name": "Implementing nonlinear control algorithms from scratch is complex and error-prone, especially when requiring gradient or Hessian computations.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "implementing",
+        "nonlinear",
+        "control",
+        "algorithms",
+        "scratch",
+        "complex",
+        "locomotion",
+        "pid"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "embodiedocc_scannet",
+          "insight": "Derive a large-scale dataset of precomputed gradients and Hessians from simulation to train a neural surrogate for nonlinear control.",
+          "action_suggestion": "EmbodiedOcc-ScanNet: a large-scale egocentric occupancy dataset derived from ScanNet with voxel-level occupancy labels from first-person perspective."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "mapnav",
+          "insight": "Replace manual gradient derivation with a precomputed annotated Jacobian map updated online.",
+          "action_suggestion": "Replace historical frame sequences with an Annotated Semantic Map (ASM) that is constructed at episode start and updated each timestep, using a VLM to add textual labels for key regions."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "driving_videos",
+          "insight": "Use driving data to auto-generate control code and gradient approximations for nonlinear controllers.",
+          "action_suggestion": "Use driving videos to automatically generate navigation instructions and action labels for data augmentation."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_shunichi09linear_nonlinear_control"
+      ],
+      "priority": 0
+    },
+    "scada_cybersecurity_framework": {
+      "standard_name": "SCADA systems lack structured cybersecurity defenses against targeted attacks",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "scada",
+        "systems",
+        "lack",
+        "structured",
+        "cybersecurity",
+        "defenses",
+        "compute",
+        "cuda"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "deformable_cross_attention",
+          "insight": "Use learned selective attention to prioritize critical SCADA nodes instead of monitoring all points.",
+          "action_suggestion": "Use deformable cross-attention with learned sampling points to selectively attend to relevant image features instead of the entire grid."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "igl_nav_incremental_3d_gaussian_localization_for_image_goal_navigation",
+          "insight": "Incremental 3D Gaussian map updates inspire sliding-window anomaly detection for real-time SCADA threat localization.",
+          "action_suggestion": "Incremental 3D Gaussian Splatting for online scene reconstruction and localization, using a sliding window of keyframes to update a 3D Gaussian map and match the goal image via rendering-based pose estimation."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "navigator",
+          "insight": "Use the SCADA system itself to filter and score its own traffic for high-confidence anomaly detection.",
+          "action_suggestion": "Self-Refining Data Flywheel (SRDF): after initial training, use the Navigator model itself to filter and score candidate trajectories, retaining only high-confidence or high-reward pairs for iterative fine-tuning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_scada_cybersecurity_framework"
+      ],
+      "priority": 0
+    },
+    "pytrajectory": {
+      "standard_name": "Trajectory optimization for underactuated systems fails to converge or produces infeasible solutions when using naive collocation methods.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "trajectory",
+        "optimization",
+        "underactuated",
+        "systems",
+        "fails",
+        "converge",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "multi_task_learning_for_vln",
+          "insight": "Jointly predict state feasibility, dynamics, and constraints from a shared latent trajectory representation.",
+          "action_suggestion": "Multi-task learning jointly predicting 3D occupancy, room layout, and object bounding boxes from a shared volumetric representation"
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "llm_based_planner",
+          "insight": "Use hierarchical scene graph construction to structure state space for collocation.",
+          "action_suggestion": "Use hierarchical scene graph construction from a semantic object map to provide structured, open-vocabulary environment context to the LLM, enabling multi-step plan generation and real-time re-planning."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "synthetic_instructions",
+          "insight": "Use structured environment priors to generate synthetic collocation constraints, ensuring feasibility.",
+          "action_suggestion": "Use Marky to programmatically generate 4.2 million synthetic instruction–trajectory pairs from structured environment representations and action sequences."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_pytrajectory"
+      ],
+      "priority": 0
+    },
+    "a_collection_of_resources_for_getting_started_in_icsscada_cybersecurity": {
+      "standard_name": "Newcomers to ICS/SCADA cybersecurity struggle to find a structured learning path due to the field's unique mission, risks, and threats compared to IT security.",
+      "domain": "Learning_Training",
+      "matched_keywords": [
+        "newcomers",
+        "scada",
+        "cybersecurity",
+        "struggle",
+        "find",
+        "structured",
+        "learning",
+        "training"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "spherical_geometry_aware_constraints_sgc",
+          "insight": "Use spherical geometry-aware constraints to structure a risk-aligned learning path for ICS/SCADA cybersecurity.",
+          "action_suggestion": "Apply spherical geometry-aware constraints to regularize sampling offsets, leveraging panoramic ray properties for distortion-aware alignment without explicit undistortion."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "capability_conditioned_navigation_capnav",
+          "insight": "Structured multi-scenario evaluation benchmarks mapping learner constraints to adaptive training paths.",
+          "action_suggestion": "CapNav benchmark: evaluate VLMs on 5 agent types with distinct constraints across 45 scenes, 473 tasks, and 2,365 QA pairs to test capability-aware navigation."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "eb_manipulation",
+          "insight": "Use a structured benchmark with standardized tasks to train newcomers on ICS-specific risks and threats.",
+          "action_suggestion": "Use EB-Manipulation benchmark to evaluate and train agents on low-level actions (joint torques, end-effector poses) with standardized tasks that require precise perception and spatial reasoning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_a_collection_of_resources_for_getting_started_in_icsscada_cybersecurity"
+      ],
+      "priority": 0
+    },
+    "hacker_machine_interface_-_the_state_of_scada_hmi_vulnerabilities": {
+      "standard_name": "SCADA HMI systems have unpatched vulnerabilities that allow remote code execution and unauthorized control.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "scada",
+        "systems",
+        "unpatched",
+        "vulnerabilities",
+        "allow",
+        "remote",
+        "compute",
+        "cuda"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "data_domain_gap",
+          "insight": "Use real-world system snapshots to generate synthetic HMI states for patching validation.",
+          "action_suggestion": "Construct high-fidelity datasets using 3D Gaussian Splatting (3D-GS) to generate photorealistic novel-view synthetic images from sparse real captures, preserving fine-grained textures and lighting details."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "lovon_legged_open_vocabulary_object_navigator",
+          "insight": "Hierarchical decomposition with closed-loop verification.",
+          "action_suggestion": "Hierarchical framework: VLM-based high-level planner selects sub-goals via visual grounding, MPC-based low-level controller executes adaptive locomotion."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "navigator",
+          "insight": "Use the HMI system itself to filter and validate control commands, retaining only high-confidence actions for execution.",
+          "action_suggestion": "Self-Refining Data Flywheel (SRDF): after initial training, use the Navigator model itself to filter and score candidate trajectories, retaining only high-confidence or high-reward pairs for iterative fine-tuning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_hacker_machine_interface_-_the_state_of_scada_hmi_vulnerabilities"
+      ],
+      "priority": 0
+    },
+    "scadashutdowntool": {
+      "standard_name": "SCADA controllers can be maliciously scanned, fuzzed, and rewritten without authentication, leading to potential shutdown or damage.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "scada",
+        "controllers",
+        "maliciously",
+        "scanned",
+        "fuzzed",
+        "rewritten",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "opengraph",
+          "insight": "Hierarchical open-vocabulary verification segments controller commands into authenticated, semantically validated layers.",
+          "action_suggestion": "Open-vocabulary hierarchical 3D graph representation combining VLM-based instance/caption extraction from images, incremental LiDAR projection, and lane graph connectivity segmentation."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "language_guided_visual_navigation",
+          "insight": "State-adaptive expert selection could authenticate SCADA commands per context to block unauthorized actions.",
+          "action_suggestion": "State-Adaptive Mixture of Experts (SAME): adaptively selects expert modules based on current state and instruction, enabling shared navigation knowledge with task-specific exploitation."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "vision_and_language_pretraining",
+          "insight": "Pretrain a secure baseline controller on benign traffic data, then fine-tune on authenticated SCADA protocols.",
+          "action_suggestion": "Pretrain a vision-language model on large-scale web data to learn cross-modal alignment, then fine-tune on navigation tasks"
+        }
+      ],
+      "associated_patterns": [
+        "pattern_scadashutdowntool"
+      ],
+      "priority": 0
+    },
+    "nettoplcsim": {
+      "standard_name": "Unable to simulate PLC communication with Siemens S7-1200/1500 PLCs without physical hardware",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "unable",
+        "simulate",
+        "communication",
+        "siemens",
+        "plcs",
+        "without",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "sensing_intelligence",
+          "insight": "Fuse virtual PLC communication channels with attention-based priority scheduling for realistic simulation.",
+          "action_suggestion": "Implement a sensing intelligence pipeline that fuses multiple sensor modalities (e.g., vision, depth, IMU) into a coherent representation, with attention mechanisms to prioritize salient input."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "coarse_to_fine_reasoning",
+          "insight": "Use coarse-to-fine reasoning: first simulate basic protocol, then refine with LLM-driven semantic checks.",
+          "action_suggestion": "Coarse-to-Fine Reasoning: first rank frontiers geometrically, then refine with LLM-driven semantic analysis of frontier properties (e.g., room type, connectivity) to select navigation goals."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "deepmind_causal_reasoning",
+          "insight": "Use causal structure learning to infer PLC communication protocols from offline traces, enabling simulation without physical hardware.",
+          "action_suggestion": "Use causal representation learning (e.g., Causal VAEs, independent mechanism analysis) and causal model-based RL to learn structural causal models that support interventions and counterfactuals."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_nettoplcsim"
+      ],
+      "priority": 0
+    },
+    "sixnet-tools": {
+      "standard_name": "Sixnet SCADA devices lack basic security controls, allowing root-level access via proprietary protocol.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "sixnet",
+        "scada",
+        "devices",
+        "lack",
+        "basic",
+        "security",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "pre_trained_vision_language_model",
+          "insight": "Use a pre-trained security embedding space to enable zero-shot threat detection across proprietary protocols.",
+          "action_suggestion": "Use a pre-trained vision-language model (e.g., CLIP) trained on large-scale image-text pairs to learn a shared embedding space, enabling zero-shot transfer to unseen tasks and objects."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "ha_vln_a_benchmark_for_human_aware_navigation_in_discrete_continuous_environment",
+          "insight": "Closed-loop verification with dynamic human interaction models could enforce secure access policies.",
+          "action_suggestion": "HA-VLN benchmark with discrete-continuous environments, dynamic multi-human interactions, real-world validation, and an open leaderboard to evaluate human-aware navigation policies."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "end_to_end_learning",
+          "insight": "Replace proprietary protocol with a single end-to-end encrypted channel from sensor to actuator.",
+          "action_suggestion": "Train a single neural network end-to-end from raw sensor inputs to control outputs using a reward signal (e.g., reinforcement learning), allowing the network to discover internal representations that directly optimize the desired behavior."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_sixnet-tools"
+      ],
+      "priority": 0
+    },
+    "atsushisakaipyadvancedcontrol": {
+      "standard_name": "MPC optimization with state constraints is computationally expensive when using high-level modeling tools like cvxpy",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "optimization",
+        "state",
+        "constraints",
+        "computationally",
+        "expensive",
+        "when",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "sim_to_real_gap_in_depth_perception",
+          "insight": "Use synthetic constraint distributions to pre-train a fast surrogate solver.",
+          "action_suggestion": "Generate synthetic depth images with simulated sensor noise, self-occlusion, and lighting effects to match real sensor distribution."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "vision_and_language_navigation_a_survey_of_tasks_methods_and_future_directions",
+          "insight": "Use hierarchical decomposition with auxiliary sub-tasks to reduce online MPC constraint complexity.",
+          "action_suggestion": "Use panoramic action space, progress monitoring, and pre-trained vision-language models (e.g., VLN-BERT) with auxiliary tasks like single-step reasoning and backtracking."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "vlnverse",
+          "insight": "Use full-kinematics agents with a robust physics engine to reduce computational cost by precomputing feasible trajectories.",
+          "action_suggestion": "Use full-kinematics agents with a robust physics engine to enable realistic motion dynamics and high-fidelity simulation, reducing sim-to-real gap."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_atsushisakaipyadvancedcontrol"
+      ],
+      "priority": 0
+    },
+    "plcinject": {
+      "standard_name": "Siemens S7 PLCs lack a built-in mechanism to inject custom function block calls into existing cyclic OBs without manual re-engineering.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "siemens",
+        "plcs",
+        "lack",
+        "built-in",
+        "mechanism",
+        "inject",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "langnav_language_as_a_perceptual_representation_for_navigation",
+          "insight": "Use language-based abstraction to decouple custom logic from cyclic OB hardware dependencies.",
+          "action_suggestion": "Replace visual features with language-based representations (e.g., captions from a vision-language model) for navigation policy input."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "vision_and_language_navigation_in_the_continuous_environment_vln_ce",
+          "insight": "Use hierarchical decomposition to inject low-level control blocks into cyclic OBs via a continuous execution layer.",
+          "action_suggestion": "Use continuous action spaces with low-level controllers (e.g., PID) and train with reinforcement learning or imitation learning on continuous trajectories."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "deepmind_enformer",
+          "insight": "Insert a transformer-like global attention layer to dynamically inject custom blocks into cyclic OBs.",
+          "action_suggestion": "Use a convolutional stem followed by Transformer blocks with global attention to model dependencies across 100kb+ distances"
+        }
+      ],
+      "associated_patterns": [
+        "pattern_plcinject"
+      ],
+      "priority": 0
     }
   },
   "safety_label_index": {
