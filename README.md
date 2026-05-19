@@ -7,11 +7,13 @@ fragments) into **procedural knowledge** — symptom → fix_pattern pairs with
 cross-domain analogies — that runtime agents act on through the sister
 project [`rosclaw-how`](../rosclaw-how).
 
-Phase 1–7 are closed. The system is a self-improving knowledge engine: new
-sources flow in via `scripts/ingest.py`, agent feedback flows back via
+Phase 1–8 are closed. The system is a self-improving knowledge engine: new
+sources flow in via `scripts/ingest.py` (or `scripts/ingest_awesome.py` for
+curated GitHub lists), agent feedback flows back via
 `scripts/distill_feedback.py`, and cold-spots auto-draft patch sources via
 `scripts/autodraft.py`. The full loop is verified end-to-end by
-`scripts/verify_phase7_active.py` (6/6 PASS).
+`scripts/verify_phase7_active.py` (6/6 PASS) and
+`scripts/verify_phase8_awesome.py` (2/2 PASS, control-theory + ICS).
 
 ## What's in the box
 
@@ -27,6 +29,8 @@ sources flow in via `scripts/ingest.py`, agent feedback flows back via
 | `active_learning.py` + `autodraft.py` | 7 | poll `/blind_spots` → DeepSeek draft → auto-ingest |
 | `promote.py` | 7 | staging maturation gate (n≥5 + uplift > ±0.05 → priority ±1) |
 | `verify_phase7_active.py` | 7 | 8-step end-to-end joint verify with rosclaw-how |
+| `awesome_fetcher.py` + `ingest_awesome.py` | 8 | pull curated GitHub awesome lists (markdown OR HTML-table format), download referenced content, write to wiki/awesome_corpus/ as priority=0 staging |
+| `verify_phase8_awesome.py` | 8 | end-to-end verify: fetch awesome list → ingest → reload → CATALYST hit on new staging cluster |
 
 ## Quick start
 
@@ -60,6 +64,11 @@ python scripts/autodraft.py --then-ingest
 
 # 9. Promote staging clusters with positive feedback
 python scripts/promote.py --apply
+
+# 10. Bulk ingest from a curated awesome list (Phase 8)
+python scripts/ingest_awesome.py \
+    --url https://github.com/A-make/awesome-control-theory \
+    --then-ingest
 ```
 
 ## Architecture (Phase 1–7)
@@ -165,6 +174,9 @@ Latest verified results (`data/benchmarks/`):
 - **Phase 7 active**: PASS — autodrafted cluster (sim 0.657) promoted to
   production after 5 positive feedbacks, final /build silently injected
   with `is_staging` falsy
+- **Phase 8 awesome**: PASS — 47 corpus files from
+  `A-make/awesome-control-theory` + `hslatman/awesome-ics-security`
+  → 16 new staging clusters (sim 0.52–0.82 on PID / MPC / ICS probes)
 
 ## What this replaces
 
