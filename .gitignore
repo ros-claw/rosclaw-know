@@ -28,3 +28,4 @@ wiki/awesome_corpus/
 
 # Legacy wiki source corpus — deployer mounts or symlinks it themselves
 wiki/
+/wiki
