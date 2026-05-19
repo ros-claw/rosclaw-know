@@ -58,10 +58,15 @@ Make the system see itself and run faster.
 - rosclaw-how `/healthz` (cluster_count, embedding_dim, mtime, similarity_floor, blind_spot_count)
 - rosclaw-how `/ui` dashboard (8.8 KB HTML, polls /stats every 5 s)
 - rosclaw-how `/wiki/v1/blind_spots` cold-spot tracker (sliding window)
-- Content-hash **delta-mode reload** — 113 s → 284 ms (398× speed-up on no-change re-load).
+- Content-hash **delta-mode reload** — 113 s → 284 ms on **no-change** re-load
+  (398× speed-up for the 80-cluster bundle; new clusters scale linearly at ~1 s
+  CPU encode each, so adding 16 clusters takes ~24 s, still well under the
+  300 s SLO for full rebuild).
 - rosclaw-know `stats_analyze.py` linear-regression trend reports.
 - `bench_phase6.py` SLO baseline:
-  build p95 ≤ 400 ms · feedback p95 ≤ 150 ms · reload-delta ≤ 5 s · export p95 ≤ 500 ms.
+  build p95 ≤ 400 ms · feedback p95 ≤ 150 ms ·
+  reload-delta ≤ 5 s **on no-change** (linear in new-cluster count otherwise) ·
+  export p95 ≤ 500 ms.
 
 ### Phase 7 — Active learning + staging maturation
 Close the self-improvement meta-loop.
@@ -111,11 +116,15 @@ score deltas.
 | `docs/EVAL.md` | How to add a new task, how to choose the agent model, how to read reports. |
 
 ### Initial task catalogue (≥ 5 tasks)
-- **CartPole**: PID + adaptive gain — measure settle time
-- **LunarLander**: PPO sub-collapse symptom recovery
-- **Pendulum-SwingUp**: MPC with constraint
+
+**Primary** (high reward variance, injection signal can dominate noise):
 - **Quadrotor altitude hold** (synthetic, no Gym dep): wind disturbance rejection
 - **PLC anomaly detection** (text-only): static-analysis style probe with `pattern_attkfinder`
+- **Pendulum-SwingUp**: MPC with constraint
+
+**Secondary** (small reward variance — useful as sanity baselines, not headline metrics):
+- **CartPole**: PID + adaptive gain — measure settle time
+- **LunarLander**: PPO sub-collapse symptom recovery
 
 ### Pass criterion for Phase 9
 - ≥ 3 of 5 tasks show **statistically significant uplift** (p < 0.1) on
