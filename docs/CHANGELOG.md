@@ -35,7 +35,7 @@ All notable changes by phase. Most recent first. Format inspired by
   `--then-ingest`), `scripts/promote.py` (staging→production gate),
   `scripts/verify_phase7_active.py` (8-step joint verify, 6/6 PASS).
 
-## [0.1.0] – [0.6.0] — 2026-05-17 · Phase 1–6 (squashed)
+## [0.1.0 – 0.6.0] — 2026-05-17 · Phase 1–6 (squashed)
 
 ### Added — Phase 1 (offline refinery)
 - `c4f9b3e` — Initial commit of the whole offline refinery: harvester,
