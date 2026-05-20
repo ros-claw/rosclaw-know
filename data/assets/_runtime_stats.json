@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-05-20T17:38:18.580644+00:00",
+  "schema_version": 1,
+  "bridge_clusters": 349,
+  "domains": {
+    "Planning_Decision": 190,
+    "Control_Locomotion": 22,
+    "Learning_Training": 59,
+    "Perception_Vision": 42,
+    "Systems_Compute": 19,
+    "Memory_Reasoning": 15,
+    "World_Physics": 2
+  },
+  "lifecycle": {
+    "staging": 23,
+    "production": 2,
+    "demoted": 3,
+    "unbucketed": 321
+  },
+  "graph_nodes": 342,
+  "graph_edges": 2052,
+  "pattern_files": 349
+}

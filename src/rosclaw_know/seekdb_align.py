@@ -73,7 +73,7 @@ def check_duplicate_and_align(
     *,
     source_url: str | None = None,
     arxiv_id: str | None = None,
-    similarity_threshold: float = 0.88,
+    similarity_threshold: float = 0.88,  # not 0.85 — the lower value over-merged distinct symptoms (e.g. KV-cache OOM ≈ general CUDA OOM but they need different fixes); 0.88 keeps cross-symptom drift below 5%.
 ) -> dict[str, Any]:
     """Decide what to do with a freshly extracted heuristic.
 

@@ -20,6 +20,15 @@ DB_PATH = DATA_DIR / "rosclaw_knowledge.db"
 WIKI_DIR = PROJECT_ROOT / os.environ.get("WIKI_DIR", "wiki")
 
 # DeepSeek API
+#
+# IMPORTANT — model selection gotcha:
+#   `deepseek-v4-flash` and `deepseek-v4-pro` are *reasoning* models — they
+#   return their answer in the `reasoning_content` field, leaving the
+#   public `content` field empty. The harvester/Muse code reads `content`,
+#   so configuring those models silently produces 0 extractions.
+#   Production deployments override both of these to `deepseek-chat` via
+#   .env. The defaults below are placeholders; do NOT assume they're the
+#   battle-tested production choice.
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
 DEEPSEEK_EXTRACTOR_MODEL = os.environ.get("DEEPSEEK_EXTRACTOR_MODEL", "deepseek-v4-flash")

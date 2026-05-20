@@ -1,4 +1,22 @@
-# Phase 1 — Status Report
+# Phase 1 — Status Report (HISTORICAL · 2026-05-16)
+
+> ⚠️ **This file is a frozen snapshot from Phase 1 only.** The numbers below
+> (80 clusters, 240 analogies, 317 heuristics) are no longer current. As
+> of 2026-05-20 the bridge has **349 clusters** across 7 sub-domains with
+> Phase 4 feedback metrics, Phase 7 staging maturation, and Phase 8
+> awesome-list ingest layered on top.
+>
+> **For current state see** [`ROADMAP.md`](ROADMAP.md) **and**
+> [`CHANGELOG.md`](CHANGELOG.md) **and**
+> [`../data/assets/_runtime_stats.json`](../data/assets/_runtime_stats.json).
+>
+> This file is kept for archaeology — it documents the original commit
+> that proved the offline-refinery hypothesis worked. Do **not** cite its
+> numbers as "the system today".
+
+---
+
+# Phase 1 — Status Report (original content)
 
 **Date**: 2026-05-16
 **Run**: `python scripts/run_phase1.py --max-pages 350 --muse-max-nodes 80`

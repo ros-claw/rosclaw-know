@@ -1,5 +1,10 @@
 # ROSClaw-Know
 
+> **v0.8.1 · Phase 1–8 closed · 349 clusters · 2026-05-20**
+> Canonical state: [`docs/ROADMAP.md`](docs/ROADMAP.md) · runtime stats:
+> [`data/assets/_runtime_stats.json`](data/assets/_runtime_stats.json) ·
+> AI agents start at [`AGENTS.md`](AGENTS.md)
+
 **Offline knowledge refinery** for the ROSClaw embodied-intelligence stack.
 
 Converts free-form robotics wiki pages (paper abstracts, design notes, code
