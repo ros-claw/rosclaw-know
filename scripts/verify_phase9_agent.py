@@ -34,9 +34,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
-sys.path.insert(0, str(PROJECT_ROOT.parent / "rosclaw-client" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT.parent / "rosclaw-know-how-mcp" / "src"))
 
-from rosclaw_client import RosclawClient  # noqa: E402
+from rosclaw_know_how_mcp import RosclawClient  # noqa: E402
 
 
 def main() -> int:
