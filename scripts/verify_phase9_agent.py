@@ -20,8 +20,8 @@ Pass criteria:
   - feedback returns ok=True
 
 Run with both services up:
-  - rosclaw-how on :8088
-  - rosclaw-know on :8089
+  - rosclaw-how on :47820
+  - rosclaw-know on :47821
 """
 from __future__ import annotations
 
@@ -41,8 +41,8 @@ from rosclaw_know_how_mcp import RosclawClient  # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--know-base", default="http://127.0.0.1:8089")
-    ap.add_argument("--how-base", default="http://127.0.0.1:8088")
+    ap.add_argument("--know-base", default="http://127.0.0.1:47821")
+    ap.add_argument("--how-base", default="http://127.0.0.1:47820")
     ap.add_argument("--how-api-key", default="rw_sk_dev_local")
     ap.add_argument("--topic", default="PID quadrotor tuning with anti-windup")
     ap.add_argument("--research-timeout", type=int, default=600)

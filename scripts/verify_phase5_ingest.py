@@ -42,7 +42,7 @@ from rosclaw_know.config import ASSETS_DIR, WIKI_DIR  # noqa: E402
 
 logger = logging.getLogger("rosclaw_know.verify_phase5")
 
-DEFAULT_HOW_BASE = "http://127.0.0.1:8088"
+DEFAULT_HOW_BASE = "http://127.0.0.1:47820"
 DEFAULT_HOW_API_KEY = "rw_sk_dev_local"
 
 # A symptom that should NOT collide with anything currently in bridge_index.

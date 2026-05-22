@@ -31,7 +31,7 @@ logger = logging.getLogger("rosclaw_know.stats_analyze")
 
 STATS_HISTORY_DIR = DATA_DIR / "stats_history"
 REPORTS_DIR = DATA_DIR / "reports"
-DEFAULT_STATS_URL = "http://127.0.0.1:8088/wiki/v1/stats"
+DEFAULT_STATS_URL = "http://127.0.0.1:47820/wiki/v1/stats"
 
 # Slopes thresholds — these are uplift_mean units per *snapshot*, not per
 # time, because snapshots may be irregular. ``analyze_trends`` normalises

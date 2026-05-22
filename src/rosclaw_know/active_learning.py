@@ -152,7 +152,7 @@ def _write_draft(prefix_hash: str, body: str, *, out_dir: Path | None = None) ->
     return out
 
 
-def fetch_blind_spots(url: str = "http://127.0.0.1:8088/wiki/v1/blind_spots") -> list[dict[str, Any]]:
+def fetch_blind_spots(url: str = "http://127.0.0.1:47820/wiki/v1/blind_spots") -> list[dict[str, Any]]:
     """GET /wiki/v1/blind_spots — no auth required (read-only)."""
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:
@@ -190,7 +190,7 @@ def fetch_blind_spots(url: str = "http://127.0.0.1:8088/wiki/v1/blind_spots") ->
 async def autodraft_for_blind_spots(
     blind_spots: list[dict[str, Any]] | None = None,
     *,
-    url: str = "http://127.0.0.1:8088/wiki/v1/blind_spots",
+    url: str = "http://127.0.0.1:47820/wiki/v1/blind_spots",
     out_dir: Path | None = None,
     max_drafts: int = MAX_DRAFTS_PER_RUN,
 ) -> list[Path]:

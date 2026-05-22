@@ -44,7 +44,7 @@ from rosclaw_know.config import ASSETS_DIR  # noqa: E402
 
 logger = logging.getLogger("rosclaw_know.verify_phase7")
 
-DEFAULT_BASE = "http://127.0.0.1:8088"
+DEFAULT_BASE = "http://127.0.0.1:47820"
 DEFAULT_API_KEY = "rw_sk_dev_local"
 
 # Brand-new symptom space — must NOT match anything currently in bridge.

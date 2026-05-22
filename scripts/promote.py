@@ -155,7 +155,7 @@ def _apply(base: str, api_key: str, candidate: Candidate, timeout: int = 30) -> 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--base", default="http://127.0.0.1:8088")
+    ap.add_argument("--base", default="http://127.0.0.1:47820")
     ap.add_argument("--api-key", default="rw_sk_dev_local")
     ap.add_argument(
         "--apply", action="store_true",

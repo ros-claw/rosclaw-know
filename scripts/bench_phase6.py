@@ -12,7 +12,7 @@ SLO targets:
 
 Usage:
     .venv/bin/python scripts/bench_phase6.py
-    .venv/bin/python scripts/bench_phase6.py --samples 50 --url http://127.0.0.1:8088
+    .venv/bin/python scripts/bench_phase6.py --samples 50 --url http://127.0.0.1:47820
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_BASE = "http://127.0.0.1:8088"
+DEFAULT_BASE = "http://127.0.0.1:47820"
 DEFAULT_API_KEY = "rw_sk_dev_local"
 
 # Outcome written to disk

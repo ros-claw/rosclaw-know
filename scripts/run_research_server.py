@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """scripts/run_research_server.py — launch the rosclaw-know HTTP layer.
 
-Default port 8089 (rosclaw-how lives on 8088). Reads:
+Default port 47821 (rosclaw-how lives on 47820). Reads:
 
   ROSCLAW_KNOW_HOST          (default: 127.0.0.1)
-  ROSCLAW_KNOW_PORT          (default: 8089)
+  ROSCLAW_KNOW_PORT          (default: 47821)
   ROSCLAW_KNOW_API_KEYS      optional, comma-separated bearer keys
   ROSCLAW_HOW_RELOAD_URL     for know→how auto-notification
-                             (default: http://127.0.0.1:8088/wiki/v1/admin/reload)
+                             (default: http://127.0.0.1:47820/wiki/v1/admin/reload)
   ROSCLAW_HOW_API_KEY        used to sign the reload notification
 """
 from __future__ import annotations

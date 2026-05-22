@@ -48,7 +48,7 @@ class ResearchWorker:
         self._task: asyncio.Task | None = None
         # Auto-reload hook — when set, finished jobs POST to rosclaw-how.
         self.how_reload_url = how_reload_url or os.environ.get(
-            "ROSCLAW_HOW_RELOAD_URL", "http://127.0.0.1:8088/wiki/v1/admin/reload"
+            "ROSCLAW_HOW_RELOAD_URL", "http://127.0.0.1:47820/wiki/v1/admin/reload"
         )
         self.how_api_key = how_api_key or os.environ.get(
             "ROSCLAW_HOW_API_KEY", "rw_sk_dev_local"

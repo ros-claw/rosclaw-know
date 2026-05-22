@@ -12,7 +12,7 @@ short-circuit the operator's review.
 Usage:
 
     .venv/bin/python scripts/autodraft.py
-    .venv/bin/python scripts/autodraft.py --url http://127.0.0.1:8088/wiki/v1/blind_spots
+    .venv/bin/python scripts/autodraft.py --url http://127.0.0.1:47820/wiki/v1/blind_spots
     .venv/bin/python scripts/autodraft.py --max-drafts 3 --then-ingest
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ from rosclaw_know.active_learning import (  # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--url", default="http://127.0.0.1:8088/wiki/v1/blind_spots")
+    ap.add_argument("--url", default="http://127.0.0.1:47820/wiki/v1/blind_spots")
     ap.add_argument("--max-drafts", type=int, default=MAX_DRAFTS_PER_RUN)
     ap.add_argument("--out-dir", type=Path, default=AUTO_DRAFT_DIR)
     ap.add_argument(

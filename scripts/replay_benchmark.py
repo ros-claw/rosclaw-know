@@ -24,7 +24,7 @@ demotes when every contributing pattern is clearly negative.
 Usage:
 
     .venv/bin/python scripts/replay_benchmark.py \\
-        --how-endpoint http://127.0.0.1:8088/wiki/v1 \\
+        --how-endpoint http://127.0.0.1:47820/wiki/v1 \\
         --api-key rw_sk_dev_local \\
         --rollouts 60 --seed 17
 """
@@ -283,7 +283,7 @@ def evaluate(
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--how-endpoint", default="http://127.0.0.1:8088/wiki/v1")
+    ap.add_argument("--how-endpoint", default="http://127.0.0.1:47820/wiki/v1")
     ap.add_argument("--api-key", default=os.environ.get("ROSCLAW_HOW_API_KEY", "rw_sk_dev_local"))
     ap.add_argument("--rollouts", type=int, default=60)
     ap.add_argument("--seed", type=int, default=17)

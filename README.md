@@ -64,7 +64,7 @@ python scripts/ingest.py path/to/new_paper.md
 python scripts/distill_feedback.py --summary
 python scripts/reweight_bridge.py
 
-# 8. Auto-draft for cold-spots (requires rosclaw-how live on :8088)
+# 8. Auto-draft for cold-spots (requires rosclaw-how live on :47820)
 python scripts/autodraft.py --then-ingest
 
 # 9. Promote staging clusters with positive feedback

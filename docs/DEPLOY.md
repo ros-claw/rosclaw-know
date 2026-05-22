@@ -65,7 +65,7 @@ Outputs `data/assets/bridge_index.json` (~150 KB at 80 clusters) and
 `data/assets/code_patterns/*.md`. Trigger rosclaw-how to load:
 
 ```bash
-curl -X POST -H "X-API-Key: ..." http://rosclaw-how:8088/wiki/v1/admin/reload
+curl -X POST -H "X-API-Key: ..." http://rosclaw-how:47820/wiki/v1/admin/reload
 ```
 
 ### B. Incremental ingest (you have new papers / articles)
@@ -87,7 +87,7 @@ Phase 4 metrics on clusters are preserved.
 
 After ingest:
 ```bash
-curl -X POST -H "X-API-Key: ..." http://rosclaw-how:8088/wiki/v1/admin/reload
+curl -X POST -H "X-API-Key: ..." http://rosclaw-how:47820/wiki/v1/admin/reload
 ```
 
 ### C. Awesome-list bulk pull (Phase 8)
@@ -112,7 +112,7 @@ in one pass. Reload rosclaw-how afterward.
 
 ```bash
 # Pull outcomes export from rosclaw-how
-curl -H "X-API-Key: ..." http://rosclaw-how:8088/wiki/v1/outcomes/export \
+curl -H "X-API-Key: ..." http://rosclaw-how:47820/wiki/v1/outcomes/export \
     > data/exports/outcomes-$(date -u +%Y%m%d).jsonl
 
 # Distill metrics
@@ -126,7 +126,7 @@ python scripts/promote.py            # dry-run by default
 python scripts/promote.py --apply    # commit changes
 
 # Reload rosclaw-how
-curl -X POST -H "X-API-Key: ..." http://rosclaw-how:8088/wiki/v1/admin/reload
+curl -X POST -H "X-API-Key: ..." http://rosclaw-how:47820/wiki/v1/admin/reload
 ```
 
 Cadence suggestion: distill + reweight + promote nightly; reload immediately
@@ -195,7 +195,7 @@ reloads use the delta cache (~5 s for no-change runs).
 
 ## Joint verification scripts
 
-Run these against a live rosclaw-how on `:8088`:
+Run these against a live rosclaw-how on `:47820`:
 
 ```bash
 python scripts/verify_phase5_ingest.py     # ingest + hot-reload + CATALYST round-trip

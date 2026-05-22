@@ -182,7 +182,7 @@ def run() -> None:
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
     host = os.environ.get("ROSCLAW_KNOW_HOST", "127.0.0.1")
-    port = int(os.environ.get("ROSCLAW_KNOW_PORT", "8089"))
+    port = int(os.environ.get("ROSCLAW_KNOW_PORT", "47821"))
     uvicorn.run("rosclaw_know.api:app", host=host, port=port, log_level="info")
 
 
