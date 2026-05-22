@@ -24,13 +24,36 @@ from .infra import (
     upsert_heuristic,
 )
 from .llm import DEEPSEEK_EXTRACTOR_MODEL, chat_json
-from .prompts import EXTRACTOR_PROMPT, FRONTIER_DOMAINS
+from .prompts import FRONTIER_DOMAINS, extractor_prompt_for
 from .seekdb_align import check_duplicate_and_align
 
 log = logging.getLogger("rosclaw_know.harvester")
 
 # Strip YAML frontmatter when present.
-_FRONTMATTER = re.compile(r"^---\n.*?\n---\n", re.DOTALL)
+_FRONTMATTER = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
+# Frontmatter scalar field — k: v (one per line, no nesting).
+_FRONTMATTER_FIELD = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.+?)\s*$", re.MULTILINE)
+
+
+def _parse_frontmatter(text: str) -> dict[str, str]:
+    """Best-effort extract of scalar fields from a YAML-style frontmatter block.
+
+    Used to read ``source_type`` (or its alias ``fetch_kind``) so the
+    extractor prompt can be specialised per source. Returns {} if the
+    document has no frontmatter.
+    """
+    if not text.startswith("---"):
+        return {}
+    m = _FRONTMATTER.match(text)
+    if not m:
+        return {}
+    out: dict[str, str] = {}
+    for field_match in _FRONTMATTER_FIELD.finditer(m.group(1)):
+        key = field_match.group(1).strip().lower()
+        # Strip inline comments and surrounding quotes.
+        val = field_match.group(2).split("#", 1)[0].strip().strip('"').strip("'")
+        out[key] = val
+    return out
 
 
 def _strip_frontmatter(text: str) -> str:
@@ -63,6 +86,12 @@ async def process_single_page(
         if not _looks_useful(body):
             return None
 
+        # Phase 10: pick the extractor prompt based on the source type
+        # declared in frontmatter (set by awesome_fetcher / research_sources).
+        fm = _parse_frontmatter(raw_text)
+        source_type = fm.get("source_type") or fm.get("fetch_kind")
+        extractor_prompt = extractor_prompt_for(source_type)
+
         file_md5 = hashlib.md5(body.encode("utf-8")).hexdigest()
 
         # Resumability — short-circuit on already-processed
@@ -77,7 +106,7 @@ async def process_single_page(
 
         result = await chat_json(
             session,
-            EXTRACTOR_PROMPT,
+            extractor_prompt,
             combined,
             model=DEEPSEEK_EXTRACTOR_MODEL,
             max_tokens=500,
