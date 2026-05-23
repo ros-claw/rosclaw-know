@@ -37,6 +37,15 @@ logger = logging.getLogger("rosclaw_know.research_worker")
 # Where the worker drops fetched markdown for the harvester to pick up
 _RESEARCH_CORPUS_ROOT = config.WIKI_DIR / "research_corpus"
 
+# Hard wall-clock cap on collect_sources (sum of three channel timeouts is
+# ~30s under normal conditions; this is the defensive ceiling).
+_COLLECT_TIMEOUT = 90.0
+
+# Cap on the how-reload notification. The actual /admin/reload is fast for a
+# delta (~500 ms no-change, ~1.5 s per new cluster); cap at 120 s so a hung
+# rosclaw-how doesn't block the worker indefinitely.
+_RELOAD_TIMEOUT = 120.0
+
 
 class ResearchWorker:
     """One worker per process; serialises jobs through a single queue."""
@@ -99,14 +108,46 @@ class ResearchWorker:
         self.store.update(job_id, status="running")
         t0 = time.perf_counter()
 
-        # 1) Resolve + fetch sources
-        sources = await collect_sources(
-            job.topic, depth=job.depth, budget_tokens=job.budget_tokens
-        )
+        # 1) Resolve + fetch sources (wall-clock capped — defense-in-depth on
+        #    top of the per-channel timeouts in research_sources.py).
+        try:
+            sources = await asyncio.wait_for(
+                collect_sources(
+                    job.topic, depth=job.depth, budget_tokens=job.budget_tokens
+                ),
+                timeout=_COLLECT_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            err = f"collect_sources timed out after {_COLLECT_TIMEOUT}s"
+            logger.warning("Job %s: %s", job_id, err)
+            self.store.update(job_id, status="failed", error=err)
+            return
         self.store.update(
             job_id,
             sources_planned=len(sources),
         )
+
+        # Short-circuit: zero sources fetched means all three channels
+        # (arXiv / GitHub / Brave) returned nothing usable. There is no point
+        # running the incremental pipeline on an empty directory — Muse would
+        # add zero clusters and we'd still pay the LLM-config check + a
+        # how-reload round-trip. Mark completed with a clear summary so the
+        # warmup driver can move on instead of polling forever.
+        if not sources:
+            elapsed = time.perf_counter() - t0
+            self.store.update(
+                job_id,
+                status="completed",
+                clusters_added=0,
+                new_cluster_ids=[],
+                summary=(
+                    f"No sources fetched for {job.topic!r} (arXiv/GitHub/web "
+                    f"all returned 0). Elapsed {elapsed:.1f}s. Check network "
+                    "or topic phrasing."
+                ),
+            )
+            logger.info("Job %s: 0 sources — short-circuit to completed", job_id)
+            return
 
         # 2) Drop fetched markdowns into wiki/research_corpus/<job_id>/
         out_dir = _RESEARCH_CORPUS_ROOT / job_id
@@ -180,9 +221,13 @@ class ResearchWorker:
                 method="POST",
             )
             # urlopen is blocking; run in default executor to keep the
-            # asyncio loop responsive.
+            # asyncio loop responsive. Bounded by _RELOAD_TIMEOUT so a hung
+            # rosclaw-how can't park the research worker forever.
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, lambda: urllib.request.urlopen(req, timeout=600).read())
+            await loop.run_in_executor(
+                None,
+                lambda: urllib.request.urlopen(req, timeout=_RELOAD_TIMEOUT).read(),
+            )
             return "ok"
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
             logger.warning("rosclaw-how reload notification failed: %s", exc)
