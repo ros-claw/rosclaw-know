@@ -146,20 +146,25 @@ async def chat_json(
 def _mock_response(system: str, user: str, want_json: bool) -> str:
     """Deterministic stub for plumbing tests."""
     if want_json:
-        # Pick a domain based on simple keywords so weaver gets cross-domain edges
+        # Pick a domain based on simple keywords so weaver gets cross-domain edges.
+        # Must match FRONTIER_DOMAINS in prompts.py so harvester validation passes.
         u = user.lower()
-        if "pid" in u or "control" in u or "motor" in u or "torque" in u:
-            domain = "Robotics_Control"
-        elif "cuda" in u or "memory" in u or "kernel" in u or "gpu" in u:
-            domain = "Computing_Quantum"
-        elif "signal" in u or "channel" in u or "fiber" in u:
-            domain = "Optics_Communications"
-        elif "fluid" in u or "material" in u or "thermal" in u or "physical" in u:
-            domain = "PhysicalSciences_Engineering"
-        elif "schedul" in u or "battery" in u or "optim" in u:
-            domain = "OperationsResearch"
+        if "pid" in u or "control" in u or "motor" in u or "torque" in u or "actuator" in u:
+            domain = "Control_Locomotion"
+        elif "cuda" in u or "kernel" in u or "gpu" in u or "latency" in u or "throughput" in u:
+            domain = "Systems_Compute"
+        elif "memory" in u or "kv-cache" in u or "context" in u or "reasoning" in u or "recall" in u:
+            domain = "Memory_Reasoning"
+        elif "signal" in u or "channel" in u or "fiber" in u or "depth" in u or "segmentation" in u or "image" in u or "vision" in u:
+            domain = "Perception_Vision"
+        elif "fluid" in u or "material" in u or "thermal" in u or "physical" in u or "simulation" in u or "dynamics" in u or "mesh" in u:
+            domain = "World_Physics"
+        elif "schedul" in u or "battery" in u or "optim" in u or "planning" in u or "navigation" in u:
+            domain = "Planning_Decision"
+        elif "rl" in u or "policy" in u or "training" in u or "learn" in u or "augment" in u or "sim-to-real" in u:
+            domain = "Learning_Training"
         else:
-            domain = "Robotics_Control"
+            domain = "Control_Locomotion"
         # Use first 60 chars of user content to fake a symptom
         snippet = user.strip().split("\n", 1)[0][:80] or "generic_symptom"
         return json.dumps(
