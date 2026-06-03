@@ -158,3 +158,88 @@ failures:
 # --- autodraft ---
 # Trajectory miner and autodraft additions go below this line.
 # Keep them clearly distinct from curated entries above.
+
+  - id: failure_generic_unvalidated_input
+    name: "Unvalidated Input Crash"
+    domain: Systems_Compute
+    symptom_text: "Function receives malformed or out-of-range input and crashes (or silently mis-computes) without a guarding check."
+    normalized_symptom: "boundary_input_propagates_to_crash"
+    observable_signals:
+      - exception traceback originates inside an inner loop
+      - downstream NaN that traces back to a single unchecked value
+      - intermittent failures that disappear when input is hand-curated
+    likely_causes:
+      - missing precondition assertion
+      - implicit assumption about input shape or dtype
+      - no defensive clamp at the boundary
+    contraindications:
+      - "do not wrap the whole call in try/except — fail loudly at the boundary instead"
+    severity: warning
+
+  - id: failure_generic_runaway_search
+    name: "Runaway Search / No Time Budget"
+    domain: Systems_Compute
+    symptom_text: "Iterative search runs past its useful budget — either timing out the harness or wasting compute past a flat reward plateau."
+    normalized_symptom: "search_runs_without_wallclock_guard"
+    observable_signals:
+      - wall-clock exceeds verifier timeout
+      - score curve flat for many iterations before exit
+      - per-iteration cost amortises poorly
+    likely_causes:
+      - no early-stop or budget guard
+      - convergence test never reaches threshold
+      - exploration coefficient never decays
+    contraindications:
+      - "do not pick a budget below the first feasible solution — that aborts before convergence"
+    severity: info
+
+  - id: failure_generic_random_search_inefficiency
+    name: "Random Search Inefficiency"
+    domain: Systems_Compute
+    symptom_text: "Pure random search keeps sampling uninformative points instead of exploiting structure the gradient or surrogate exposes."
+    normalized_symptom: "random_search_misses_structure"
+    observable_signals:
+      - improvement rate plateaus while compute keeps going
+      - best-so-far stuck at one of the first 5 samples
+      - no exploration of high-density regions in the trust region
+    likely_causes:
+      - solver kept on default random_search
+      - no structured optimiser plugged in
+      - surrogate not refitted
+    contraindications:
+      - "do not jump straight to a model-heavy optimiser before checking the search space is structured"
+    severity: info
+
+  - id: failure_generic_python_loop_overhead
+    name: "Python Inner-Loop Overhead"
+    domain: Systems_Compute
+    symptom_text: "Inner Python loop dominates wall-clock; replacing it with a vectorised primitive recovers an order of magnitude."
+    normalized_symptom: "python_loop_dominates_runtime"
+    observable_signals:
+      - profiler shows interpreter overhead > numerical work
+      - throughput scales sub-linearly with batch size
+      - NumPy / Triton primitives unused on a hot path
+    likely_causes:
+      - loop body trivially vectorisable
+      - branch-heavy logic still in Python
+      - cache-unfriendly access pattern
+    contraindications:
+      - "do not vectorise without preserving the original numerical semantics"
+    severity: info
+
+  - id: failure_generic_cold_start_search
+    name: "Cold-Start Search Wasted Budget"
+    domain: Systems_Compute
+    symptom_text: "Search restarts from a random or default seed each call, ignoring prior-best solutions."
+    normalized_symptom: "cold_start_when_prior_best_exists"
+    observable_signals:
+      - first-iteration score worse than last archived best
+      - convergence time longer than necessary
+      - cached results not loaded
+    likely_causes:
+      - prior-best not persisted
+      - warm-start path missing
+      - cache invalidated on every call
+    contraindications:
+      - "do not blindly warm-start when the task distribution has shifted"
+    severity: info

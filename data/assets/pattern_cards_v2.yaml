@@ -1,0 +1,547 @@
+schema_version: '2.0'
+pattern_cards:
+- id: compiled_add_boundary_validation
+  domain: Systems_Compute
+  task_families:
+  - unknown_optimization
+  embodiment_types: []
+  artifact_languages:
+  - python
+  priority: 0
+  symptom: Successful runs insert finiteness / range checks at the boundary of their
+    solver so a NaN or invalid output is caught before the evaluator returns 'infeasible'.
+  diagnosis: Successful runs insert finiteness / range checks at the boundary of their
+    solver so a NaN or invalid output is caught before the evaluator returns 'infeasible'.  Catches
+    a large fraction of soft failures in Frontier-Eng's pure-Python tasks.
+  preconditions:
+  - The candidate artifact compiles and runs without errors on the baseline evaluator.
+  next_experiment: '- Add a finiteness / range check at the boundary: added boundary
+    / finiteness check on intermediate value.'
+  code_target: The whole editable artifact is the patch site.
+  patch_sketch: "```python\n# Finiteness + range guard at the function boundary.\n\
+    if not np.all(np.isfinite(out)):\n    raise ValueError(\"non-finite output\")\n\
+    out = np.clip(out, lo, hi)\n```"
+  expected_verifier_signals:
+  - feasibility rate stays high even on novel candidate configurations.
+  anti_patterns:
+  - Do not embed concrete tuning values from another task's baseline archive — see
+    plan §3.5.
+  contraindications: []
+  cross_domain_analogy: ''
+  source_quality: A
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing
+  - experiment1__openevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__claude-opus-4.6__KernelEngineering_MLA
+  - experiment1__openevolve__deepseek-v3.2__Aerodynamics_CarAerodynamicsSensing
+  - experiment1__openevolve__deepseek-v3.2__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__deepseek-v3.2__KernelEngineering_MLA
+  - experiment1__openevolve__gemini-3.1-pro-preview__Aerodynamics_CarAerodynamicsSensing
+  - experiment1__openevolve__gemini-3.1-pro-preview__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__gemini-3.1-pro-preview__KernelEngineering_MLA
+  - experiment1__openevolve__glm-5__Aerodynamics_CarAerodynamicsSensing
+  - experiment1__openevolve__glm-5__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__glm-5__KernelEngineering_MLA
+  - experiment1__openevolve__gpt-5.4__Aerodynamics_CarAerodynamicsSensing
+  - experiment1__openevolve__gpt-5.4__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__gpt-5.4__KernelEngineering_MLA
+  - experiment1__openevolve__grok-4.20__Aerodynamics_CarAerodynamicsSensing
+  - experiment1__openevolve__grok-4.20__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__grok-4.20__KernelEngineering_MLA
+  - experiment1__openevolve__qwen3-coder-next__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__qwen3-coder-next__KernelEngineering_MLA
+  - experiment1__openevolve__seed-2.0-pro__Aerodynamics_CarAerodynamicsSensing
+  - experiment1__openevolve__seed-2.0-pro__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__seed-2.0-pro__KernelEngineering_MLA
+  - experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__abmcts__gpt-oss-120b__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__abmcts__gpt-oss-120b__Astrodynamics_MannedLunarLanding
+  - experiment2__abmcts__gpt-oss-120b__InventoryOptimization_disruption_eoqd
+  - experiment2__abmcts__gpt-oss-120b__KernelEngineering_MLA
+  - experiment2__openevolve__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__openevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding
+  - experiment2__openevolve__claude-opus-4.6__KernelEngineering_MLA
+  - experiment2__openevolve__gpt-oss-120b__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__openevolve__gpt-oss-120b__Astrodynamics_MannedLunarLanding
+  - experiment2__openevolve__gpt-oss-120b__InventoryOptimization_disruption_eoqd
+  - experiment2__openevolve__gpt-oss-120b__KernelEngineering_MLA
+  - experiment2__shinkaevolve__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__shinkaevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding
+  - experiment2__shinkaevolve__claude-opus-4.6__KernelEngineering_MLA
+  - experiment2__shinkaevolve__gpt-oss-120b__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__shinkaevolve__gpt-oss-120b__Astrodynamics_MannedLunarLanding
+  - experiment2__shinkaevolve__gpt-oss-120b__KernelEngineering_MLA
+  evidence:
+    n: 41
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'
+- id: compiled_add_time_budget
+  domain: Control_Locomotion
+  task_families:
+  - robotics_optimization
+  embodiment_types:
+  - uav
+  - manipulator
+  - wheeled_robot
+  - quadruped
+  artifact_languages:
+  - python
+  - cpp
+  priority: 0
+  symptom: A structured optimizer with no wall-clock guard can run past the evaluator
+    timeout and lose the run entirely.
+  diagnosis: A structured optimizer with no wall-clock guard can run past the evaluator
+    timeout and lose the run entirely.  Successful entries gate their search on ``time.time()
+    < deadline``.
+  preconditions:
+  - The candidate artifact compiles and runs without errors on the baseline evaluator.
+  next_experiment: '- Gate the search loop on a wall-clock deadline: added wall-clock
+    time budget guard.'
+  code_target: Locate every `while` / `for` loop that controls the search iteration
+    budget; treat its guard expression as the patch site.
+  patch_sketch: "```python\nimport time\nDEADLINE = time.time() + WALLCLOCK_BUDGET\n\
+    while time.time() < DEADLINE:\n    ...   # search step\n```"
+  expected_verifier_signals:
+  - evaluator returncode stays 0 even when the search explores deep alternatives.
+  anti_patterns:
+  - Do not embed concrete tuning values from another task's baseline archive — see
+    plan §3.5.
+  contraindications: []
+  cross_domain_analogy: '**Systems_Compute**: same shape as a request timeout in an
+    RPC client — gate the inner loop on a wall-clock deadline, fail soft when it elapses.'
+  source_quality: B
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__abmcts__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning
+  evidence:
+    n: 4
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'
+- id: compiled_controller_output_clamp
+  domain: Control_Locomotion
+  task_families:
+  - robotics_optimization
+  embodiment_types:
+  - uav
+  - manipulator
+  - wheeled_robot
+  - quadruped
+  artifact_languages:
+  - python
+  - cpp
+  priority: 0
+  symptom: Final controller command is not bounded before it reaches the actuator
+    interface.
+  diagnosis: 'Likely cause(s):
+
+    - clamp removed during debugging
+
+    - feed-forward path bypasses clamp
+
+
+    Successful runs explicitly clamp the controller command to the actuator''s physical
+    range before it leaves the control function.  Relying on downstream code to clip
+    is a frequent source of saturation-induced instability.'
+  preconditions:
+  - 'Observable signal: command magnitude tracks raw PID output'
+  - 'Observable signal: actuator saturation flag never set by driver'
+  - 'Symbols present in the editable artifact: `T_cmd`, `desired_pitch`'
+  next_experiment: '- Clamp the controller output before it leaves the function: added
+    output clamp on desired_pitch; added output clamp on T_cmd.'
+  code_target: 'Search the editable artifact for these identifiers and treat their
+    definitions as the patch site: `T_cmd`, `desired_pitch`.'
+  patch_sketch: '```python
+
+    # Clamp the controller output BEFORE the actuator-lag filter.
+
+    out = max(min_value, min(max_value, out))
+
+    # or numpy:
+
+    out = np.clip(out, -bound, bound)
+
+    ```'
+  expected_verifier_signals:
+  - feasibility stays valid even on aggressive maneuvers; thrust / torque never exceeds
+    its bound.
+  anti_patterns:
+  - do not implement clamp inside the integrator step — keep it on the output
+  contraindications:
+  - clamps must be applied *before* the actuator-lag filter, not after, or the command
+    will spike at the next sample
+  - do not implement clamp inside the integrator step — keep it on the output
+  cross_domain_analogy: ''
+  source_quality: A
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment1__openevolve__deepseek-v3.2__Robotics_PIDTuning
+  - experiment1__openevolve__gemini-3.1-pro-preview__Robotics_PIDTuning
+  - experiment1__openevolve__glm-5__Robotics_PIDTuning
+  - experiment1__openevolve__gpt-5.4__Robotics_PIDTuning
+  - experiment1__openevolve__grok-4.20__Robotics_PIDTuning
+  - experiment1__openevolve__qwen3-coder-next__Robotics_PIDTuning
+  - experiment1__openevolve__seed-2.0-pro__Robotics_PIDTuning
+  - experiment2__abmcts__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__abmcts__gpt-oss-120b__Robotics_PIDTuning
+  - experiment2__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__openevolve__gpt-oss-120b__Robotics_PIDTuning
+  - experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__shinkaevolve__gpt-oss-120b__Robotics_PIDTuning
+  evidence:
+    n: 14
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'
+- id: compiled_generic_time_budget
+  domain: World_Physics
+  task_families:
+  - optics_optimization
+  embodiment_types:
+  - optical_system
+  artifact_languages:
+  - python
+  priority: 0
+  symptom: Structured optimisers can overrun the per-task wall clock if left ungated.
+  diagnosis: Structured optimisers can overrun the per-task wall clock if left ungated.  Top
+    entries explicitly check ``time.time() < deadline`` inside their search loop.
+  preconditions:
+  - The candidate artifact compiles and runs without errors on the baseline evaluator.
+  next_experiment: '- Gate the search loop on a wall-clock deadline: added wall-clock
+    time budget guard.'
+  code_target: Locate every `while` / `for` loop that controls the search iteration
+    budget; treat its guard expression as the patch site.
+  patch_sketch: "```python\nimport time\nDEADLINE = time.time() + WALLCLOCK_BUDGET\n\
+    while time.time() < DEADLINE:\n    ...   # search step\n```"
+  expected_verifier_signals:
+  - evaluator returncode stays 0; no wall-clock-timeout infeasibility.
+  anti_patterns:
+  - Do not embed concrete tuning values from another task's baseline archive — see
+    plan §3.5.
+  contraindications: []
+  cross_domain_analogy: '**Systems_Compute**: same shape as a request timeout in an
+    RPC client — gate the inner loop on a wall-clock deadline, fail soft when it elapses.'
+  source_quality: A
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing
+  - experiment1__openevolve__glm-5__Optics_holographic_multiplane_focusing
+  - experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__abmcts__gpt-oss-120b__Optics_phase_dammann_uniform_orders
+  - experiment2__abmcts__gpt-oss-120b__StructuralOptimization_ISCSO2023
+  - experiment2__openevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing
+  - experiment2__openevolve__gpt-oss-120b__Optics_fiber_guardband_spectrum_packing
+  - experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing
+  evidence:
+    n: 8
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'
+- id: compiled_swap_random_search_to_structured_optimizer
+  domain: Control_Locomotion
+  task_families:
+  - robotics_optimization
+  embodiment_types:
+  - uav
+  - manipulator
+  - wheeled_robot
+  - quadruped
+  artifact_languages:
+  - python
+  - cpp
+  priority: 0
+  symptom: Random search saturates well below the achievable score on PID-tuning tasks
+    within the iteration budget.
+  diagnosis: Random search saturates well below the achievable score on PID-tuning
+    tasks within the iteration budget.  Top runs replace it with a structured optimizer
+    (CMA-ES, Bayesian, differential evolution).
+  preconditions:
+  - The candidate artifact compiles and runs without errors on the baseline evaluator.
+  next_experiment: '- Swap the search loop to a structured optimiser: swapped optimizer
+    from random search to CMA-ES-style strategy.'
+  code_target: Locate the main search loop (typically a function whose name contains
+    `optimize` / `search` / `solve`) and treat its body as the patch site.
+  patch_sketch: '```python
+
+    # Replace `random_search()` with a structured optimiser.
+
+    # Acceptable choices: CMA-ES, Bayesian, differential evolution.
+
+    # Pair with a wall-clock deadline (see add_time_budget).
+
+    ```'
+  expected_verifier_signals:
+  - score climbs monotonically past the random-search plateau before the time budget
+    elapses.
+  anti_patterns:
+  - Do not embed concrete tuning values from another task's baseline archive — see
+    plan §3.5.
+  contraindications:
+  - do not run unbounded — pair with an explicit time budget so the search returns
+    before the wall clock expires (see candidate_add_time_budget)
+  cross_domain_analogy: ''
+  source_quality: A
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__abmcts__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__shinkaevolve__gpt-oss-120b__Robotics_PIDTuning
+  evidence:
+    n: 5
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'
+- id: compiled_vectorize_inner_loop
+  domain: Systems_Compute
+  task_families:
+  - unknown_optimization
+  embodiment_types: []
+  artifact_languages:
+  - python
+  priority: 0
+  symptom: Top-scoring runs replace explicit Python iteration over candidate arrays
+    with numpy / array-form operations.
+  diagnosis: Top-scoring runs replace explicit Python iteration over candidate arrays
+    with numpy / array-form operations.  The inner-loop call overhead dominates wall-clock
+    budget on score-bounded benchmarks.
+  preconditions:
+  - The candidate artifact compiles and runs without errors on the baseline evaluator.
+  next_experiment: '- Replace the inner Python loop with numpy / array operations:
+    replaced explicit Python loop with numpy array form.'
+  code_target: The whole editable artifact is the patch site.
+  patch_sketch: '```python
+
+    # Replace explicit `for` over candidates with numpy array form.
+
+    x_vec = np.asarray(x_list)
+
+    scores = f_vectorised(x_vec)   # one call, vectorised body
+
+    ```'
+  expected_verifier_signals:
+  - more candidates evaluated within the same time budget; score plateau pushed further.
+  anti_patterns:
+  - Do not embed concrete tuning values from another task's baseline archive — see
+    plan §3.5.
+  contraindications:
+  - do not vectorise if the inner step has data-dependent branches — branchless numpy
+    ops will compute discarded work and may even regress.
+  cross_domain_analogy: ''
+  source_quality: A
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment1__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment1__openevolve__deepseek-v3.2__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__deepseek-v3.2__Optics_fiber_wdm_channel_power_allocation
+  - experiment1__openevolve__deepseek-v3.2__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment1__openevolve__gemini-3.1-pro-preview__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment1__openevolve__glm-5__Optics_fiber_mcs_power_scheduling
+  - experiment1__openevolve__glm-5__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment1__openevolve__gpt-5.4__Optics_phase_dammann_uniform_orders
+  - experiment1__openevolve__gpt-5.4__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment1__openevolve__grok-4.20__Optics_fiber_mcs_power_scheduling
+  - experiment1__openevolve__grok-4.20__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment1__openevolve__qwen3-coder-next__Optics_fiber_guardband_spectrum_packing
+  - experiment1__openevolve__qwen3-coder-next__Optics_phase_dammann_uniform_orders
+  - experiment1__openevolve__qwen3-coder-next__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment1__openevolve__seed-2.0-pro__Astrodynamics_MannedLunarLanding
+  - experiment1__openevolve__seed-2.0-pro__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing
+  - experiment2__abmcts__claude-opus-4.6__InventoryOptimization_finite_horizon_dp
+  - experiment2__abmcts__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment2__abmcts__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__abmcts__claude-opus-4.6__StructuralOptimization_TopologyOptimization
+  - experiment2__abmcts__gpt-oss-120b__Optics_fiber_mcs_power_scheduling
+  - experiment2__abmcts__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment2__openevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding
+  - experiment2__openevolve__claude-opus-4.6__Optics_fiber_mcs_power_scheduling
+  - experiment2__openevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment2__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__openevolve__gpt-oss-120b__Optics_fiber_wdm_channel_power_allocation
+  - experiment2__openevolve__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment2__shinkaevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding
+  - experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_wdm_channel_power_allocation
+  - experiment2__shinkaevolve__claude-opus-4.6__Optics_phase_dammann_uniform_orders
+  - experiment2__shinkaevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2015
+  - experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2023
+  - experiment2__shinkaevolve__gpt-oss-120b__Astrodynamics_MannedLunarLanding
+  - experiment2__shinkaevolve__gpt-oss-120b__Optics_fiber_mcs_power_scheduling
+  - experiment2__shinkaevolve__gpt-oss-120b__Optics_fiber_wdm_channel_power_allocation
+  - experiment2__shinkaevolve__gpt-oss-120b__Optics_phase_dammann_uniform_orders
+  - experiment2__shinkaevolve__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance
+  - experiment2__shinkaevolve__gpt-oss-120b__Robotics_PIDTuning
+  - experiment2__shinkaevolve__gpt-oss-120b__StructuralOptimization_ISCSO2023
+  evidence:
+    n: 45
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'
+- id: compiled_warm_start_from_prior_best
+  domain: Systems_Compute
+  task_families:
+  - unknown_optimization
+  embodiment_types: []
+  artifact_languages:
+  - python
+  priority: 0
+  symptom: Top entries seed their optimiser from a prior-best solution (their own
+    or a sibling task's) rather than starting from a random or hand-tuned baseline.
+  diagnosis: Top entries seed their optimiser from a prior-best solution (their own
+    or a sibling task's) rather than starting from a random or hand-tuned baseline.  Cuts
+    the path-length to a high score significantly.
+  preconditions:
+  - The candidate artifact compiles and runs without errors on the baseline evaluator.
+  next_experiment: '- Seed the optimiser from a prior-best solution: seeded optimizer
+    from a prior-best solution.'
+  code_target: The whole editable artifact is the patch site.
+  patch_sketch: '```python
+
+    # Warm-start from a prior-best solution on the SAME task.
+
+    # DO NOT embed concrete tuning values from another task''s archive.
+
+    initial = load_prior_best_for_this_task()
+
+    optimiser = make_optimizer(initial=initial)
+
+    ```'
+  expected_verifier_signals:
+  - first valid score is already close to the search ceiling; subsequent iterations
+    refine rather than discover.
+  anti_patterns:
+  - Do not embed concrete tuning values from another task's baseline archive — see
+    plan §3.5.
+  contraindications:
+  - never embed *concrete* gain values from another task verbatim — that turns the
+    pattern into a leaderboard cheat sheet (see plan §3.5).
+  - the seed must come from a previous run on the *same* task; cross-task seeding
+    is much less reliable.
+  cross_domain_analogy: ''
+  source_quality: A
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__JobShop_ta
+  - experiment1__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment1__openevolve__glm-5__Robotics_PIDTuning
+  - experiment1__openevolve__gpt-5.4__InventoryOptimization_tree_gsm_safety_stock
+  - experiment2__abmcts__claude-opus-4.6__JobShop_abz
+  - experiment2__abmcts__claude-opus-4.6__JobShop_ta
+  - experiment2__abmcts__gpt-oss-120b__InventoryOptimization_tree_gsm_safety_stock
+  - experiment2__openevolve__claude-opus-4.6__JobShop_ta
+  - experiment2__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__openevolve__gpt-oss-120b__EnergyStorage_BatteryFastChargingSPMe
+  - experiment2__shinkaevolve__claude-opus-4.6__InventoryOptimization_general_meio
+  - experiment2__shinkaevolve__claude-opus-4.6__JobShop_ta
+  - experiment2__shinkaevolve__claude-opus-4.6__Optics_holographic_multifocus_power_ratio
+  - experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__shinkaevolve__gpt-oss-120b__InventoryOptimization_finite_horizon_dp
+  - experiment2__shinkaevolve__gpt-oss-120b__Robotics_PIDTuning
+  evidence:
+    n: 16
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'
+- id: compiled_zero_integral_gain_on_saturation
+  domain: Control_Locomotion
+  task_families:
+  - robotics_optimization
+  embodiment_types:
+  - uav
+  - manipulator
+  - wheeled_robot
+  - quadruped
+  artifact_languages:
+  - python
+  - cpp
+  priority: 0
+  symptom: Actuator saturates while integral term keeps accumulating; recovery after
+    setpoint change is slow.
+  diagnosis: 'Likely cause(s):
+
+    - unconditional integration during saturation
+
+    - missing back-calculation term
+
+    - integral gain too high for current actuator range
+
+
+    When an actuator output is at saturation, allowing the integral term to keep accumulating
+    produces windup.  Successful PID-tuning runs disable the integral channel entirely
+    for axes where the actuator is regularly saturated.'
+  preconditions:
+  - 'Observable signal: actuator output clipped to limit for many control steps'
+  - 'Observable signal: overshoot grows after error persists'
+  - 'Observable signal: settling time blows up after setpoint reversal'
+  - 'Symbols present in the editable artifact: `Ki_theta`, `Ki_x`, `Ki_z`'
+  next_experiment: '- Set the named parameter(s) to zero: set parameter to zero on
+    Ki_theta; set parameter to zero on Ki_x; set parameter to zero on Ki_z.'
+  code_target: 'Search the editable artifact for these identifiers and treat their
+    definitions as the patch site: `Ki_theta`, `Ki_x`, `Ki_z`.'
+  patch_sketch: '```python
+
+    # Zero out the named parameter(s) in your candidate dict.
+
+    # Example shape (replace identifier with the one in your code):
+
+    best_gains["<param>"] = 0.0   # was nonzero in baseline
+
+    ```'
+  expected_verifier_signals:
+  - feasibility stays valid, overshoot decreases, settling time after setpoint changes
+    goes down.
+  anti_patterns:
+  - do not simply increase Ki when output is already saturated
+  - do not remove the output limiter
+  contraindications:
+  - do not raise Ki to compensate — the integrator will wind up again on the next
+    saturation event
+  - do not simply increase Ki when output is already saturated
+  - do not remove the output limiter
+  cross_domain_analogy: '**Learning_Training**: same shape as `clip_grad_norm_` —
+    an upper bound that only fires when the magnitude exceeds a known physical limit.  Both
+    are ''stop the integration when downstream saturates''.'
+  source_quality: A
+  source_ids:
+  - experiment1__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment1__openevolve__deepseek-v3.2__Robotics_PIDTuning
+  - experiment1__openevolve__gemini-3.1-pro-preview__Robotics_PIDTuning
+  - experiment1__openevolve__glm-5__Robotics_PIDTuning
+  - experiment1__openevolve__gpt-5.4__Robotics_PIDTuning
+  - experiment1__openevolve__grok-4.20__Robotics_PIDTuning
+  - experiment1__openevolve__seed-2.0-pro__Robotics_PIDTuning
+  - experiment2__openevolve__claude-opus-4.6__Robotics_PIDTuning
+  - experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning
+  evidence:
+    n: 9
+    avg_uplift: 0.0
+    win_rate: 0.0
+    hint_use_rate: 0.0
+    last_seen: ''
+    placebo_adjusted_uplift: null
+  schema_version: '2.0'

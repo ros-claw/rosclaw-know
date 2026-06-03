@@ -18,7 +18,7 @@ agents before they start.  Sprint plan source:
 | **2** | Frontier-Eng / Arena `TaskCard` extraction (47 tasks) | ✅ shipped |
 | **3** | Trajectory mining (Python / CUDA / crypto / scheduling features) | 🟡 partial (framework + 3/4 extractors) |
 | **4** | Pattern Compiler v2 (action-template markdown) | ✅ shipped |
-| 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | planned |
+| 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | ✅ shipped |
 | 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | planned |
 | 7 | Task Pack API + MCP `rosclaw_task_pack` | planned |
 | 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | planned |
@@ -128,18 +128,53 @@ Deferred to a follow-up sprint:
 - `muse._write_pattern_file` extended to emit v2 sections so future
   muse-minted pattern markdown passes the same linter.
 
-### Sprint 5 — Physical Knowledge Graph V2 (next)
+### Sprint 5 — Physical Knowledge Graph V2 (shipped)
 
-Sprint 4 leaves us with two parallel asset stores:
+- New `src/rosclaw_know/graph_builder_v2.py` — builds a typed
+  `networkx.MultiDiGraph` covering every v2 typed object.  Nodes carry
+  `node_type` ∈ {Domain | FailureMode | FixPattern | ConstraintPattern
+  | TaskCard | EmbodimentCard | VerifierCard | EvidenceTrace}; edges
+  carry `relation` ∈ one of the 12 plan §6.2 literals (CAUSES, FIXES,
+  VIOLATES, CONSTRAINED_BY, OBSERVED_IN, APPLIES_TO,
+  CONTRAINDICATED_FOR, VALIDATED_BY, TRANSFERABLE_TO, DERIVED_FROM,
+  IMPROVED_BY, REGRESSED_BY).
+- New `src/rosclaw_know/hybrid_retriever.py` — implements plan §6.3:
+  `0.35·semantic + 0.15·bm25 + 0.15·family + 0.10·embodiment +
+   0.10·verifier_signal + 0.10·evidence − 0.20·contraindication`.
+  Default semantic fallback is an offline token-Jaccard so the
+  retriever runs in CI without an embedding service; a real embedding
+  function plugs in via `semantic_fn`.  Demoted patterns
+  (`priority == -1`) excluded from top-k by default.
+- New `data/assets/embodiments.yaml` (7 cards) and
+  `data/assets/verifier_cards.yaml` (8 cards) — seed material so the
+  graph has anchor nodes for APPLIES_TO / VALIDATED_BY edges.
+- `data/assets/failure_taxonomy.yaml` extended with 5 generic
+  engineering failure modes so the cross-cutting Sprint-3 patterns
+  (vectorize_inner_loop, warm_start_from_prior_best, etc.) attach
+  real FIXES edges — keeps the §11.5 gate "every FixPattern → ≥1
+  FailureMode" honest.
+- New `scripts/build_physical_graph.py` — emits
+  `data/assets/physical_graph.json` (node-link) plus
+  `data/assets/pattern_cards_v2.yaml` (manifest the hybrid retriever
+  and Sprint-7 task-pack builder consume).
+- Real assets: **117 nodes, 359 edges, 0 violations**.  Edge mix:
+  `APPLIES_TO=82`, `OBSERVED_IN=130`, `VALIDATED_BY=139`, `FIXES=8`.
+- Tests: +31 (`test_graph_builder_v2.py` 13 cases +
+  `test_hybrid_retriever.py` 18 cases).  Full suite **232 PASS**, 0
+  FAIL.  All four Sprint-5 acceptance gates green:
+  - PID query top-5 ≥ 3 relevant ✓
+  - CUDA query top-5 ≥ 3 relevant ✓
+  - World_Physics query not dominated by Planning_Decision ✓
+  - Demoted patterns excluded from top-k ✓
 
-- v1 `bridge_index.json` (rosclaw-how reads this verbatim)
-- v2 typed objects (TaskCard / CandidatePattern / FailureMode /
-  PatternCardV2)
+### Sprint 6 — Evidence Loop V2 (next)
 
-Sprint 5 plumbs them into a single multi-type `nx.MultiDiGraph` with
-the 11 edge kinds the plan §6.2 specifies (CAUSES, FIXES, VIOLATES,
-APPLIES_TO, …) and a hybrid retriever that boosts on
-`evidence_count`, `embodiment_type`, and `verifier_type`.
+Sprint 5 makes the graph and the retriever work, but the
+`EvidenceTrace` node type currently has zero instances — the runtime
+doesn't yet write traces.  Sprint 6 closes that loop by extending the
+how-side `submit_outcome` to capture `code_diff_summary`,
+`hint_features`, and `used_hint`, then training the bridge reweighter
+on **adjusted uplift** (true − placebo) instead of raw uplift.
 
 ---
 

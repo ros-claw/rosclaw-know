@@ -3,6 +3,77 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev4] — 2026-06-03 · v1.5 Sprint 5 — Physical Knowledge Graph V2 + hybrid retrieval
+
+### Added — Sprint 5 (typed multi-relation graph + hybrid retrieval)
+
+- `src/rosclaw_know/graph_builder_v2.py` — builds a typed
+  `networkx.MultiDiGraph` from every v2 typed object emitted by
+  Sprints 1-4.  Nodes carry `node_type ∈ {Domain | FailureMode |
+  FixPattern | ConstraintPattern | TaskCard | EmbodimentCard |
+  VerifierCard | EvidenceTrace}`; edges carry `relation ∈` one of the
+  12 plan §6.2 literals (CAUSES, FIXES, VIOLATES, CONSTRAINED_BY,
+  OBSERVED_IN, APPLIES_TO, CONTRAINDICATED_FOR, VALIDATED_BY,
+  TRANSFERABLE_TO, DERIVED_FROM, IMPROVED_BY, REGRESSED_BY).
+  Returns `(graph, GraphBuildReport)` so callers can inspect
+  `report.violations` against plan §11.5 acceptance:
+  - every `FixPattern` is linked to ≥1 `FailureMode` via FIXES;
+  - every `TaskCard` is linked to a Domain via APPLIES_TO AND to a
+    VerifierCard via VALIDATED_BY;
+  - every `EvidenceTrace` is linked to a pattern via
+    DERIVED_FROM / IMPROVED_BY / REGRESSED_BY (chosen by
+    `best_delta_5` sign).
+- `src/rosclaw_know/hybrid_retriever.py` — implements the plan §6.3
+  formula
+  `0.35·semantic + 0.15·bm25 + 0.15·family + 0.10·embodiment +
+  0.10·verifier_signal + 0.10·evidence − 0.20·contraindication`.
+  `RankerQuery` dataclass + `rank_pattern` + `top_k` (with
+  `include_demoted` / `min_score` knobs).  Default semantic fallback
+  is offline (token Jaccard); a real embedding function plugs in via
+  `semantic_fn`.  Returns `ScoreBreakdown` so callers can explain
+  ranking decisions.
+- `data/assets/embodiments.yaml` — seed `EmbodimentCard`s for 7
+  embodiment types (quadrotor, manipulator, quadruped, humanoid,
+  gpu_kernel, data_center, optical_system).
+- `data/assets/verifier_cards.yaml` — seed `VerifierCard`s covering
+  the 6 verifier types used by Sprint-2 TaskCards plus unit_test,
+  static_analysis, real_hardware for future use.
+- `data/assets/failure_taxonomy.yaml` — extended with 5 generic
+  engineering failure modes (`failure_generic_unvalidated_input`,
+  `failure_generic_runaway_search`,
+  `failure_generic_random_search_inefficiency`,
+  `failure_generic_python_loop_overhead`,
+  `failure_generic_cold_start_search`) so the cross-cutting Sprint-3
+  patterns (vectorize_inner_loop, warm_start_from_prior_best, etc.)
+  can attach FIXES edges to a real failure.  Curated entries stay
+  above the `# --- autodraft ---` marker.
+- `scripts/build_physical_graph.py` — CLI that loads every YAML,
+  compiles Sprint-3 candidates → `PatternCardV2` → `FixPattern`,
+  builds the typed graph, and emits
+  `data/assets/physical_graph.json` (node-link) plus
+  `data/assets/pattern_cards_v2.yaml` (manifest for the hybrid
+  retriever and Sprint-7 task-pack builder).  Exits non-zero on any
+  plan §11.5 violation unless `--allow-violations` is passed.
+- `tests/test_graph_builder_v2.py` (13 cases) — every plan §11.5
+  acceptance gate, multi-edge support, sister-task transferable
+  inference, dangling failure-id handling, integration build against
+  the real asset set.
+- `tests/test_hybrid_retriever.py` (18 cases) — Sprint-5 acceptance
+  (PID query top-5 ≥ 3 relevant, CUDA query top-5 ≥ 3 relevant,
+  World_Physics not dominated by Planning_Decision, demoted pattern
+  excluded from top-k), plus per-component formula checks and an
+  integration query against the real `pattern_cards_v2.yaml`.
+
+### Output
+
+- 117 nodes, 359 edges, 0 violations on the full asset set
+  (7 Domain pseudo-nodes + 13 FailureModes + 8 FixPatterns + 74
+  TaskCards + 7 EmbodimentCards + 8 VerifierCards).  Edge mix:
+  `APPLIES_TO=82`, `OBSERVED_IN=130`, `VALIDATED_BY=139`, `FIXES=8`.
+- 232 pytest cases pass (was 201 after Sprint 4, +31 new).
+- Hybrid retriever passes all 4 Sprint-5 acceptance gates against
+  both a synthetic mixed catalog and the 8 real PatternCardV2s.
+
 ## [1.5.0.dev3] — 2026-06-03 · v1.5 Sprint 4 — Pattern Compiler V2
 
 ### Added — Sprint 4 (CandidatePattern → action-template markdown)
