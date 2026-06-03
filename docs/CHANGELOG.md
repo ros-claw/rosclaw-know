@@ -3,6 +3,102 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev2] — 2026-06-03 · v1.5 Sprint 3 — Trajectory Mining
+
+### Added — Sprint 3 (agent rollouts → CandidatePattern)
+
+- `src/rosclaw_know/schemas.py` — three new typed objects:
+  `Mutation`, `TrajectoryStep`, `Trajectory`, `CandidatePattern`.  Plus
+  the `MutationKind` Literal (14 kinds: set_parameter_zero,
+  add_output_clamp, add_time_budget, swap_optimizer, vectorize_loop,
+  add_input_validation, add_initialization_seed, …).
+- `src/rosclaw_know/extractors/code_diff_summarizer.py` — pure-Python
+  AST + regex diff classifier.  Given (baseline_text, candidate_text)
+  returns a list of abstracted `Mutation`s.  Concrete numeric values
+  are scrubbed from descriptions — plan §3.5 forbids embedding
+  benchmark answers, so descriptions say "set parameter to zero on
+  Ki_z" not "Ki_z = 0.0142".  Float literals in mutation
+  descriptions are auto-replaced with `<value>`.
+- `src/rosclaw_know/extractors/trajectory_extractor.py` — framework +
+  three feature extractors:
+  - `extract_pid_features` (anti-windup, controller clamp, optimizer
+    swap, time-budget — fires only for PID-like tasks)
+  - `extract_systems_features` (vectorize_loop, input_validation,
+    generic time-budget — cross-family)
+  - `extract_optimizer_features` (warm-start, generic optimizer-swap —
+    cross-family)
+- `scripts/extract_trajectory_patterns.py` — CLI driver.  Walks
+  `Frontier-Engineering/baseline_archive/`, builds a single-step
+  trajectory per `(experiment, algorithm, model, task)` tuple, runs all
+  registered extractors, merges candidates with the same id across
+  trajectories.  Acceptance gates `--min-trajectories 10` and
+  `--min-candidates 4`; refuses to write if any output description
+  contains a float literal (leak guard).
+- `data/assets/trajectory_patterns.yaml` — generated catalog from real
+  baseline_archive sweep:
+  - **375 trajectories** mined across 11 task families (well above the
+    plan §11.4 ≥100 gate).
+  - **8 merged candidate patterns**, every one with evidence_count ≥ 4:
+    | id | evidence |
+    | --- | --- |
+    | candidate_vectorize_inner_loop | 45 |
+    | candidate_add_boundary_validation | 41 |
+    | candidate_warm_start_from_prior_best | 16 |
+    | candidate_controller_output_clamp | 14 |
+    | candidate_zero_integral_gain_on_saturation | 9 |
+    | candidate_generic_time_budget | 8 |
+    | candidate_swap_random_search_to_structured_optimizer | 5 |
+    | candidate_add_time_budget | 4 |
+  - 0 candidates leak concrete answer values (verified by integration
+    test against all 14 PIDTuning programs in the archive).
+- `tests/test_trajectory_extractor.py` (22 cases) — unit tests on each
+  detector + leak guard + feature extractors + end-to-end
+  `from_iteration_dir` against synthetic three-step iteration trees +
+  integration against real baseline_archive PID programs.
+
+### Design notes
+
+- **Single-step trajectories from baseline_archive.**  The archive
+  ships only the final-best program, not the iteration history.  We
+  fold the entire optimisation into one `TrajectoryStep` with
+  iteration=0 and mark it explicitly in the trajectory's notes.  This
+  cannot detect *failed* mutations (no intermediate runs), so Sprint 3
+  candidates carry empty `failed_mutations` — when real iteration
+  history is available downstream, that field starts populating
+  automatically via `from_iteration_dir`.
+- **Mutation-kind dictionary, not free-form strings.**  Every
+  classified mutation maps to one of 14 enumerated `MutationKind`
+  literals.  Sprint 4's pattern compiler can branch on these without
+  natural-language parsing.
+- **Evidence-count merging.**  When the same candidate id fires for
+  multiple trajectories, `_merge_candidates` sums evidence counts,
+  unions successful mutations (deduped on `(kind,
+  target_identifier)`), and concatenates source trajectory ids.  Plan
+  §3.5 sets `evidence_count ≥ 2` as the lower bound for promotion in
+  Sprint 4 — all 8 candidates clear that already.
+
+### Partially met / deferred
+
+- Plan §11.4 acceptance "≥20 candidate patterns" — currently at **8**
+  with 3 feature extractors.  Reaching 20 requires the
+  family-specific AES / CUDA / scheduling extractors the plan §5.3
+  calls out.  Those slot into `ALL_FEATURE_EXTRACTORS` via the same
+  protocol and are scheduled as follow-up commits.
+- Plan §11.4 "successful + failed mutations on each candidate" —
+  successful is at 8/8, failed is at 0/8.  Failed mutations require
+  real iteration history; once one is available
+  (Sprint 9 / real-robot ingest), `from_iteration_dir` populates the
+  failed bag automatically by classifying mutations that landed
+  immediately *before* a score regression.
+
+### Verified
+
+- `pytest -q` — **183 passed** (Sprint 2 baseline 161; +22 new).
+- `extract_trajectory_patterns.py --apply` — wrote 8-card catalog;
+  ≥4-candidate / ≥10-trajectory / leak-free gates all green.
+- `validate_bridge.py` + `migrate_assets_v1_to_v2.py --check` —
+  still OK.
+
 ## [1.5.0.dev1] — 2026-06-03 · v1.5 Sprint 2 — Benchmark Task Cards
 
 ### Added — Sprint 2 (Frontier-Eng → TaskCard catalog)
