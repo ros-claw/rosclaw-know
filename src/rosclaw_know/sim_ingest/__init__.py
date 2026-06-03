@@ -39,11 +39,16 @@ from .cross_embodiment import (
 )
 from .cross_embodiment import render_markdown as render_cross_embodiment_markdown
 from .event_schema import EVENT_TYPES, RobotEvent
-from .event_to_evidence import event_to_evidence_trace
+from .event_to_evidence import (
+    event_to_evidence_trace,
+    events_to_evidence_traces,
+    read_robot_event_jsonl,
+)
 from .event_to_failure import EventToFailureMapper, MappedFailure, map_events_to_failures
 from .foxglove_reader import read_foxglove_jsonl
 from .isaac_reader import read_isaac_jsonl
 from .mujoco_reader import read_mujoco_jsonl
+from .robot_trajectory_extractor import extract_candidates_from_evidence_traces
 from .rosbag_reader import read_rosbag_jsonl
 from .urdf_parser import (
     ControllerConfig,
@@ -62,6 +67,9 @@ __all__ = (
     "MappedFailure",
     "map_events_to_failures",
     "event_to_evidence_trace",
+    "events_to_evidence_traces",
+    "read_robot_event_jsonl",
+    "extract_candidates_from_evidence_traces",
     "read_rosbag_jsonl",
     "read_foxglove_jsonl",
     "read_isaac_jsonl",

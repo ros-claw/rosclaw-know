@@ -31,7 +31,10 @@ That convention lets a "task replay" log emit both the symptom event
 """
 from __future__ import annotations
 
+import json
 import logging
+from collections.abc import Iterable
+from pathlib import Path
 from typing import Any
 
 from ..schemas import EvidenceTrace
@@ -134,4 +137,61 @@ def event_to_evidence_trace(
     return trace
 
 
-__all__ = ("event_to_evidence_trace",)
+# ── Sprint 11: batch ingest from a JSONL RobotEvent stream ──────────────
+
+
+def read_robot_event_jsonl(path: str | Path) -> list[RobotEvent]:
+    """Parse a JSONL file of pre-serialized :class:`RobotEvent` objects.
+
+    Sprint 11 uses this as the bridge between real-robot rollouts and
+    the evidence loop.  Each line must be the JSON form of a single
+    RobotEvent (the schema lives in
+    :class:`rosclaw_know.sim_ingest.event_schema.RobotEvent`).
+
+    Lines that fail to parse are skipped with a log warning so a single
+    corrupt event doesn't kill the batch.
+    """
+    out: list[RobotEvent] = []
+    with Path(path).open(encoding="utf-8") as fh:
+        for line_no, raw in enumerate(fh, start=1):
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                obj = json.loads(raw)
+                out.append(RobotEvent(
+                    timestamp=str(obj["timestamp"]),
+                    event_type=str(obj["event_type"]),
+                    embodiment_id=str(obj["embodiment_id"]),
+                    severity=str(obj.get("severity", "warning")),  # type: ignore[arg-type]
+                    fingerprint=str(obj.get("fingerprint", "")),
+                    fields=dict(obj.get("fields") or {}),
+                    source=str(obj.get("source", "rosbag")),
+                    source_id=str(obj.get("source_id", "")),
+                ))
+            except (KeyError, ValueError, TypeError) as exc:
+                log.warning("skipped malformed RobotEvent on line %d: %s", line_no, exc)
+    return out
+
+
+def events_to_evidence_traces(
+    events: Iterable[RobotEvent],
+) -> list[EvidenceTrace]:
+    """Convert a stream of RobotEvents into EvidenceTraces.
+
+    Drops events without a ``task_run`` envelope (the converter returns
+    ``None`` for them).  Order-preserving for determinism.
+    """
+    out: list[EvidenceTrace] = []
+    for ev in events:
+        trace = event_to_evidence_trace(ev)
+        if trace is not None:
+            out.append(trace)
+    return out
+
+
+__all__ = (
+    "event_to_evidence_trace",
+    "events_to_evidence_traces",
+    "read_robot_event_jsonl",
+)

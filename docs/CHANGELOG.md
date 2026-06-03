@@ -3,6 +3,95 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev11] — 2026-06-03 · v1.5 Sprint 11 — Self-improvement loop (real-robot ↔ catalog)
+
+### Added — Sprint 11 (user request #4: 真机 trace 喂回 Sprint 6 / Sprint 3)
+
+Two paths close the self-improvement loop:
+
+#### Promotion path (real-robot ↔ Sprint 6 evidence_distill)
+
+- **`read_robot_event_jsonl(path)`** — parse a JSONL of pre-serialized
+  `RobotEvent` objects; skip malformed lines with a warning.
+- **`events_to_evidence_traces(events)`** — batch convert RobotEvents
+  to `EvidenceTrace` when the event carries a `task_run` envelope;
+  preserve order, drop the rest.
+- **`scripts/ingest_robot_evidence.py`** — CLI wrapping the full chain
+  (rosbag/Isaac/MuJoCo JSONL → EvidenceTrace → distill →
+  `data/assets/evidence_stats.json`).  The output file is what
+  `bridge_reweighter` already consumes, so no new bridge code is
+  needed — the loop closes via the existing Sprint 6 plumbing.
+
+#### Discovery path (real-robot → Sprint 4 CandidatePattern)
+
+- **`extract_candidates_from_evidence_traces(traces, *, known_pattern_ids, min_trace_count, promote_threshold)`**
+  — new pure function in `sim_ingest.robot_trajectory_extractor` that
+  emits `CandidatePattern` entries from real-robot traces that:
+  - reference a pattern_id **not** in the offline v2 catalog (or no
+    pattern_id at all — task_name groups in that case)
+  - have ≥ `MIN_TRACE_COUNT` (default 3) traces
+  - clear the `ADJUSTED_PROMOTE_THRESHOLD` (same threshold Sprint 6
+    uses for promote — both loops agree on what counts as real).
+  Each candidate uses `Mutation(kind="other")` (real-robot diffs aren't
+  structurally parsed) and cites every contributing trace via
+  `source_trajectory_ids`.
+
+### Cleanup — Sprint 10 follow-up
+
+- **`load_default_transfer_table` lru_cache removed** — the cache was
+  papering over a `cfg.ASSETS_DIR` leak in `tests/test_pipeline.py`
+  (the unittest setUp mutated cfg module-level paths without
+  restoring them).  Added proper cfg save/restore in test_pipeline's
+  `tearDown` and removed the cache so monkey-patching works correctly
+  in any order.
+
+### Tests
+
+- **`tests/test_sprint11_robot_evidence_loop.py`** (new, 12 cases) —
+  the promotion path end-to-end: reader smoke, converter contract,
+  promote/demote/no-promotion-when-placebo-matches verdicts, plus a
+  Sprint 10×11 integration test pinning that the pattern Sprint 11
+  promotes is exactly the one Sprint 10's auto transfer table
+  exposes for `controller_error`.
+- **`tests/test_sprint11_robot_trajectory_extractor.py`** (new, 10 cases) —
+  the discovery path: empty-input contract, known-pattern filtering,
+  novel-pattern candidate emission, threshold + min-count gates,
+  determinism, and a Sprint 11 / Sprint 6 disjoint-pattern smoke.
+
+### Fixtures
+
+- **`tests/fixtures/sprint11/robot_traces_with_evidence.jsonl`** — 10
+  rosbag/Isaac RobotEvents (5 true / 5 placebo) of
+  `compiled_zero_integral_gain_on_saturation` on UR5 + quadrotor with
+  measurable post_score uplift.
+- **`tests/fixtures/sprint11/discovery_traces.jsonl`** — 6 RobotEvents
+  on `stack_blocks_with_torque_feedback` referencing the *novel*
+  pattern_id `novel_torque_feedback_loop`.
+
+### Acceptance summary (data/assets/sprint11_acceptance_report.json)
+
+```json
+{
+  "promotion_path": {
+    "promoted": ["compiled_zero_integral_gain_on_saturation"],
+    "placebo_adjusted_uplift": {"compiled_zero_integral_gain_on_saturation": 0.224}
+  },
+  "discovery_path": {
+    "candidates_discovered": [{
+      "id": "candidate_real_robot_novel_torque_feedback_loop",
+      "evidence_count": 6,
+      "avg_score_delta": 0.2833
+    }]
+  }
+}
+```
+
+### Tests summary
+
+```
+pytest -q  →  448 passed (was 426; +22 across two new test files)
+```
+
 ## [1.5.0.dev10] — 2026-06-03 · v1.5 Sprint 10 — auto-derived cross-embodiment transfer table
 
 ### Removed — Sprint 10 (replaces hand-curated Sprint 9 table)

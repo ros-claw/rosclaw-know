@@ -1,0 +1,29 @@
+{
+  "promotion_path": {
+    "fixture": "robot_traces_with_evidence.jsonl",
+    "events_read": 10,
+    "traces_emitted": 10,
+    "patterns_with_stats": 1,
+    "promoted": [
+      "compiled_zero_integral_gain_on_saturation"
+    ],
+    "demoted": [],
+    "coverage_violations": [],
+    "placebo_adjusted_uplift": {
+      "compiled_zero_integral_gain_on_saturation": 0.224
+    }
+  },
+  "discovery_path": {
+    "fixture": "discovery_traces.jsonl",
+    "events_read": 6,
+    "traces_emitted": 6,
+    "candidates_discovered": [
+      {
+        "id": "candidate_real_robot_novel_torque_feedback_loop",
+        "task_family": "robotics_optimization",
+        "evidence_count": 6,
+        "avg_score_delta": 0.2833
+      }
+    ]
+  }
+}

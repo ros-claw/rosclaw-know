@@ -30,7 +30,6 @@ import logging
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from functools import lru_cache
 from pathlib import Path
 
 from ..schemas import FailureMode, FixPattern
@@ -181,13 +180,16 @@ def derive_pattern_transfer_table(
 # ── Default loader (reads compiled graph) ───────────────────────────────
 
 
-@lru_cache(maxsize=1)
 def load_default_transfer_table() -> dict[str, tuple[str, ...]]:
     """Load + derive the transfer table from the canonical asset bundle.
 
     Reads ``physical_graph.json`` (post-build) and
     ``failure_taxonomy.yaml``.  Returns an empty dict when either is
     missing so CI / fresh checkouts don't crash.
+
+    Reads ``config.ASSETS_DIR`` *at call time* (not at import time) so
+    tests can monkey-patch ``rosclaw_know.config.ASSETS_DIR`` without
+    needing to clear a cache.
     """
     from .. import config as _config
 
@@ -223,8 +225,11 @@ def load_default_transfer_table() -> dict[str, tuple[str, ...]]:
 
 
 def _invalidate_default_transfer_table_cache() -> None:
-    """Test hook: drop the lru_cache so reassigned config.ASSETS_DIR is honoured."""
-    load_default_transfer_table.cache_clear()
+    """Deprecated no-op: ``load_default_transfer_table`` is no longer cached.
+
+    Kept so existing tests that imported the helper don't break.
+    """
+    return None
 
 
 # ── Report types ────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@ agents before they start.  Sprint plan source:
 | 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | ✅ shipped |
 | 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | ✅ shipped |
 | 10 | Auto-derived cross-embodiment transfer table (replaces Sprint 9 hand table) | ✅ shipped |
+| 11 | Self-improvement loop (real-robot → Sprint 6 promote + Sprint 4 discover) | ✅ shipped |
 
 ### Sprint 0 — Safety & sanity (shipped)
 
@@ -361,8 +362,10 @@ Closes the hand-curated gap that Sprint 9 left behind.
   Output is sorted-tuple-per-event_type for determinism.  Every
   emitted `pattern_id` is a real catalog entry (`compiled_*` /
   `candidate_*`); phantom names structurally impossible.
-- `load_default_transfer_table()` — `lru_cache(1)` loader over
+- `load_default_transfer_table()` — loader over
   `data/assets/physical_graph.json` + `failure_taxonomy.yaml`.
+  Sprint 11 dropped its lru_cache after diagnosing a test-pipeline
+  cfg leak the cache was hiding.
 - `_EVENT_TYPE_ALIASES` — taxonomic vocabulary only (8 event_types ×
   4–9 tokens).  No pattern_ids; that's the manual layer we're
   explicitly NOT bringing back.
@@ -376,6 +379,48 @@ Closes the hand-curated gap that Sprint 9 left behind.
 - Tests: 16 new in `tests/test_cross_embodiment_auto.py` + 12 in
   `tests/test_sim_ingest_cross_embodiment.py` updated to assert real
   `compiled_*` IDs.
+
+### Sprint 11 — Self-improvement loop (shipped)
+
+Closes the user-requested #4 path: Sprint 9 真机 trace 喂回 Sprint 6 /
+Sprint 3, "pattern 越用越精".  Two complementary paths.
+
+**Promotion path** — real-robot traces of *known* catalog patterns
+flow into Sprint 6's evidence_distill:
+
+- `read_robot_event_jsonl(path)` — parse JSONL of pre-serialized
+  RobotEvent objects, malformed-line tolerant.
+- `events_to_evidence_traces(events)` — batch-convert events with a
+  ``task_run`` envelope into EvidenceTraces, preserving order.
+- `scripts/ingest_robot_evidence.py` — CLI: RobotEvent JSONL →
+  EvidenceTrace stream → `evidence_distill.distill` →
+  `data/assets/evidence_stats.json` (already consumed by
+  bridge_reweighter — no new bridge plumbing required).
+
+**Discovery path** — real-robot traces using *unknown* pattern_ids
+that clear placebo are turned into Sprint-4-ready CandidatePatterns:
+
+- `extract_candidates_from_evidence_traces(traces, *, known_pattern_ids, ...)` —
+  pure function in `sim_ingest.robot_trajectory_extractor`.  Emits
+  `CandidatePattern(id="candidate_real_robot_<pid_or_task>", ..., 
+  successful_mutations=[Mutation(kind="other", description=...)])`
+  when ≥ MIN_TRACE_COUNT traces with placebo-adjusted uplift above
+  ADJUSTED_PROMOTE_THRESHOLD (same gate Sprint 6 uses, so the two
+  loops agree on "real").
+
+**Acceptance** (`data/assets/sprint11_acceptance_report.json`):
+
+- Promotion: `compiled_zero_integral_gain_on_saturation` promoted
+  from 10 real-robot traces (UR5 + quadrotor) with
+  placebo_adjusted_uplift = +0.224.
+- Discovery: `candidate_real_robot_novel_torque_feedback_loop`
+  emitted from 6 traces on `stack_blocks_with_torque_feedback` with
+  avg_score_delta = +0.283.
+- Negative controls: equal-arm fixture does NOT promote; demotion
+  path triggers when true arm underperforms placebo.
+- Tests: +22 across two new files (`test_sprint11_robot_evidence_loop.py`
+  + `test_sprint11_robot_trajectory_extractor.py`).  Full suite **448
+  PASS**, 0 FAIL.
 
 ---
 

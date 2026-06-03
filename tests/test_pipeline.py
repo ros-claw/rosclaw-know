@@ -12,7 +12,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 # Set mock mode BEFORE importing rosclaw_know so config.MOCK_LLM picks it up.
 os.environ["ROSCLAW_KNOW_MOCK_LLM"] = "1"
 os.environ.setdefault("DEEPSEEK_API_KEY", "")
@@ -62,6 +61,19 @@ class PipelineSmokeTest(unittest.TestCase):
         # Re-import config with patched paths
         import rosclaw_know.config as cfg
 
+        # Snapshot original values so tearDown can restore them — without
+        # this, the cfg module-level constants leak into later tests in
+        # the same process (Sprint 10 / 11 default-loader was the first
+        # caller to actually notice the leak).
+        self._orig_cfg = {
+            "DATA_DIR": cfg.DATA_DIR,
+            "ASSETS_DIR": cfg.ASSETS_DIR,
+            "CODE_PATTERNS_DIR": cfg.CODE_PATTERNS_DIR,
+            "BENCHMARKS_DIR": cfg.BENCHMARKS_DIR,
+            "DB_PATH": cfg.DB_PATH,
+            "WIKI_DIR": cfg.WIKI_DIR,
+            "MOCK_LLM": cfg.MOCK_LLM,
+        }
         cfg.DATA_DIR = self.tmp / "data"
         cfg.ASSETS_DIR = cfg.DATA_DIR / "assets"
         cfg.CODE_PATTERNS_DIR = cfg.ASSETS_DIR / "code_patterns"
@@ -72,6 +84,12 @@ class PipelineSmokeTest(unittest.TestCase):
         cfg.ensure_dirs()
 
     def tearDown(self) -> None:
+        # Restore the cfg constants we mutated in setUp so they don't
+        # leak into other test files in the same pytest run.
+        import rosclaw_know.config as cfg
+
+        for k, v in self._orig_cfg.items():
+            setattr(cfg, k, v)
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_end_to_end_mock(self) -> None:
