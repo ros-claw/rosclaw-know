@@ -129,6 +129,80 @@ def _pattern_card_to_fix(card: PatternCardV2, *, failure_id: str | None) -> FixP
     )
 
 
+# Cross-cutting Sprint-3 candidates are tagged with their source task
+# family (often ``unknown_optimization``) which under-sells how broadly
+# they apply.  Sprint 7 needs the hybrid retriever to recognise these
+# as applicable across multiple families so e.g. a CUDA-flavoured query
+# can recall ``compiled_vectorize_inner_loop``.  This map widens
+# ``task_families`` post-compile.
+_CROSS_FAMILY_ALIASES: dict[str, list[str]] = {
+    "compiled_vectorize_inner_loop": [
+        "kernel_engineering_optimization",
+        "cryptographic_optimization",
+        "computer_systems_optimization",
+        "sustainable_data_center_control_optimization",
+        "wireless_channel_simulation_optimization",
+        "robotics_optimization",
+        "particle_physics_optimization",
+    ],
+    "compiled_add_boundary_validation": [
+        "robotics_optimization",
+        "kernel_engineering_optimization",
+        "cryptographic_optimization",
+        "computer_systems_optimization",
+        "additive_manufacturing_optimization",
+        "structural_optimization_optimization",
+    ],
+    "compiled_warm_start_from_prior_best": [
+        "robotics_optimization",
+        "kernel_engineering_optimization",
+        "additive_manufacturing_optimization",
+        "aerodynamics_optimization",
+        "molecular_mechanics_optimization",
+        "astrodynamics_optimization",
+        "py_portfolio_opt_optimization",
+        "inventory_optimization_optimization",
+    ],
+    "compiled_generic_time_budget": [
+        "robotics_optimization",
+        "kernel_engineering_optimization",
+        "computer_systems_optimization",
+        "optics_optimization",
+        "aerodynamics_optimization",
+        "particle_physics_optimization",
+    ],
+    "compiled_swap_random_search_to_structured_optimizer": [
+        "robotics_optimization",
+        "kernel_engineering_optimization",
+        "molecular_mechanics_optimization",
+        "aerodynamics_optimization",
+        "additive_manufacturing_optimization",
+        "reaction_optimisation_optimization",
+        "py_portfolio_opt_optimization",
+        "wireless_channel_simulation_optimization",
+    ],
+    "compiled_add_time_budget": [
+        "robotics_optimization",
+        "kernel_engineering_optimization",
+        "computer_systems_optimization",
+        "sustainable_data_center_control_optimization",
+        "job_shop_optimization",
+    ],
+}
+
+
+def _widen_task_families(card: PatternCardV2) -> PatternCardV2:
+    """Add cross-cutting task_family aliases to a compiled pattern."""
+    extras = _CROSS_FAMILY_ALIASES.get(card.id)
+    if not extras:
+        return card
+    merged: list[str] = list(card.task_families)
+    for fam in extras:
+        if fam not in merged:
+            merged.append(fam)
+    return card.model_copy(update={"task_families": merged})
+
+
 def compile_candidates(
     candidates: Iterable[CandidatePattern],
     failures: Iterable[FailureMode],
@@ -149,6 +223,7 @@ def compile_candidates(
     fixes: list[FixPattern] = []
     for c in candidates:
         card = compile_pattern_card(c, context=ctx)
+        card = _widen_task_families(card)
         cards.append(card)
         fid = _resolve_failure_id(c, fm_lookup)
         fixes.append(_pattern_card_to_fix(card, failure_id=fid))

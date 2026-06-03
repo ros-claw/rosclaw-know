@@ -3,6 +3,81 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev6] — 2026-06-03 · v1.5 Sprint 7 — Task Pack API (pre-flight knowledge for agents)
+
+### Added — Sprint 7 (plan §10, §11.7)
+
+- New `src/rosclaw_know/task_pack_builder.py`:
+  - `build_task_pack(query, *, catalog, patterns, failures) -> TaskPack`
+    — pure-function pipeline that matches the agent's `task_name` to a
+    `TaskCard`, runs `hybrid_retriever.top_k` over the
+    `PatternCardV2` manifest, synthesises a per-iteration exploration
+    plan, and surfaces the verifier + failure-mode signature.
+  - `_match_task_card` runs a 4-tier resolver:
+    exact-id substring → `task_name` substring →
+    letter↔digit token-overlap (so `crypto_aes128` finds `AES-128`)
+    → benchmark fallback.  CamelCase boundaries are inserted before
+    normalisation so `PIDTuning` tokenises to `pid_tuning`.
+  - `_trim_to_budget` keeps the rendered pack within
+    `query.max_tokens` (plan §Sprint 7 default = 1200).
+  - `render_markdown(pack)` emits the canonical agent-prompt format
+    with stable section headings.
+- New `src/rosclaw_know/schemas.py::TaskPack` / `TaskPackPatternRef` /
+  `TaskPackQuery` — strict pydantic v2 schemas matching the
+  plan §10.1 request/response example verbatim, plus
+  provenance fields (`source_task_card_id`, `source_failure_ids`,
+  `token_estimate`).
+- `src/rosclaw_know/api.py` extended with:
+  - `POST /know/v1/task-pack/build` — Sprint-7 HTTP endpoint that
+    loads the typed catalog at lifespan and serves packs in
+    single-digit-ms latency.  Returns 404 on unknown task,
+    503 when assets haven't been generated (e.g. fresh checkout
+    before `scripts/build_physical_graph.py`).
+  - `_try_load_task_pack_assets` reads `config.ASSETS_DIR` at
+    call-time so tests / fixtures that monkey-patch the asset path
+    are honoured.
+- New `scripts/build_task_pack.py` — CLI that loads canonical assets,
+  builds a pack, prints Markdown + JSON to stdout, and optionally
+  writes to `data/assets/task_packs/<id>.json` with `--apply`.
+  Doubles as the MCP-tool backend.
+- `scripts/build_physical_graph.py` extended with
+  `_widen_task_families` — augments cross-cutting Sprint-3 patterns
+  (vectorize_inner_loop, warm_start_from_prior_best, add_time_budget
+  …) with a curated list of applicable `task_families`, so the
+  hybrid retriever's family-boost fires for kernel / crypto / etc.
+  queries.  Manifest regenerated.
+- `pyproject.toml` — new optional-dependency group `api`
+  (`fastapi>=0.110, uvicorn[standard]>=0.27, httpx>=0.27`) so
+  `pip install rosclaw-know[api]` provisions the HTTP runtime.
+
+### Tests
+
+- `tests/test_task_pack_builder.py` (20 cases):
+  - All 5 plan §Sprint 7 task families
+    (pid_tuning / crypto_aes128 / flash_attention / quadruped_gait /
+    robot_arm) produce a non-empty pack within the 1200-token ceiling.
+  - `pid_tuning` pack recalls `compiled_zero_integral_gain_on_saturation`
+    (the anti_windup_pid concept) — plan §11.7 acceptance.
+  - `flash_attention` pack recalls `compiled_vectorize_inner_loop` or
+    a sibling cross-cutting CUDA pattern.
+  - Every recommended `pattern_id` resolves back to a real
+    `PatternCardV2` — plan §Sprint 7 "task pack 引用 pattern_id，可追
+    踪反馈".
+  - Build latency averages well under 1500 ms on a cold catalog
+    (~2 ms in CI).
+  - HTTP smoke tests via `fastapi.testclient.TestClient`: 200 on
+    valid query, 404 on unknown task, 422 on bad input.
+- Full suite **299 PASS** (was 279 after Sprint 6, +20 new).
+
+### Output
+
+- All 5 acceptance task families produce packs in the 366–441
+  token range — comfortably under the 1200-token ceiling.
+- HTTP build latency: <2 ms.
+- `compile_pattern_card`/`hybrid_retriever`/`task_pack_builder`
+  pipeline composes cleanly end-to-end: Sprint 4 markdowns →
+  Sprint 5 retriever → Sprint 7 pack.
+
 ## [1.5.0.dev5] — 2026-06-03 · v1.5 Sprint 6 — Evidence Loop V2 (placebo-adjusted uplift)
 
 ### Added — Sprint 6 (causal evidence + adjusted uplift promotion)

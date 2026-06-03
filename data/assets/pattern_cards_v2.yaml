@@ -4,6 +4,12 @@ pattern_cards:
   domain: Systems_Compute
   task_families:
   - unknown_optimization
+  - robotics_optimization
+  - kernel_engineering_optimization
+  - cryptographic_optimization
+  - computer_systems_optimization
+  - additive_manufacturing_optimization
+  - structural_optimization_optimization
   embodiment_types: []
   artifact_languages:
   - python
@@ -83,6 +89,10 @@ pattern_cards:
   domain: Control_Locomotion
   task_families:
   - robotics_optimization
+  - kernel_engineering_optimization
+  - computer_systems_optimization
+  - sustainable_data_center_control_optimization
+  - job_shop_optimization
   embodiment_types:
   - uav
   - manipulator
@@ -209,6 +219,11 @@ pattern_cards:
   domain: World_Physics
   task_families:
   - optics_optimization
+  - robotics_optimization
+  - kernel_engineering_optimization
+  - computer_systems_optimization
+  - aerodynamics_optimization
+  - particle_physics_optimization
   embodiment_types:
   - optical_system
   artifact_languages:
@@ -255,6 +270,13 @@ pattern_cards:
   domain: Control_Locomotion
   task_families:
   - robotics_optimization
+  - kernel_engineering_optimization
+  - molecular_mechanics_optimization
+  - aerodynamics_optimization
+  - additive_manufacturing_optimization
+  - reaction_optimisation_optimization
+  - py_portfolio_opt_optimization
+  - wireless_channel_simulation_optimization
   embodiment_types:
   - uav
   - manipulator
@@ -313,6 +335,13 @@ pattern_cards:
   domain: Systems_Compute
   task_families:
   - unknown_optimization
+  - kernel_engineering_optimization
+  - cryptographic_optimization
+  - computer_systems_optimization
+  - sustainable_data_center_control_optimization
+  - wireless_channel_simulation_optimization
+  - robotics_optimization
+  - particle_physics_optimization
   embodiment_types: []
   artifact_languages:
   - python
@@ -404,6 +433,14 @@ pattern_cards:
   domain: Systems_Compute
   task_families:
   - unknown_optimization
+  - robotics_optimization
+  - kernel_engineering_optimization
+  - additive_manufacturing_optimization
+  - aerodynamics_optimization
+  - molecular_mechanics_optimization
+  - astrodynamics_optimization
+  - py_portfolio_opt_optimization
+  - inventory_optimization_optimization
   embodiment_types: []
   artifact_languages:
   - python

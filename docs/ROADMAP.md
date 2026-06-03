@@ -20,7 +20,7 @@ agents before they start.  Sprint plan source:
 | **4** | Pattern Compiler v2 (action-template markdown) | ✅ shipped |
 | 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | ✅ shipped |
 | 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | ✅ shipped |
-| 7 | Task Pack API + MCP `rosclaw_task_pack` | planned |
+| 7 | Task Pack API + MCP `rosclaw_task_pack` | ✅ shipped |
 | 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | planned |
 | 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | planned |
 
@@ -221,14 +221,48 @@ Deferred to a follow-up sprint:
   `test_evidence_distill.py`, 5 v2 cases appended to
   `test_bridge_reweighter.py`).  Full suite **279 PASS**, 0 FAIL.
 
-### Sprint 7 — Task Pack API (next)
+### Sprint 7 — Task Pack API (shipped)
 
-With Sprints 1-6 in place we have typed objects, a typed graph, a
-hybrid retriever, and a causal evidence loop.  Sprint 7 exposes all
-of that to agents as a structured task-pack: an HTTP/MCP endpoint
-that returns recommended patterns, expected failure modes, and the
-verifier signature for a given `task_id`, before the agent's first
-mutation.
+- New `src/rosclaw_know/task_pack_builder.py` — pure-function pipeline
+  that matches `task_name` → `TaskCard`, runs `hybrid_retriever.top_k`
+  over the `PatternCardV2` manifest, staggers patterns across the
+  iteration budget, and trims the rendered pack to a token ceiling.
+- New typed objects in `schemas.py`: `TaskPack`, `TaskPackPatternRef`,
+  `TaskPackQuery` — match plan §10.1 verbatim.
+- `src/rosclaw_know/api.py` exposes `POST /know/v1/task-pack/build`
+  (plan §10).  Lifespan loads the catalog once; per-request latency
+  is single-digit ms.  503 when assets are missing; 404 when no
+  TaskCard matches the request.
+- New `scripts/build_task_pack.py` CLI — same builder, terminal /
+  MCP entry point.  Prints Markdown + JSON; `--apply` writes JSON
+  to `data/assets/task_packs/<id>.json`.
+- `scripts/build_physical_graph.py` extended with
+  `_widen_task_families` — augments the cross-cutting Sprint-3
+  patterns (vectorize_inner_loop, warm_start_from_prior_best, etc.)
+  with a curated list of applicable families, so the retriever's
+  family-boost fires for kernel / crypto / etc. queries.  Manifest
+  regenerated to reflect this.
+- `pyproject.toml` declares the `api` extras-group
+  (`fastapi / uvicorn / httpx`) for `pip install rosclaw-know[api]`.
+- Plan §Sprint 7 acceptance gates **all green**:
+  - 5 task families (pid_tuning / crypto_aes128 / flash_attention /
+    quadruped_gait / robot_arm) build successfully ✓
+  - pack stays ≤ 1200 tokens (real-world: 366-441) ✓
+  - every recommended pattern_id resolves to a real PatternCardV2 ✓
+  - pid_tuning recalls `compiled_zero_integral_gain_on_saturation` ✓
+  - flash_attention recalls `compiled_vectorize_inner_loop` ✓
+- Plan §13 latency: 1.5-2 ms per build, well under the 1500 ms p95 target.
+- Tests: +20 (`test_task_pack_builder.py`).  Full suite **299 PASS**,
+  0 FAIL.
+
+### Sprint 8 — Frontier-Eng 6-arm A/B (next)
+
+With Sprints 1-7 the pipeline is end-to-end: an agent gets a
+TaskPack pre-flight, runs the search, the runtime writes
+EvidenceTraces, the distiller computes placebo-adjusted uplift, and
+bridge_reweighter promotes/demotes patterns.  Sprint 8 closes the
+quality loop by running the 6-arm A/B harness on Frontier-Eng
+benchmarks to ground-truth the pipeline.
 
 ---
 
