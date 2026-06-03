@@ -1,10 +1,15 @@
-"""Sprint 9: cross-embodiment reuse acceptance test."""
+"""Sprint 9: cross-embodiment reuse acceptance test.
+
+Sprint 10 retired the hand-curated ``PATTERN_TRANSFER_TABLE``; this
+module now asserts the auto-derived defaults via
+:func:`load_default_transfer_table`.  All pattern_ids referenced below
+are real catalog entries (``compiled_*``).
+"""
 from __future__ import annotations
 
 from pathlib import Path
 
 from rosclaw_know.sim_ingest import (
-    PATTERN_TRANSFER_TABLE,
     map_events_to_failures,
     read_foxglove_jsonl,
     read_isaac_jsonl,
@@ -14,6 +19,7 @@ from rosclaw_know.sim_ingest import (
 )
 from rosclaw_know.sim_ingest.cross_embodiment import (
     CrossEmbodimentReport,
+    load_default_transfer_table,
     render_markdown,
 )
 
@@ -62,21 +68,22 @@ def test_synthetic_failure_dedup_across_embodiments() -> None:
     assert report.acceptance_pattern_reuse_passed
 
 
-def test_anti_windup_is_one_of_the_transferable_patterns() -> None:
+def test_anti_windup_concept_appears_as_compiled_pattern() -> None:
+    """The catalog's anti-windup-equivalent (zero_integral_gain) must transfer."""
     events = _read_all()
     failures = map_events_to_failures(events)
     report = run_cross_embodiment_check(failures)
     transferable_pids = {row.pattern_id for row in report.patterns_seen_on_multiple_embodiments}
-    assert "anti_windup" in transferable_pids
+    assert "compiled_zero_integral_gain_on_saturation" in transferable_pids
 
 
-def test_anti_windup_serves_both_arm_and_quadrotor() -> None:
+def test_anti_windup_pattern_serves_both_arm_and_quadrotor() -> None:
     events = _read_all()
     failures = map_events_to_failures(events)
     report = run_cross_embodiment_check(failures)
     aw_row = next(
         row for row in report.patterns_seen_on_multiple_embodiments
-        if row.pattern_id == "anti_windup"
+        if row.pattern_id == "compiled_zero_integral_gain_on_saturation"
     )
     embs = set(aw_row.embodiments)
     # The fixtures include UR5 controller windup AND quadrotor PID windup.
@@ -98,10 +105,13 @@ def test_report_is_deterministic() -> None:
 def test_known_pattern_filter_drops_unknown_pids(tmp_path) -> None:
     events = _read_all()
     failures = map_events_to_failures(events)
-    report = run_cross_embodiment_check(failures, known_pattern_ids={"anti_windup"})
-    # Anything except anti_windup must be filtered out.
+    report = run_cross_embodiment_check(
+        failures,
+        known_pattern_ids={"compiled_zero_integral_gain_on_saturation"},
+    )
+    # Anything except that single pattern must be filtered out.
     rows = {r.pattern_id for r in report.all_pattern_rows}
-    assert rows == {"anti_windup"}
+    assert rows == {"compiled_zero_integral_gain_on_saturation"}
     # And a note about manifest drift is recorded.
     assert any("not in current manifest" in n for n in report.notes)
 
@@ -120,13 +130,14 @@ def test_markdown_renders_sections() -> None:
     assert "Sprint 9" in md
     assert "Pattern reuse" in md
     assert "Acceptance gates" in md
-    assert "anti_windup" in md
+    assert "compiled_zero_integral_gain_on_saturation" in md
 
 
-def test_pattern_transfer_table_contains_anti_windup() -> None:
-    # Smoke: the transfer table must say controller_error → anti_windup.
-    assert "anti_windup" in PATTERN_TRANSFER_TABLE["controller_error"]
-    assert "anti_windup" in PATTERN_TRANSFER_TABLE["actuator_saturation"]
+def test_auto_derived_default_table_has_controller_error_bucket() -> None:
+    """Sprint 10: instead of the old hand-curated constant, assert auto table."""
+    table = load_default_transfer_table()
+    assert "controller_error" in table
+    assert "compiled_zero_integral_gain_on_saturation" in table["controller_error"]
 
 
 def test_isolated_single_embodiment_fails_gate(tmp_path) -> None:

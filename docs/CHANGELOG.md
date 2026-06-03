@@ -3,6 +3,87 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev10] — 2026-06-03 · v1.5 Sprint 10 — auto-derived cross-embodiment transfer table
+
+### Removed — Sprint 10 (replaces hand-curated Sprint 9 table)
+
+- **`cross_embodiment.PATTERN_TRANSFER_TABLE`** — the 8-row Sprint 9
+  hand-curated dict mapping `event_type → tuple[pattern_id, ...]` is
+  gone.  It claimed phantom pattern names like `"anti_windup"` and
+  `"controller_output_clamp"` that didn't exist in the catalog.
+
+### Added — Sprint 10
+
+- **`derive_pattern_transfer_table(failures, fix_patterns)`** — pure
+  function performing the structural join
+  `event_type ↔ FailureMode ↔ FixPattern.failure_ids`.  Output is
+  sorted-tuple-per-event_type so the mapping is deterministic.  Every
+  emitted `pattern_id` is a real catalog entry (`compiled_*` /
+  `candidate_*`); no phantom names possible.
+- **`load_default_transfer_table()`** — `lru_cache(1)` loader that
+  reads `data/assets/physical_graph.json` (for FixPattern nodes) plus
+  `data/assets/failure_taxonomy.yaml` (for FailureMode catalog) and
+  returns the derived mapping.  Empty dict when assets are missing so
+  CI / fresh checkouts don't crash.
+- **`_EVENT_TYPE_ALIASES`** — small taxonomic vocabulary (8 event_types
+  × 4–9 alias tokens each) used to bridge `RobotEvent.event_type`
+  domain language with catalog `FailureMode.normalized_symptom`.  This
+  is *vocabulary only* — no pattern_ids appear in this dict; that's
+  the manual layer we're explicitly NOT bringing back.
+- **`run_cross_embodiment_check(..., transfer_table=None)`** — the
+  default behaviour is to call `load_default_transfer_table`; callers
+  (tests, what-if) can still inject a custom mapping.
+
+### Tests
+
+- **`tests/test_cross_embodiment_auto.py`** (new, +16 cases) — pins
+  the pure function contract, empty-input edge cases, no-phantom
+  invariant, deterministic output, default-loader smoke tests, and
+  the `event_type` coverage gate (≥3 of 8).
+- **`tests/test_sim_ingest_cross_embodiment.py`** updated to assert
+  real catalog IDs (`compiled_zero_integral_gain_on_saturation`)
+  instead of the phantom `"anti_windup"` strings.
+
+### Why this matters
+
+The Sprint 9 hand-curated `PATTERN_TRANSFER_TABLE` was authored
+*before* the v2 catalog grew its `compiled_*` prefix convention.  As a
+result every Sprint 9 cross-embodiment report referenced pattern names
+that the runtime catalog had never heard of — the gate passed only
+because the names matched themselves, not because they linked to real
+patterns.  Sprint 10 deletes the manual table and proves the same
+acceptance gate from data, so the report's pattern_ids round-trip back
+to genuine catalog entries.
+
+### Acceptance proof (data/assets/sprint10_acceptance_report.json)
+
+```json
+{
+  "auto_derived_transfer_table": {
+    "actuator_saturation": ["compiled_controller_output_clamp",
+                            "compiled_zero_integral_gain_on_saturation"],
+    "controller_error":   ["compiled_zero_integral_gain_on_saturation"],
+    "task_timeout":       ["compiled_add_time_budget",
+                            "compiled_generic_time_budget",
+                            "compiled_warm_start_from_prior_best"]
+  },
+  "distinct_event_types": 3,
+  "distinct_patterns": 5,
+  "rules_emitted_from_data": 6,
+  "phantom_pattern_names_present": false
+}
+```
+
+Plan §Sprint 9 main gate (≥1 pattern transferable across ≥2
+embodiments) still passes on the unchanged Sprint 9 fixtures, with
+`compiled_zero_integral_gain_on_saturation` linking UR5 + quadrotor.
+
+### Tests summary
+
+```
+pytest -q  →  426 passed (was 410; +16 new in test_cross_embodiment_auto.py)
+```
+
 ## [1.5.0.dev9] — 2026-06-03 · v1.5 Sprint 3 收尾 — AES / CUDA / scheduling extractors
 
 ### Added — Sprint 3 收尾 (plan §11.4 final acceptance)

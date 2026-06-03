@@ -31,9 +31,10 @@ assertions.
 from __future__ import annotations
 
 from .cross_embodiment import (
-    PATTERN_TRANSFER_TABLE,
     CrossEmbodimentReport,
     PatternReuseRow,
+    derive_pattern_transfer_table,
+    load_default_transfer_table,
     run_cross_embodiment_check,
 )
 from .cross_embodiment import render_markdown as render_cross_embodiment_markdown
@@ -72,9 +73,10 @@ __all__ = (
     "parse_controller_config",
     "urdf_to_embodiment",
     "urdf_to_constraints",
-    "PATTERN_TRANSFER_TABLE",
     "PatternReuseRow",
     "CrossEmbodimentReport",
+    "derive_pattern_transfer_table",
+    "load_default_transfer_table",
     "run_cross_embodiment_check",
     "render_cross_embodiment_markdown",
 )

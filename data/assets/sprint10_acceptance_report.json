@@ -1,0 +1,20 @@
+{
+  "auto_derived_transfer_table": {
+    "actuator_saturation": [
+      "compiled_controller_output_clamp",
+      "compiled_zero_integral_gain_on_saturation"
+    ],
+    "controller_error": [
+      "compiled_zero_integral_gain_on_saturation"
+    ],
+    "task_timeout": [
+      "compiled_add_time_budget",
+      "compiled_generic_time_budget",
+      "compiled_warm_start_from_prior_best"
+    ]
+  },
+  "distinct_event_types": 3,
+  "distinct_patterns": 5,
+  "rules_emitted_from_data": 6,
+  "phantom_pattern_names_present": false
+}

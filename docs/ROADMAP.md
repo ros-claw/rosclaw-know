@@ -23,6 +23,7 @@ agents before they start.  Sprint plan source:
 | 7 | Task Pack API + MCP `rosclaw_task_pack` | ✅ shipped |
 | 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | ✅ shipped |
 | 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | ✅ shipped |
+| 10 | Auto-derived cross-embodiment transfer table (replaces Sprint 9 hand table) | ✅ shipped |
 
 ### Sprint 0 — Safety & sanity (shipped)
 
@@ -337,15 +338,44 @@ controller configs, URDF/e-URDF, collision reports, safety-stop events.
   `--rosbag` / `--isaac` / `--mujoco` / `--foxglove` / `--urdf`.
 - Reference run persisted at
   `data/assets/sprint9_ingest_reference.{json,md}`: 26 events from 4
-  adapters + 1 URDF → 21 FailureMode + 18 ConstraintPattern.  **3
-  patterns** (`add_boundary_validation`, `anti_windup`,
-  `controller_output_clamp`) confirmed cross-embodiment-transferable
-  between **ur5 and quadrotor**.
+  adapters + 1 URDF → 21 FailureMode + 18 ConstraintPattern.  Sprint 10
+  re-derived the transfer table from data, so the cross-embodiment row
+  now shows `compiled_zero_integral_gain_on_saturation` (the catalog's
+  anti-windup-equivalent) linking **ur5 and quadrotor**.
 - Acceptance gates (plan §Sprint 9):
   - Real/sim logs → FailureMode ✓ (21 from fixtures)
   - Sandbox collision report → ConstraintPattern ✓ (18 from URDF)
-  - Same pattern survives on ≥2 embodiments ✓ (3 patterns)
-- Tests: +65 across 5 new files.  Full suite **389 PASS**, 0 FAIL.
+  - Same pattern survives on ≥2 embodiments ✓ (1 catalog pattern after
+    Sprint 10's tightening; was 3 phantom-name patterns under Sprint 9)
+- Tests: +65 across 5 new files (Sprint 9) + 16 new (Sprint 10).
+  Full suite **426 PASS**, 0 FAIL.
+
+### Sprint 10 — Auto-derived cross-embodiment transfer table (shipped)
+
+Closes the hand-curated gap that Sprint 9 left behind.
+
+- `cross_embodiment.PATTERN_TRANSFER_TABLE` (the 8-row hand-curated
+  dict) — **removed**.
+- `derive_pattern_transfer_table(failures, fix_patterns)` — pure
+  function joining `event_type ↔ FailureMode ↔ FixPattern.failure_ids`.
+  Output is sorted-tuple-per-event_type for determinism.  Every
+  emitted `pattern_id` is a real catalog entry (`compiled_*` /
+  `candidate_*`); phantom names structurally impossible.
+- `load_default_transfer_table()` — `lru_cache(1)` loader over
+  `data/assets/physical_graph.json` + `failure_taxonomy.yaml`.
+- `_EVENT_TYPE_ALIASES` — taxonomic vocabulary only (8 event_types ×
+  4–9 tokens).  No pattern_ids; that's the manual layer we're
+  explicitly NOT bringing back.
+- `run_cross_embodiment_check(..., transfer_table=None)` — defaults to
+  the auto-derived table; injection supported for what-if / tests.
+- Acceptance proof (`data/assets/sprint10_acceptance_report.json`):
+  - 3 event_types covered (actuator_saturation, controller_error,
+    task_timeout)
+  - 5 distinct patterns, 6 rules total, all from data
+  - 0 phantom names
+- Tests: 16 new in `tests/test_cross_embodiment_auto.py` + 12 in
+  `tests/test_sim_ingest_cross_embodiment.py` updated to assert real
+  `compiled_*` IDs.
 
 ---
 

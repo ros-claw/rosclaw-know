@@ -37,18 +37,17 @@
 
 - distinct embodiments observed: 2
 - failure modes on ≥2 embodiments: 0
-- patterns on ≥2 embodiments: 3
+- patterns on ≥2 embodiments: 1
 
 ## Pattern reuse
 
 | pattern_id | event_types | embodiments | cross-embodiment? |
 |---|---|---|---|
-| add_boundary_validation | collision, controller_error, joint_limit_violation, safety_stop, sensor_outlier | quadrotor, ur5 | ✅ |
-| add_time_budget | task_timeout | ur5 |   |
-| anti_windup | actuator_saturation, controller_error | quadrotor, ur5 | ✅ |
-| controller_output_clamp | actuator_saturation, controller_error, joint_limit_violation, trajectory_deviation | quadrotor, ur5 | ✅ |
-| generic_time_budget | task_timeout | ur5 |   |
-| warm_start_from_prior_best | trajectory_deviation | ur5 |   |
+| compiled_add_time_budget | task_timeout | ur5 |   |
+| compiled_controller_output_clamp | actuator_saturation | quadrotor |   |
+| compiled_generic_time_budget | task_timeout | ur5 |   |
+| compiled_warm_start_from_prior_best | task_timeout | ur5 |   |
+| compiled_zero_integral_gain_on_saturation | actuator_saturation, controller_error | quadrotor, ur5 | ✅ |
 
 ## Acceptance gates
 

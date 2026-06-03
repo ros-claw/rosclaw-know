@@ -670,37 +670,10 @@
     "failures_seen_on_multiple_embodiments": [],
     "patterns_seen_on_multiple_embodiments": [
       {
-        "pattern_id": "add_boundary_validation",
-        "event_types": [
-          "collision",
-          "controller_error",
-          "joint_limit_violation",
-          "safety_stop",
-          "sensor_outlier"
-        ],
-        "embodiments": [
-          "quadrotor",
-          "ur5"
-        ]
-      },
-      {
-        "pattern_id": "anti_windup",
+        "pattern_id": "compiled_zero_integral_gain_on_saturation",
         "event_types": [
           "actuator_saturation",
           "controller_error"
-        ],
-        "embodiments": [
-          "quadrotor",
-          "ur5"
-        ]
-      },
-      {
-        "pattern_id": "controller_output_clamp",
-        "event_types": [
-          "actuator_saturation",
-          "controller_error",
-          "joint_limit_violation",
-          "trajectory_deviation"
         ],
         "embodiments": [
           "quadrotor",
@@ -710,21 +683,7 @@
     ],
     "all_pattern_rows": [
       {
-        "pattern_id": "add_boundary_validation",
-        "event_types": [
-          "collision",
-          "controller_error",
-          "joint_limit_violation",
-          "safety_stop",
-          "sensor_outlier"
-        ],
-        "embodiments": [
-          "quadrotor",
-          "ur5"
-        ]
-      },
-      {
-        "pattern_id": "add_time_budget",
+        "pattern_id": "compiled_add_time_budget",
         "event_types": [
           "task_timeout"
         ],
@@ -733,44 +692,40 @@
         ]
       },
       {
-        "pattern_id": "anti_windup",
+        "pattern_id": "compiled_controller_output_clamp",
+        "event_types": [
+          "actuator_saturation"
+        ],
+        "embodiments": [
+          "quadrotor"
+        ]
+      },
+      {
+        "pattern_id": "compiled_generic_time_budget",
+        "event_types": [
+          "task_timeout"
+        ],
+        "embodiments": [
+          "ur5"
+        ]
+      },
+      {
+        "pattern_id": "compiled_warm_start_from_prior_best",
+        "event_types": [
+          "task_timeout"
+        ],
+        "embodiments": [
+          "ur5"
+        ]
+      },
+      {
+        "pattern_id": "compiled_zero_integral_gain_on_saturation",
         "event_types": [
           "actuator_saturation",
           "controller_error"
         ],
         "embodiments": [
           "quadrotor",
-          "ur5"
-        ]
-      },
-      {
-        "pattern_id": "controller_output_clamp",
-        "event_types": [
-          "actuator_saturation",
-          "controller_error",
-          "joint_limit_violation",
-          "trajectory_deviation"
-        ],
-        "embodiments": [
-          "quadrotor",
-          "ur5"
-        ]
-      },
-      {
-        "pattern_id": "generic_time_budget",
-        "event_types": [
-          "task_timeout"
-        ],
-        "embodiments": [
-          "ur5"
-        ]
-      },
-      {
-        "pattern_id": "warm_start_from_prior_best",
-        "event_types": [
-          "trajectory_deviation"
-        ],
-        "embodiments": [
           "ur5"
         ]
       }
