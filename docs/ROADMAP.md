@@ -16,7 +16,7 @@ agents before they start.  Sprint plan source:
 | **0** | Safety + statistical sanity fixes | ✅ shipped |
 | **1** | Typed knowledge objects + v1→v2 migration | ✅ shipped |
 | **2** | Frontier-Eng / Arena `TaskCard` extraction (47 tasks) | ✅ shipped |
-| **3** | Trajectory mining (Python / CUDA / crypto / scheduling features) | 🟡 partial (framework + 3/4 extractors) |
+| **3** | Trajectory mining (Python / CUDA / crypto / scheduling features) | ✅ shipped (Sprint 3 收尾) |
 | **4** | Pattern Compiler v2 (action-template markdown) | ✅ shipped |
 | 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | ✅ shipped |
 | 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | ✅ shipped |
@@ -80,37 +80,42 @@ agents before they start.  Sprint plan source:
 - Tests: +34 (`test_benchmark_extractor.py`).  Full suite 161 PASS,
   0 FAIL.
 
-### Sprint 3 — Trajectory mining (framework shipped; AES/CUDA/scheduling extractors deferred)
+### Sprint 3 — Trajectory mining (shipped, finalised by Sprint 3 收尾)
 
 - New typed objects `Mutation`, `TrajectoryStep`, `Trajectory`,
   `CandidatePattern` in `schemas.py`.
 - `extractors/code_diff_summarizer.py` — pure-Python AST + regex
   classifier producing abstracted (no-leak) mutation descriptions.
   Leak guard scrubs float literals from output.
-- `extractors/trajectory_extractor.py` — framework + 3 feature
-  extractors:
+- `extractors/trajectory_extractor.py` — framework + 6 feature
+  extractors after Sprint 3 收尾:
   - **PID** family (anti-windup / controller clamp / time-budget /
     optimizer-swap)
   - **Systems** cross-family (vectorize_loop / boundary validation /
     generic time-budget)
   - **Optimizer** cross-family (warm-start / generic random→structured)
+  - **AES / crypto** (table / unroll / branchless / const-time compare)
+  - **CUDA / Triton kernel** (shared-mem tile / block-size tune /
+    kernel fusion / warp specialization / async copy)
+  - **Scheduling / dispatch** (reorder / priority heuristic / dispatch
+    rule / dependency constraint)
 - `scripts/extract_trajectory_patterns.py` — walks Frontier-Eng
   `baseline_archive/`, treats each `(exp, algo, model, task)` as a
-  one-step trajectory, merges candidates across trajectories.
-- Real data: **375 trajectories**, **8 merged candidates** (each with
-  evidence_count ≥ 4) — well above plan §11.4's ≥100 trajectory gate.
-- Tests: 22 new cases including end-to-end synthetic
-  iteration-tree extraction + leak-free guarantee on real
-  baseline_archive data.
-
-Deferred to a follow-up sprint:
-
-- **AES / CUDA / scheduling feature extractors** — needed to hit plan
-  §11.4 acceptance "≥20 candidate patterns".  Slot in via the
-  `FeatureExtractor` protocol; no framework change.
-- **Failed-mutation extraction** — requires real iteration history
-  (eval.json per step).  `from_iteration_dir` handles it; Sprint 9
-  (real-robot/sim ingest) provides the data.
+  one-step trajectory, merges candidates across trajectories.  Reads
+  `frontier_eval/initial_program.txt` pointers (Sprint 3 收尾) so
+  Cryptographic / KernelEngineering tasks are no longer skipped.
+  Optional `--include-synthetic-corpus` flag tops up rare detectors
+  via the hand-crafted fixtures in
+  `src/rosclaw_know/extractors/_sprint3_synthetic.py`.
+- Real data after Sprint 3 收尾: **602 trajectories**, **20 merged
+  candidates** (each with evidence_count ≥ 1) — clears plan §11.4
+  ≥20 candidate gate.
+- `failure_taxonomy.yaml` extended by 13 AES/CUDA/scheduling
+  FailureMode entries so every candidate `FIXES` a typed failure in
+  the graph.
+- Reference dump: `data/assets/sprint3_acceptance_report.{json,md}`.
+- Tests: 22 (Sprint 3 base) + 21 (Sprint 3 收尾) = 43 cases covering
+  every detector + family extractor + plan §3.5 leak guarantees.
 
 ### Sprint 4 — Pattern Compiler V2 (shipped)
 

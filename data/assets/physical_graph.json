@@ -396,6 +396,323 @@
       "id": "failure_generic_cold_start_search"
     },
     {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_aes_byte_op_overhead",
+        "name": "AES Byte-Op Overhead",
+        "domain": "Systems_Compute",
+        "symptom_text": "Per-byte AES (sbox + shift + mix as separate ops) is dominated by byte arithmetic; throughput well below memory bandwidth.",
+        "normalized_symptom": "aes_per_byte_arithmetic_dominates",
+        "observable_signals": [
+          "throughput stays well below the CPU-memory ceiling",
+          "profiler shows arithmetic-unit saturation"
+        ],
+        "likely_causes": [
+          "sbox and mix-columns implemented as discrete byte ops",
+          "no T-table consolidation"
+        ],
+        "contraindications": [
+          "do not just inline more — the win comes from merging ops, not unrolling them"
+        ],
+        "severity": "warning",
+        "schema_version": "2.0"
+      },
+      "id": "failure_aes_byte_op_overhead"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_aes_branch_mispredict",
+        "name": "AES Round-Loop Branch Mispredict",
+        "domain": "Systems_Compute",
+        "symptom_text": "Loop over 10 AES rounds keeps a counter live and exposes a predictable but non-free branch each iteration.",
+        "normalized_symptom": "aes_round_loop_branch_cost",
+        "observable_signals": [
+          "profiler reports BR_MISP_RETIRED inside the round function",
+          "per-block throughput plateaus despite cache hits"
+        ],
+        "likely_causes": [
+          "rounds expressed as a Python / C++ ``for`` loop",
+          "no #pragma unroll on the inner loop"
+        ],
+        "contraindications": [
+          "do not unroll past the I-cache size on small cores"
+        ],
+        "severity": "info",
+        "schema_version": "2.0"
+      },
+      "id": "failure_aes_branch_mispredict"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_aes_timing_side_channel",
+        "name": "AES Timing Side Channel",
+        "domain": "Systems_Compute",
+        "symptom_text": "Secret-dependent conditional moves leak whether the key bit was 0 or 1 via branch-predictor state.",
+        "normalized_symptom": "aes_secret_dependent_branch",
+        "observable_signals": [
+          "wall-clock differs measurably with key value",
+          "timing-side-channel test in the verifier fails"
+        ],
+        "likely_causes": [
+          "ternary / if-else on a secret value in the hot path",
+          "no branchless lowering of conditional ops"
+        ],
+        "contraindications": [
+          "branchless rewrites on every comparison can hurt non-secret-dependent paths"
+        ],
+        "severity": "warning",
+        "schema_version": "2.0"
+      },
+      "id": "failure_aes_timing_side_channel"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_aes_early_exit_compare",
+        "name": "AES Early-Exit MAC Compare",
+        "domain": "Systems_Compute",
+        "symptom_text": "memcmp-style tag verification stops at the first mismatch, letting an attacker recover the tag one byte at a time.",
+        "normalized_symptom": "aes_tag_compare_early_exit",
+        "observable_signals": [
+          "verifier flags constant-time compare regression",
+          "byte-by-byte wall-clock differential on injected mismatches"
+        ],
+        "likely_causes": [
+          "tag comparison via stock memcmp / standard equality",
+          "no constant-time helper imported"
+        ],
+        "contraindications": [
+          "do not roll your own constant-time compare — use the vetted helper"
+        ],
+        "severity": "safety_critical",
+        "schema_version": "2.0"
+      },
+      "id": "failure_aes_early_exit_compare"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_cuda_global_memory_bound",
+        "name": "CUDA Global-Memory-Bound Kernel",
+        "domain": "Systems_Compute",
+        "symptom_text": "Hot kernel re-reads the same input element from global memory across many threads; bandwidth, not compute, caps performance.",
+        "normalized_symptom": "cuda_global_memory_reuse",
+        "observable_signals": [
+          "Nsight reports memory throughput saturated and tensor cores idle",
+          "tokens/sec scales with bandwidth, not FLOPs"
+        ],
+        "likely_causes": [
+          "inputs never promoted to shared memory",
+          "tile loop missing"
+        ],
+        "contraindications": [
+          "shared memory is scarce; over-tiling reduces occupancy"
+        ],
+        "severity": "warning",
+        "schema_version": "2.0"
+      },
+      "id": "failure_cuda_global_memory_bound"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_cuda_occupancy_too_low",
+        "name": "CUDA Low-Occupancy Kernel",
+        "domain": "Systems_Compute",
+        "symptom_text": "Conservative block size leaves the SM underutilised; throughput stays well below theoretical peak.",
+        "normalized_symptom": "cuda_low_occupancy",
+        "observable_signals": [
+          "achieved occupancy < 50% on Nsight",
+          "register spill warnings absent (compute under-used)"
+        ],
+        "likely_causes": [
+          "hand-picked BLOCK_M / BLOCK_N too small",
+          "num_warps / num_stages defaults left untouched"
+        ],
+        "contraindications": [
+          "do not hard-code the tuned value across SM counts"
+        ],
+        "severity": "info",
+        "schema_version": "2.0"
+      },
+      "id": "failure_cuda_occupancy_too_low"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_cuda_launch_overhead",
+        "name": "CUDA Kernel-Launch Overhead",
+        "domain": "Systems_Compute",
+        "symptom_text": "Two kernels chained back-to-back pay double launch cost and round-trip activations through global memory.",
+        "normalized_symptom": "cuda_back_to_back_launches",
+        "observable_signals": [
+          "wall-clock dominated by launch latency on small batches",
+          "activations written then immediately re-read"
+        ],
+        "likely_causes": [
+          "softmax + matmul left as separate kernels",
+          "missing fusion pass"
+        ],
+        "contraindications": [
+          "fusion raises register pressure — watch for spill"
+        ],
+        "severity": "info",
+        "schema_version": "2.0"
+      },
+      "id": "failure_cuda_launch_overhead"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_cuda_load_compute_serialization",
+        "name": "CUDA Load/Compute Serialised",
+        "domain": "Systems_Compute",
+        "symptom_text": "Synchronous global → shared loads stall the warp and leave tensor cores idle between tiles.",
+        "normalized_symptom": "cuda_serialised_load_compute",
+        "observable_signals": [
+          "Nsight shows compute SOL much lower than memory SOL",
+          "no overlap between load and MMA stages on the timeline"
+        ],
+        "likely_causes": [
+          "blocking ldg / __ldcs in the inner loop",
+          "no warp specialization or async pipeline"
+        ],
+        "contraindications": [
+          "warp specialization requires sm_80+; falls back hurts older devices"
+        ],
+        "severity": "info",
+        "schema_version": "2.0"
+      },
+      "id": "failure_cuda_load_compute_serialization"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "failure_cuda_blocking_load",
+        "name": "CUDA Blocking Global Load",
+        "domain": "Systems_Compute",
+        "symptom_text": "Synchronous ldg / __ldcs stall the warp; compute cannot overlap with the next tile's load.",
+        "normalized_symptom": "cuda_blocking_global_load",
+        "observable_signals": [
+          "profiler reports memory stalls between MMA stages"
+        ],
+        "likely_causes": [
+          "cp.async / tl.async_copy not used"
+        ],
+        "contraindications": [
+          "async copies require careful wait_group fences"
+        ],
+        "severity": "info",
+        "schema_version": "2.0"
+      },
+      "id": "failure_cuda_blocking_load"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "failure_sched_arrival_order_makespan",
+        "name": "Scheduler Arrival-Order Bias",
+        "domain": "Planning_Decision",
+        "symptom_text": "Baseline schedules in input order, leaving slack that any priority sort would recover.",
+        "normalized_symptom": "sched_arrival_order_only",
+        "observable_signals": [
+          "makespan exceeds known lower bound on standard instances",
+          "utilization on bottleneck machine well below 100%"
+        ],
+        "likely_causes": [
+          "no sorting / priority pass on the job list"
+        ],
+        "contraindications": [
+          "static priority rules struggle under high resource contention"
+        ],
+        "severity": "warning",
+        "schema_version": "2.0"
+      },
+      "id": "failure_sched_arrival_order_makespan"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "failure_sched_no_priority_rule",
+        "name": "Scheduler Missing Priority Rule",
+        "domain": "Planning_Decision",
+        "symptom_text": "Ad-hoc dispatch lacks a named priority (SPT / EDD / LPT / slack), so behaviour does not scale with instance size.",
+        "normalized_symptom": "sched_unprincipled_dispatch",
+        "observable_signals": [
+          "performance gap widens with instance size",
+          "ablation shows random priority beats the baseline"
+        ],
+        "likely_causes": [
+          "dispatch loop picks the first ready job verbatim"
+        ],
+        "contraindications": [
+          "do not freeze the priority weights at the values that tuned one instance"
+        ],
+        "severity": "warning",
+        "schema_version": "2.0"
+      },
+      "id": "failure_sched_no_priority_rule"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "failure_sched_greedy_dispatch_bias",
+        "name": "Scheduler Greedy Dispatch Bias",
+        "domain": "Planning_Decision",
+        "symptom_text": "Greedy ready-list selection without a named rule loses tail-end optimisations available to Johnson / FFD.",
+        "normalized_symptom": "sched_unnamed_greedy_dispatch",
+        "observable_signals": [
+          "schedule looks good early but late-job tardiness explodes",
+          "same instance solved in more dispatch decisions than necessary"
+        ],
+        "likely_causes": [
+          "dispatch implemented inline without a named-rule abstraction"
+        ],
+        "contraindications": [],
+        "severity": "info",
+        "schema_version": "2.0"
+      },
+      "id": "failure_sched_greedy_dispatch_bias"
+    },
+    {
+      "node_type": "FailureMode",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "failure_sched_dependency_violations",
+        "name": "Scheduler Dependency Violations",
+        "domain": "Planning_Decision",
+        "symptom_text": "Schedules emit infeasible orderings because precedence / resource caps are checked post-hoc rather than enforced during dispatch.",
+        "normalized_symptom": "sched_dependency_postcheck",
+        "observable_signals": [
+          "verifier reports precedence violation",
+          "repair pass needed before every submission"
+        ],
+        "likely_causes": [
+          "precedence / resource constraints not propagated into the eligibility test"
+        ],
+        "contraindications": [
+          "do not let repair loops grow without bound — fix the source"
+        ],
+        "severity": "safety_critical",
+        "schema_version": "2.0"
+      },
+      "id": "failure_sched_dependency_violations"
+    },
+    {
       "node_type": "FixPattern",
       "domain": "Systems_Compute",
       "payload": {
@@ -425,27 +742,36 @@
           "experiment1__openevolve__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
           "experiment1__openevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__claude-opus-4.6__KernelEngineering_MLA",
+          "experiment1__openevolve__claude-opus-4.6__SingleCellAnalysis_predict_modality",
           "experiment1__openevolve__deepseek-v3.2__Aerodynamics_CarAerodynamicsSensing",
           "experiment1__openevolve__deepseek-v3.2__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__deepseek-v3.2__KernelEngineering_MLA",
+          "experiment1__openevolve__deepseek-v3.2__SingleCellAnalysis_predict_modality",
           "experiment1__openevolve__gemini-3.1-pro-preview__Aerodynamics_CarAerodynamicsSensing",
           "experiment1__openevolve__gemini-3.1-pro-preview__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__gemini-3.1-pro-preview__KernelEngineering_MLA",
+          "experiment1__openevolve__gemini-3.1-pro-preview__SingleCellAnalysis_predict_modality",
           "experiment1__openevolve__glm-5__Aerodynamics_CarAerodynamicsSensing",
           "experiment1__openevolve__glm-5__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__glm-5__KernelEngineering_MLA",
+          "experiment1__openevolve__glm-5__SingleCellAnalysis_predict_modality",
           "experiment1__openevolve__gpt-5.4__Aerodynamics_CarAerodynamicsSensing",
           "experiment1__openevolve__gpt-5.4__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__gpt-5.4__KernelEngineering_MLA",
+          "experiment1__openevolve__gpt-5.4__SingleCellAnalysis_predict_modality",
           "experiment1__openevolve__grok-4.20__Aerodynamics_CarAerodynamicsSensing",
           "experiment1__openevolve__grok-4.20__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__grok-4.20__KernelEngineering_MLA",
+          "experiment1__openevolve__grok-4.20__SingleCellAnalysis_predict_modality",
           "experiment1__openevolve__qwen3-coder-next__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__qwen3-coder-next__KernelEngineering_MLA",
+          "experiment1__openevolve__qwen3-coder-next__SingleCellAnalysis_predict_modality",
           "experiment1__openevolve__seed-2.0-pro__Aerodynamics_CarAerodynamicsSensing",
           "experiment1__openevolve__seed-2.0-pro__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__seed-2.0-pro__KernelEngineering_MLA",
+          "experiment1__openevolve__seed-2.0-pro__SingleCellAnalysis_predict_modality",
           "experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
+          "experiment2__abmcts__claude-opus-4.6__SingleCellAnalysis_predict_modality",
           "experiment2__abmcts__gpt-oss-120b__Aerodynamics_CarAerodynamicsSensing",
           "experiment2__abmcts__gpt-oss-120b__Astrodynamics_MannedLunarLanding",
           "experiment2__abmcts__gpt-oss-120b__InventoryOptimization_disruption_eoqd",
@@ -453,16 +779,21 @@
           "experiment2__openevolve__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
           "experiment2__openevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding",
           "experiment2__openevolve__claude-opus-4.6__KernelEngineering_MLA",
+          "experiment2__openevolve__claude-opus-4.6__SingleCellAnalysis_predict_modality",
           "experiment2__openevolve__gpt-oss-120b__Aerodynamics_CarAerodynamicsSensing",
           "experiment2__openevolve__gpt-oss-120b__Astrodynamics_MannedLunarLanding",
           "experiment2__openevolve__gpt-oss-120b__InventoryOptimization_disruption_eoqd",
           "experiment2__openevolve__gpt-oss-120b__KernelEngineering_MLA",
+          "experiment2__openevolve__gpt-oss-120b__SingleCellAnalysis_predict_modality",
           "experiment2__shinkaevolve__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
           "experiment2__shinkaevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding",
           "experiment2__shinkaevolve__claude-opus-4.6__KernelEngineering_MLA",
+          "experiment2__shinkaevolve__claude-opus-4.6__SingleCellAnalysis_predict_modality",
           "experiment2__shinkaevolve__gpt-oss-120b__Aerodynamics_CarAerodynamicsSensing",
           "experiment2__shinkaevolve__gpt-oss-120b__Astrodynamics_MannedLunarLanding",
-          "experiment2__shinkaevolve__gpt-oss-120b__KernelEngineering_MLA"
+          "experiment2__shinkaevolve__gpt-oss-120b__KernelEngineering_MLA",
+          "experiment2__shinkaevolve__gpt-oss-120b__Robotics_QuadrupedGaitOptimization",
+          "experiment2__shinkaevolve__gpt-oss-120b__SingleCellAnalysis_predict_modality"
         ],
         "schema_version": "2.0"
       },
@@ -503,6 +834,219 @@
         "schema_version": "2.0"
       },
       "id": "compiled_add_time_budget"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_aes_branchless_select",
+        "failure_ids": [
+          "failure_aes_timing_side_channel"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "Secret-dependent conditional moves leak whether the key bit was 0 or 1 via branch-predictor state.",
+        "preconditions": [
+          "Observable signal: wall-clock differs measurably with key value",
+          "Observable signal: timing-side-channel test in the verifier fails"
+        ],
+        "implementation_steps": [
+          "- Introduced a branchless / constant-time select in place of an if-branch.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "timing-side-channel test in the verifier (when present) stops flagging correlated wall-clock per key bit."
+        ],
+        "anti_patterns": [
+          "branchless rewrites on every comparison can hurt non-secret-dependent paths",
+          "branchless selects on every comparison can hurt throughput on hot paths that are *not* secret-dependent — apply selectively.",
+          "branchless rewrites on every comparison can hurt non-secret-dependent paths"
+        ],
+        "source_ids": [
+          "experiment1__openevolve__claude-opus-4.6__Cryptographic_AES-128",
+          "experiment1__openevolve__claude-opus-4.6__InventoryOptimization_finite_horizon_dp",
+          "experiment1__openevolve__claude-opus-4.6__Optics_fiber_wdm_channel_power_allocation",
+          "experiment1__openevolve__claude-opus-4.6__Optics_holographic_multifocus_power_ratio",
+          "experiment1__openevolve__claude-opus-4.6__Optics_holographic_multiplane_focusing",
+          "experiment1__openevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__deepseek-v3.2__Optics_fiber_guardband_spectrum_packing",
+          "experiment1__openevolve__deepseek-v3.2__Optics_fiber_wdm_channel_power_allocation",
+          "experiment1__openevolve__deepseek-v3.2__Optics_holographic_multifocus_power_ratio",
+          "experiment1__openevolve__deepseek-v3.2__Optics_holographic_multiplane_focusing",
+          "experiment1__openevolve__gemini-3.1-pro-preview__Aerodynamics_CarAerodynamicsSensing",
+          "experiment1__openevolve__gemini-3.1-pro-preview__Optics_holographic_multifocus_power_ratio",
+          "experiment1__openevolve__gemini-3.1-pro-preview__Optics_holographic_multiplane_focusing",
+          "experiment1__openevolve__gemini-3.1-pro-preview__Optics_phase_fourier_pattern_holography",
+          "experiment1__openevolve__gemini-3.1-pro-preview__Robotics_RobotArmCycleTimeOptimization",
+          "experiment1__openevolve__glm-5__Optics_fiber_wdm_channel_power_allocation",
+          "experiment1__openevolve__glm-5__Optics_holographic_multifocus_power_ratio",
+          "experiment1__openevolve__glm-5__Optics_holographic_multiplane_focusing",
+          "experiment1__openevolve__glm-5__Optics_phase_fourier_pattern_holography",
+          "experiment1__openevolve__glm-5__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__gpt-5.4__ComputerSystems_MallocLab",
+          "experiment1__openevolve__grok-4.20__Optics_holographic_multifocus_power_ratio",
+          "experiment1__openevolve__grok-4.20__Optics_holographic_multiplane_focusing",
+          "experiment1__openevolve__grok-4.20__Optics_phase_dammann_uniform_orders",
+          "experiment1__openevolve__grok-4.20__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__qwen3-coder-next__Aerodynamics_CarAerodynamicsSensing",
+          "experiment1__openevolve__qwen3-coder-next__Optics_holographic_multifocus_power_ratio",
+          "experiment1__openevolve__qwen3-coder-next__Optics_holographic_multiplane_focusing",
+          "experiment1__openevolve__seed-2.0-pro__Optics_fiber_guardband_spectrum_packing",
+          "experiment1__openevolve__seed-2.0-pro__Optics_holographic_multifocus_power_ratio",
+          "experiment1__openevolve__seed-2.0-pro__Optics_holographic_multiplane_focusing",
+          "experiment1__openevolve__seed-2.0-pro__Robotics_RobotArmCycleTimeOptimization",
+          "experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
+          "experiment2__abmcts__claude-opus-4.6__KernelEngineering_FlashAttention",
+          "experiment2__abmcts__claude-opus-4.6__Optics_fiber_wdm_channel_power_allocation",
+          "experiment2__abmcts__claude-opus-4.6__Optics_holographic_multifocus_power_ratio",
+          "experiment2__abmcts__claude-opus-4.6__Optics_holographic_multiplane_focusing",
+          "experiment2__abmcts__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__abmcts__claude-opus-4.6__Robotics_PIDTuning",
+          "experiment2__abmcts__claude-opus-4.6__StructuralOptimization_TopologyOptimization",
+          "experiment2__abmcts__gpt-oss-120b__Optics_holographic_multifocus_power_ratio",
+          "experiment2__abmcts__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__openevolve__claude-opus-4.6__Cryptographic_AES-128",
+          "experiment2__openevolve__claude-opus-4.6__InventoryOptimization_finite_horizon_dp",
+          "experiment2__openevolve__claude-opus-4.6__Optics_fiber_wdm_channel_power_allocation",
+          "experiment2__openevolve__claude-opus-4.6__Optics_holographic_multifocus_power_ratio",
+          "experiment2__openevolve__claude-opus-4.6__Optics_holographic_multiplane_focusing",
+          "experiment2__openevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__openevolve__gpt-oss-120b__Optics_fiber_wdm_channel_power_allocation",
+          "experiment2__openevolve__gpt-oss-120b__Optics_holographic_multifocus_power_ratio",
+          "experiment2__openevolve__gpt-oss-120b__Optics_holographic_multiplane_focusing",
+          "experiment2__openevolve__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__openevolve__gpt-oss-120b__StructuralOptimization_TopologyOptimization",
+          "experiment2__shinkaevolve__claude-opus-4.6__Cryptographic_SHA-256",
+          "experiment2__shinkaevolve__claude-opus-4.6__InventoryOptimization_finite_horizon_dp",
+          "experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_mcs_power_scheduling",
+          "experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_wdm_channel_power_allocation",
+          "experiment2__shinkaevolve__claude-opus-4.6__Optics_holographic_multifocus_power_ratio",
+          "experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2015",
+          "experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2023",
+          "experiment2__shinkaevolve__gpt-oss-120b__Optics_fiber_wdm_channel_power_allocation",
+          "experiment2__shinkaevolve__gpt-oss-120b__Optics_phase_fourier_pattern_holography",
+          "experiment2__shinkaevolve__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__shinkaevolve__gpt-oss-120b__StructuralOptimization_ISCSO2023",
+          "synthetic__aes-128",
+          "synthetic__flashattention"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_aes_branchless_select"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_aes_constant_time_compare",
+        "failure_ids": [
+          "failure_aes_early_exit_compare"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "memcmp-style tag verification stops at the first mismatch, letting an attacker recover the tag one byte at a time.",
+        "preconditions": [
+          "Observable signal: verifier flags constant-time compare regression",
+          "Observable signal: byte-by-byte wall-clock differential on injected mismatches"
+        ],
+        "implementation_steps": [
+          "- Replaced early-exit memcmp with a constant-time comparison helper.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "verifier's tag-validation tests still pass; timing test (if any) reports flat wall-clock independent of mismatch position."
+        ],
+        "anti_patterns": [
+          "do not roll your own constant-time compare — use the vetted helper",
+          "do not roll your own constant-time compare — use the vetted helper"
+        ],
+        "source_ids": [
+          "synthetic__aes-128"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_aes_constant_time_compare"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_aes_unroll_round_structure",
+        "failure_ids": [
+          "failure_aes_branch_mispredict"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "Loop over 10 AES rounds keeps a counter live and exposes a predictable but non-free branch each iteration.",
+        "preconditions": [
+          "Observable signal: profiler reports BR_MISP_RETIRED inside the round function",
+          "Observable signal: per-block throughput plateaus despite cache hits"
+        ],
+        "implementation_steps": [
+          "- Manually unrolled round structure (symbol count rose above baseline).",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "throughput per block goes up without losing correctness on test vectors."
+        ],
+        "anti_patterns": [
+          "do not unroll past the I-cache size on small cores",
+          "manual unrolling can blow the I-cache on smaller cores; prefer the pragma form when available.",
+          "do not unroll past the I-cache size on small cores"
+        ],
+        "source_ids": [
+          "experiment1__openevolve__qwen3-coder-next__Cryptographic_AES-128",
+          "experiment1__openevolve__seed-2.0-pro__Cryptographic_SHA-256",
+          "experiment2__shinkaevolve__gpt-oss-120b__Cryptographic_AES-128",
+          "synthetic__aes-128"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_aes_unroll_round_structure"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_aes_use_precomputed_tables",
+        "failure_ids": [
+          "failure_aes_byte_op_overhead"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "Per-byte AES (sbox + shift + mix as separate ops) is dominated by byte arithmetic; throughput well below memory bandwidth.",
+        "preconditions": [
+          "Observable signal: throughput stays well below the CPU-memory ceiling",
+          "Observable signal: profiler shows arithmetic-unit saturation",
+          "Symbols present in the editable artifact: `rcon`, `sbox`, `te0`, `te1`"
+        ],
+        "implementation_steps": [
+          "- Added lookup table rcon.\n- Added lookup table sbox.\n- Added lookup table te0.\n- Added lookup table te1.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "Search the editable artifact for these identifiers and treat their definitions as the patch site: `rcon`, `sbox`, `te0`, `te1`."
+        ],
+        "expected_verifier_signals": [
+          "throughput rises; verifier reports correct ciphertext for every test vector at higher MB/s."
+        ],
+        "anti_patterns": [
+          "do not just inline more — the win comes from merging ops, not unrolling them",
+          "do not embed the actual sbox bytes into the pattern — ship the *structural* recommendation (\"add a 256-entry lookup table indexed by state byte\"), not the bytes themselves (plan §3.5).",
+          "T-tables increase code size and instruction cache pressure — verify on the target machine before adopting.",
+          "do not just inline more — the win comes from merging ops, not unrolling them"
+        ],
+        "source_ids": [
+          "synthetic__aes-128"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_aes_use_precomputed_tables"
     },
     {
       "node_type": "FixPattern",
@@ -556,6 +1100,152 @@
     },
     {
       "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_cuda_async_global_to_shared_copy",
+        "failure_ids": [
+          "failure_cuda_blocking_load"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "Synchronous ldg / __ldcs stall the warp; compute cannot overlap with the next tile's load.",
+        "preconditions": [
+          "Observable signal: profiler reports memory stalls between MMA stages"
+        ],
+        "implementation_steps": [
+          "- Introduced asynchronous global→shared copies to overlap load with compute.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "Nsight reports the load stage and compute stage overlapping; total kernel time drops."
+        ],
+        "anti_patterns": [
+          "async copies require careful wait_group fences",
+          "async copies require careful ``cp.async.wait_group`` fences — missing fences are a correctness bug, not a perf bug.",
+          "async copies require careful wait_group fences"
+        ],
+        "source_ids": [
+          "synthetic__flashattention"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_cuda_async_global_to_shared_copy"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_cuda_shared_memory_tiling",
+        "failure_ids": [
+          "failure_cuda_global_memory_bound"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "Hot kernel re-reads the same input element from global memory across many threads; bandwidth, not compute, caps performance.",
+        "preconditions": [
+          "Observable signal: Nsight reports memory throughput saturated and tensor cores idle",
+          "Observable signal: tokens/sec scales with bandwidth, not FLOPs"
+        ],
+        "implementation_steps": [
+          "- Promoted reused inputs into shared-memory tiles before the inner reduction.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "tokens-per-sec or GB/s climbs; correctness vs reference kernel stays within tolerance."
+        ],
+        "anti_patterns": [
+          "shared memory is scarce; over-tiling reduces occupancy",
+          "shared memory is a scarce resource — over-tiling forces low occupancy and may regress.  Tile size must respect ``cudaDeviceGetAttribute(maxSharedMemoryPerBlock)``.",
+          "tile boundaries must guard against masked / partial loads or you'll silently read garbage on the edge.",
+          "shared memory is scarce; over-tiling reduces occupancy"
+        ],
+        "source_ids": [
+          "experiment2__abmcts__claude-opus-4.6__KernelEngineering_FlashAttention",
+          "synthetic__flashattention"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_cuda_shared_memory_tiling"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_cuda_tune_block_size",
+        "failure_ids": [
+          "failure_cuda_occupancy_too_low"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "Conservative block size leaves the SM underutilised; throughput stays well below theoretical peak.",
+        "preconditions": [
+          "Observable signal: achieved occupancy < 50% on Nsight",
+          "Observable signal: register spill warnings absent (compute under-used)",
+          "Symbols present in the editable artifact: `BLOCK_M`, `BLOCK_N`, `num_stages`, `num_warps`"
+        ],
+        "implementation_steps": [
+          "- Introduced block-size constant block_m.\n- Introduced block-size constant block_n.\n- Introduced block-size constant num_stages.\n- Introduced block-size constant num_warps.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "Search the editable artifact for these identifiers and treat their definitions as the patch site: `BLOCK_M`, `BLOCK_N`, `num_stages`, `num_warps`."
+        ],
+        "expected_verifier_signals": [
+          "throughput rises on the target device; reduced number of register-spill warnings."
+        ],
+        "anti_patterns": [
+          "do not hard-code the tuned value across SM counts",
+          "do not hard-code the tuned values — keep them as named constants so an agent on a different SM count can re-tune.  Plan §3.5: ship the *symbol*, not the answer.",
+          "do not hard-code the tuned value across SM counts"
+        ],
+        "source_ids": [
+          "synthetic__flashattention"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_cuda_tune_block_size"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Systems_Compute",
+      "payload": {
+        "id": "compiled_cuda_warp_specialization",
+        "failure_ids": [
+          "failure_cuda_load_compute_serialization"
+        ],
+        "domain": "Systems_Compute",
+        "fix_summary": "Synchronous global → shared loads stall the warp and leave tensor cores idle between tiles.",
+        "preconditions": [
+          "Observable signal: Nsight shows compute SOL much lower than memory SOL",
+          "Observable signal: no overlap between load and MMA stages on the timeline"
+        ],
+        "implementation_steps": [
+          "- Split warps into producer / consumer roles for double-buffered load + compute.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "throughput climbs on Hopper / Ampere targets; tensor-core SOL grows in Nsight."
+        ],
+        "anti_patterns": [
+          "warp specialization requires sm_80+; falls back hurts older devices",
+          "older architectures (sm < 80) cannot benefit and may regress because of the extra synchronisation.",
+          "warp specialization requires sm_80+; falls back hurts older devices"
+        ],
+        "source_ids": [
+          "synthetic__flashattention"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_cuda_warp_specialization"
+    },
+    {
+      "node_type": "FixPattern",
       "domain": "World_Physics",
       "payload": {
         "id": "compiled_generic_time_budget",
@@ -582,17 +1272,242 @@
         ],
         "source_ids": [
           "experiment1__openevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing",
+          "experiment1__openevolve__claude-opus-4.6__QuantumComputing_task_03_cross_target_qaoa",
           "experiment1__openevolve__glm-5__Optics_holographic_multiplane_focusing",
           "experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
+          "experiment2__abmcts__claude-opus-4.6__QuantumComputing_task_01_routing_qftentangled",
+          "experiment2__abmcts__claude-opus-4.6__QuantumComputing_task_02_clifford_t_synthesis",
           "experiment2__abmcts__gpt-oss-120b__Optics_phase_dammann_uniform_orders",
           "experiment2__abmcts__gpt-oss-120b__StructuralOptimization_ISCSO2023",
           "experiment2__openevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing",
+          "experiment2__openevolve__claude-opus-4.6__QuantumComputing_task_03_cross_target_qaoa",
           "experiment2__openevolve__gpt-oss-120b__Optics_fiber_guardband_spectrum_packing",
-          "experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing"
+          "experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing",
+          "experiment2__shinkaevolve__claude-opus-4.6__QuantumComputing_task_03_cross_target_qaoa",
+          "experiment2__shinkaevolve__claude-opus-4.6__Robotics_QuadrupedGaitOptimization"
         ],
         "schema_version": "2.0"
       },
       "id": "compiled_generic_time_budget"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "compiled_sched_explicit_dependency_constraints",
+        "failure_ids": [
+          "failure_sched_dependency_violations"
+        ],
+        "domain": "Planning_Decision",
+        "fix_summary": "Schedules emit infeasible orderings because precedence / resource caps are checked post-hoc rather than enforced during dispatch.",
+        "preconditions": [
+          "Observable signal: verifier reports precedence violation",
+          "Observable signal: repair pass needed before every submission"
+        ],
+        "implementation_steps": [
+          "- Explicitly threaded precedence / resource-capacity constraints through the scheduler.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "validity_preservation_rate stays high even on dense instances; fewer repair iterations needed."
+        ],
+        "anti_patterns": [
+          "do not let repair loops grow without bound — fix the source",
+          "do not let repair loops grow without bound — fix the source"
+        ],
+        "source_ids": [
+          "experiment1__openevolve__qwen3-coder-next__JobShop_swv",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_swv",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_ta",
+          "synthetic__jobshop_abz"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_sched_explicit_dependency_constraints"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "compiled_sched_explicit_operation_ordering",
+        "failure_ids": [
+          "failure_sched_arrival_order_makespan"
+        ],
+        "domain": "Planning_Decision",
+        "fix_summary": "Baseline schedules in input order, leaving slack that any priority sort would recover.",
+        "preconditions": [
+          "Observable signal: makespan exceeds known lower bound on standard instances",
+          "Observable signal: utilization on bottleneck machine well below 100%"
+        ],
+        "implementation_steps": [
+          "- Added an explicit ordering pass over the job/operation list before scheduling.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "The whole editable artifact is the patch site."
+        ],
+        "expected_verifier_signals": [
+          "makespan drops; verifier reports lower bound met more often."
+        ],
+        "anti_patterns": [
+          "static priority rules struggle under high resource contention",
+          "static priority rules struggle on instances with high resource contention — keep the rule swappable.",
+          "static priority rules struggle under high resource contention"
+        ],
+        "source_ids": [
+          "experiment1__openevolve__claude-opus-4.6__JobShop_abz",
+          "experiment1__openevolve__claude-opus-4.6__JobShop_swv",
+          "experiment1__openevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing",
+          "experiment1__openevolve__claude-opus-4.6__Optics_fiber_mcs_power_scheduling",
+          "experiment1__openevolve__claude-opus-4.6__QuantumComputing_task_01_routing_qftentangled",
+          "experiment1__openevolve__claude-opus-4.6__ReactionOptimisation_reizman_suzuki_pareto",
+          "experiment1__openevolve__deepseek-v3.2__ReactionOptimisation_reizman_suzuki_pareto",
+          "experiment1__openevolve__deepseek-v3.2__ReactionOptimisation_snar_multiobjective",
+          "experiment1__openevolve__glm-5__JobShop_swv",
+          "experiment1__openevolve__grok-4.20__JobShop_abz",
+          "experiment1__openevolve__qwen3-coder-next__Optics_fiber_guardband_spectrum_packing",
+          "experiment1__openevolve__qwen3-coder-next__ReactionOptimisation_reizman_suzuki_pareto",
+          "experiment1__openevolve__qwen3-coder-next__ReactionOptimisation_snar_multiobjective",
+          "experiment1__openevolve__qwen3-coder-next__Robotics_PIDTuning",
+          "experiment1__openevolve__seed-2.0-pro__Optics_fiber_wdm_channel_power_allocation",
+          "experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
+          "experiment2__abmcts__claude-opus-4.6__JobShop_abz",
+          "experiment2__abmcts__claude-opus-4.6__Optics_phase_dammann_uniform_orders",
+          "experiment2__openevolve__claude-opus-4.6__JobShop_abz",
+          "experiment2__openevolve__claude-opus-4.6__JobShop_swv",
+          "experiment2__openevolve__claude-opus-4.6__Optics_fiber_guardband_spectrum_packing",
+          "experiment2__openevolve__claude-opus-4.6__Optics_fiber_mcs_power_scheduling",
+          "experiment2__openevolve__claude-opus-4.6__QuantumComputing_task_01_routing_qftentangled",
+          "experiment2__openevolve__claude-opus-4.6__ReactionOptimisation_mit_case1_mixed",
+          "experiment2__openevolve__claude-opus-4.6__ReactionOptimisation_reizman_suzuki_pareto",
+          "experiment2__openevolve__gpt-oss-120b__Optics_fiber_guardband_spectrum_packing",
+          "experiment2__shinkaevolve__claude-opus-4.6__InventoryOptimization_general_meio",
+          "experiment2__shinkaevolve__claude-opus-4.6__JobShop_abz",
+          "experiment2__shinkaevolve__claude-opus-4.6__JobShop_swv",
+          "experiment2__shinkaevolve__claude-opus-4.6__JobShop_ta",
+          "experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_mcs_power_scheduling",
+          "experiment2__shinkaevolve__claude-opus-4.6__Optics_phase_dammann_uniform_orders",
+          "experiment2__shinkaevolve__claude-opus-4.6__ReactionOptimisation_mit_case1_mixed",
+          "experiment2__shinkaevolve__claude-opus-4.6__Robotics_QuadrupedGaitOptimization",
+          "experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2015",
+          "experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2023",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_swv",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_ta",
+          "experiment2__shinkaevolve__gpt-oss-120b__Optics_fiber_mcs_power_scheduling",
+          "experiment2__shinkaevolve__gpt-oss-120b__Optics_fiber_wdm_channel_power_allocation",
+          "experiment2__shinkaevolve__gpt-oss-120b__StructuralOptimization_ISCSO2023",
+          "synthetic__jobshop_abz"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_sched_explicit_operation_ordering"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "compiled_sched_named_dispatch_rule",
+        "failure_ids": [
+          "failure_sched_greedy_dispatch_bias"
+        ],
+        "domain": "Planning_Decision",
+        "fix_summary": "Greedy ready-list selection without a named rule loses tail-end optimisations available to Johnson / FFD.",
+        "preconditions": [
+          "Observable signal: schedule looks good early but late-job tardiness explodes",
+          "Observable signal: same instance solved in more dispatch decisions than necessary",
+          "Symbols present in the editable artifact: `apply_johnson_rule`, `best fit`, `best-fit`, `dispatch rule`"
+        ],
+        "implementation_steps": [
+          "- Adopted dispatch rule best-fit.\n- Adopted dispatch rule best fit.\n- Adopted dispatch rule dispatch rule.\n- Adopted dispatch rule apply_johnson_rule.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "Search the editable artifact for these identifiers and treat their definitions as the patch site: `apply_johnson_rule`, `best fit`, `best-fit`, `dispatch rule`."
+        ],
+        "expected_verifier_signals": [
+          "improved utilisation; same instance solved in fewer dispatch decisions."
+        ],
+        "anti_patterns": [
+          "Do not embed concrete tuning values from another task's baseline archive — see plan §3.5."
+        ],
+        "source_ids": [
+          "experiment1__openevolve__deepseek-v3.2__ComputerSystems_MallocLab",
+          "experiment2__shinkaevolve__claude-opus-4.6__ComputerSystems_MallocLab",
+          "experiment2__shinkaevolve__gpt-oss-120b__ComputerSystems_MallocLab",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_ta",
+          "synthetic__jobshop_abz"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_sched_named_dispatch_rule"
+    },
+    {
+      "node_type": "FixPattern",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "compiled_sched_priority_heuristic",
+        "failure_ids": [
+          "failure_sched_no_priority_rule"
+        ],
+        "domain": "Planning_Decision",
+        "fix_summary": "Ad-hoc dispatch lacks a named priority (SPT / EDD / LPT / slack), so behaviour does not scale with instance size.",
+        "preconditions": [
+          "Observable signal: performance gap widens with instance size",
+          "Observable signal: ablation shows random priority beats the baseline",
+          "Symbols present in the editable artifact: `critical ratio`, `due_date`, `longest processing time`, `lpt`, `priority_key`, `priority_score`"
+        ],
+        "implementation_steps": [
+          "- Added scheduling priority heuristic lpt.\n- Added scheduling priority heuristic longest processing time.\n- Added scheduling priority heuristic shortest processing time.\n- Added scheduling priority heuristic priority_key.\n- Added scheduling priority heuristic slack time.\n- Added scheduling priority heuristic critical ratio.\n- Added scheduling priority heuristic priority_score.\n- Added scheduling priority heuristic due_date.\n- Added scheduling priority heuristic shortest-processing-time.\n- Added scheduling priority heuristic spt.",
+          "_(no patch shape inferred — see Next Experiment)_"
+        ],
+        "code_targets": [
+          "Search the editable artifact for these identifiers and treat their definitions as the patch site: `critical ratio`, `due_date`, `longest processing time`, `lpt`, `priority_key`, `priority_score`, `shortest processing time`, `shortest-processing-time`, `slack time`, `spt`."
+        ],
+        "expected_verifier_signals": [
+          "makespan / tardiness reduction; ablation shows the named key beats the unsorted baseline."
+        ],
+        "anti_patterns": [
+          "do not freeze the priority weights at the values that tuned one instance",
+          "do not embed *specific weight* values in the pattern — the *kind* of priority (SPT vs slack) is the lesson, the coefficients vary per instance.",
+          "do not freeze the priority weights at the values that tuned one instance"
+        ],
+        "source_ids": [
+          "experiment1__openevolve__claude-opus-4.6__JobShop_abz",
+          "experiment1__openevolve__claude-opus-4.6__JobShop_swv",
+          "experiment1__openevolve__claude-opus-4.6__JobShop_ta",
+          "experiment1__openevolve__deepseek-v3.2__JobShop_abz",
+          "experiment1__openevolve__deepseek-v3.2__JobShop_swv",
+          "experiment1__openevolve__gemini-3.1-pro-preview__JobShop_swv",
+          "experiment1__openevolve__glm-5__JobShop_abz",
+          "experiment1__openevolve__glm-5__JobShop_swv",
+          "experiment1__openevolve__glm-5__JobShop_ta",
+          "experiment1__openevolve__grok-4.20__JobShop_swv",
+          "experiment1__openevolve__grok-4.20__JobShop_ta",
+          "experiment1__openevolve__qwen3-coder-next__JobShop_abz",
+          "experiment1__openevolve__seed-2.0-pro__JobShop_abz",
+          "experiment1__openevolve__seed-2.0-pro__JobShop_ta",
+          "experiment2__abmcts__claude-opus-4.6__JobShop_swv",
+          "experiment2__openevolve__claude-opus-4.6__JobShop_abz",
+          "experiment2__openevolve__claude-opus-4.6__JobShop_swv",
+          "experiment2__openevolve__claude-opus-4.6__JobShop_ta",
+          "experiment2__openevolve__gpt-oss-120b__JobShop_abz",
+          "experiment2__openevolve__gpt-oss-120b__JobShop_swv",
+          "experiment2__shinkaevolve__claude-opus-4.6__InventoryOptimization_finite_horizon_dp",
+          "experiment2__shinkaevolve__claude-opus-4.6__JobShop_abz",
+          "experiment2__shinkaevolve__claude-opus-4.6__JobShop_swv",
+          "experiment2__shinkaevolve__claude-opus-4.6__JobShop_ta",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_abz",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_swv",
+          "experiment2__shinkaevolve__gpt-oss-120b__JobShop_ta",
+          "experiment2__shinkaevolve__gpt-oss-120b__StructuralOptimization_ISCSO2023",
+          "synthetic__jobshop_abz"
+        ],
+        "schema_version": "2.0"
+      },
+      "id": "compiled_sched_priority_heuristic"
     },
     {
       "node_type": "FixPattern",
@@ -662,26 +1577,37 @@
         "source_ids": [
           "experiment1__openevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__claude-opus-4.6__ReactionOptimisation_mit_case1_mixed",
           "experiment1__openevolve__claude-opus-4.6__Robotics_PIDTuning",
+          "experiment1__openevolve__claude-opus-4.6__Robotics_RobotArmCycleTimeOptimization",
           "experiment1__openevolve__deepseek-v3.2__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__deepseek-v3.2__Optics_fiber_wdm_channel_power_allocation",
           "experiment1__openevolve__deepseek-v3.2__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__deepseek-v3.2__ReactionOptimisation_snar_multiobjective",
           "experiment1__openevolve__gemini-3.1-pro-preview__PyPortfolioOpt_robust_mvo_rebalance",
           "experiment1__openevolve__glm-5__Optics_fiber_mcs_power_scheduling",
           "experiment1__openevolve__glm-5__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__glm-5__Robotics_DynamicObstacleAvoidanceNavigation",
+          "experiment1__openevolve__glm-5__Robotics_RobotArmCycleTimeOptimization",
           "experiment1__openevolve__gpt-5.4__Optics_phase_dammann_uniform_orders",
           "experiment1__openevolve__gpt-5.4__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__gpt-5.4__Robotics_RobotArmCycleTimeOptimization",
           "experiment1__openevolve__grok-4.20__Optics_fiber_mcs_power_scheduling",
           "experiment1__openevolve__grok-4.20__PyPortfolioOpt_robust_mvo_rebalance",
           "experiment1__openevolve__qwen3-coder-next__Optics_fiber_guardband_spectrum_packing",
           "experiment1__openevolve__qwen3-coder-next__Optics_phase_dammann_uniform_orders",
           "experiment1__openevolve__qwen3-coder-next__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment1__openevolve__qwen3-coder-next__Robotics_UAVInspectionCoverageWithWind",
           "experiment1__openevolve__seed-2.0-pro__Astrodynamics_MannedLunarLanding",
           "experiment1__openevolve__seed-2.0-pro__PyPortfolioOpt_robust_mvo_rebalance",
           "experiment2__abmcts__claude-opus-4.6__Aerodynamics_CarAerodynamicsSensing",
           "experiment2__abmcts__claude-opus-4.6__InventoryOptimization_finite_horizon_dp",
           "experiment2__abmcts__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__abmcts__claude-opus-4.6__ReactionOptimisation_mit_case1_mixed",
+          "experiment2__abmcts__claude-opus-4.6__ReactionOptimisation_reizman_suzuki_pareto",
           "experiment2__abmcts__claude-opus-4.6__Robotics_PIDTuning",
+          "experiment2__abmcts__claude-opus-4.6__Robotics_QuadrupedGaitOptimization",
+          "experiment2__abmcts__claude-opus-4.6__Robotics_RobotArmCycleTimeOptimization",
           "experiment2__abmcts__claude-opus-4.6__StructuralOptimization_TopologyOptimization",
           "experiment2__abmcts__gpt-oss-120b__Optics_fiber_mcs_power_scheduling",
           "experiment2__abmcts__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance",
@@ -689,13 +1615,17 @@
           "experiment2__openevolve__claude-opus-4.6__Optics_fiber_mcs_power_scheduling",
           "experiment2__openevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance",
           "experiment2__openevolve__claude-opus-4.6__Robotics_PIDTuning",
+          "experiment2__openevolve__claude-opus-4.6__Robotics_RobotArmCycleTimeOptimization",
           "experiment2__openevolve__gpt-oss-120b__Optics_fiber_wdm_channel_power_allocation",
           "experiment2__openevolve__gpt-oss-120b__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__openevolve__gpt-oss-120b__SingleCellAnalysis_predict_modality",
           "experiment2__shinkaevolve__claude-opus-4.6__Astrodynamics_MannedLunarLanding",
           "experiment2__shinkaevolve__claude-opus-4.6__Optics_fiber_wdm_channel_power_allocation",
           "experiment2__shinkaevolve__claude-opus-4.6__Optics_phase_dammann_uniform_orders",
           "experiment2__shinkaevolve__claude-opus-4.6__PyPortfolioOpt_robust_mvo_rebalance",
+          "experiment2__shinkaevolve__claude-opus-4.6__ReactionOptimisation_mit_case1_mixed",
           "experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning",
+          "experiment2__shinkaevolve__claude-opus-4.6__Robotics_RobotArmCycleTimeOptimization",
           "experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2015",
           "experiment2__shinkaevolve__claude-opus-4.6__StructuralOptimization_ISCSO2023",
           "experiment2__shinkaevolve__gpt-oss-120b__Astrodynamics_MannedLunarLanding",
@@ -752,6 +1682,7 @@
           "experiment2__shinkaevolve__claude-opus-4.6__InventoryOptimization_general_meio",
           "experiment2__shinkaevolve__claude-opus-4.6__JobShop_ta",
           "experiment2__shinkaevolve__claude-opus-4.6__Optics_holographic_multifocus_power_ratio",
+          "experiment2__shinkaevolve__claude-opus-4.6__ReactionOptimisation_reizman_suzuki_pareto",
           "experiment2__shinkaevolve__claude-opus-4.6__Robotics_PIDTuning",
           "experiment2__shinkaevolve__gpt-oss-120b__InventoryOptimization_finite_horizon_dp",
           "experiment2__shinkaevolve__gpt-oss-120b__Robotics_PIDTuning"
@@ -4511,6 +5442,62 @@
     {
       "relation": "FIXES",
       "weight": 1.0,
+      "source": "compiled_aes_branchless_select",
+      "target": "failure_aes_timing_side_channel",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_aes_branchless_select",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_aes_constant_time_compare",
+      "target": "failure_aes_early_exit_compare",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_aes_constant_time_compare",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_aes_unroll_round_structure",
+      "target": "failure_aes_branch_mispredict",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_aes_unroll_round_structure",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_aes_use_precomputed_tables",
+      "target": "failure_aes_byte_op_overhead",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_aes_use_precomputed_tables",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
       "source": "compiled_controller_output_clamp",
       "target": "failure_actuator_clamp_missing",
       "key": 0
@@ -4525,6 +5512,62 @@
     {
       "relation": "FIXES",
       "weight": 1.0,
+      "source": "compiled_cuda_async_global_to_shared_copy",
+      "target": "failure_cuda_blocking_load",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_cuda_async_global_to_shared_copy",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_cuda_shared_memory_tiling",
+      "target": "failure_cuda_global_memory_bound",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_cuda_shared_memory_tiling",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_cuda_tune_block_size",
+      "target": "failure_cuda_occupancy_too_low",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_cuda_tune_block_size",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_cuda_warp_specialization",
+      "target": "failure_cuda_load_compute_serialization",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_cuda_warp_specialization",
+      "target": "domain::Systems_Compute",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
       "source": "compiled_generic_time_budget",
       "target": "failure_generic_runaway_search",
       "key": 0
@@ -4534,6 +5577,62 @@
       "weight": 1.0,
       "source": "compiled_generic_time_budget",
       "target": "domain::World_Physics",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_sched_explicit_dependency_constraints",
+      "target": "failure_sched_dependency_violations",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_sched_explicit_dependency_constraints",
+      "target": "domain::Planning_Decision",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_sched_explicit_operation_ordering",
+      "target": "failure_sched_arrival_order_makespan",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_sched_explicit_operation_ordering",
+      "target": "domain::Planning_Decision",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_sched_named_dispatch_rule",
+      "target": "failure_sched_greedy_dispatch_bias",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_sched_named_dispatch_rule",
+      "target": "domain::Planning_Decision",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_sched_priority_heuristic",
+      "target": "failure_sched_no_priority_rule",
+      "key": 0
+    },
+    {
+      "relation": "APPLIES_TO",
+      "weight": 1.0,
+      "source": "compiled_sched_priority_heuristic",
+      "target": "domain::Planning_Decision",
       "key": 0
     },
     {

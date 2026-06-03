@@ -525,6 +525,22 @@ MutationKind = Literal[
     "raise_iteration_count",   # n_iter ↑
     "lower_iteration_count",   # n_iter ↓
     "add_initialization_seed", # use prior-best as init
+    # AES / crypto-specific (Sprint 3 收尾)
+    "add_lookup_table",        # add S-box / T-table / Rcon byte table
+    "unroll_loop",             # explicit unroll of round / mixing loop
+    "add_branchless_select",   # constant-time / cmov-style select
+    "add_constant_time_compare",  # memcmp-replacement avoiding early exit
+    # CUDA / Triton kernel-specific (Sprint 3 收尾)
+    "add_shared_memory_tile",  # __shared__ buffer + tile-style load
+    "adjust_block_size",       # tweak threadsPerBlock / BLOCK_M etc.
+    "add_kernel_fusion",       # merge two kernels into one launch
+    "add_warp_specialization",  # producer/consumer warp split, cp.async
+    "add_async_copy",          # cp.async / tl.async_copy added
+    # Scheduling / dispatch-specific (Sprint 3 收尾)
+    "reorder_operations",      # sort / re-permute task list
+    "add_priority_heuristic",  # priority key (SPT/EDD/LPT/slack/CR)
+    "add_dispatch_rule",       # named dispatch rule (e.g. first-fit-decreasing)
+    "add_dependency_constraint",  # precedence / resource constraint enforcement
     "other",                   # anything not yet classified
 ]
 

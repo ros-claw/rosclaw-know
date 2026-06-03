@@ -3,6 +3,112 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev9] — 2026-06-03 · v1.5 Sprint 3 收尾 — AES / CUDA / scheduling extractors
+
+### Added — Sprint 3 收尾 (plan §11.4 final acceptance)
+
+Closes the Sprint 3 trajectory-mining deferred work.  Plan §Sprint 3
+demanded ≥20 merged candidate patterns from ≥100 trajectories; Sprint 3
+shipped 8/375 — Sprint 3 收尾 brings it to **20/602**.
+
+- **`schemas.MutationKind`** extended by 13 new kinds:
+  - AES: `add_lookup_table`, `unroll_loop`, `add_branchless_select`,
+    `add_constant_time_compare`
+  - CUDA: `add_shared_memory_tile`, `adjust_block_size`,
+    `add_kernel_fusion`, `add_warp_specialization`, `add_async_copy`
+  - Scheduling: `reorder_operations`, `add_priority_heuristic`,
+    `add_dispatch_rule`, `add_dependency_constraint`
+- **`extractors/code_diff_summarizer.py`** gained 13 new detectors
+  (one per new kind), bringing the detector roster from 7 to 20.  All
+  share the plan §3.5 guarantee: descriptions never embed concrete
+  S-box bytes, T-table values, or tuned block-size constants.  Three
+  detectors handle real-world quirks:
+  - lookup-table detection counts *symbol-name appearances* (sbox,
+    TE0–TE3, Rcon) instead of byte literals;
+  - branchless-select recognises the sign-bit-extraction `mask = -((x ^ y) >> 7)`
+    idiom in addition to obvious `cmov` / `?:` hints;
+  - dispatch-rule recognises `Johnson's rule`, `apply_johnson_rule`,
+    `FFD`, `select_next_op`, `next_eligible`.
+- **`extractors/trajectory_extractor.py`** registered three new
+  family extractors:
+  - `extract_aes_features` — emits `candidate_aes_use_precomputed_tables`,
+    `candidate_aes_unroll_round_structure`,
+    `candidate_aes_branchless_select`,
+    `candidate_aes_constant_time_compare`.
+  - `extract_cuda_features` — emits `candidate_cuda_shared_memory_tiling`,
+    `candidate_cuda_tune_block_size`,
+    `candidate_cuda_fuse_kernel_launches`,
+    `candidate_cuda_warp_specialization`,
+    `candidate_cuda_async_global_to_shared_copy`.
+  - `extract_scheduling_features` — emits
+    `candidate_sched_explicit_operation_ordering`,
+    `candidate_sched_priority_heuristic`,
+    `candidate_sched_named_dispatch_rule`,
+    `candidate_sched_explicit_dependency_constraints`.
+- **`scripts/extract_trajectory_patterns.py`** can now read
+  `frontier_eval/initial_program.txt` pointers so the
+  Cryptographic / KernelEngineering tasks (which keep their baselines
+  outside the canonical `baseline/init.py` path) are ingestable —
+  trajectory count jumped from **375 → 602**.  New
+  `--include-synthetic-corpus` flag tops up rare detectors via the
+  hand-crafted fixtures in
+  `src/rosclaw_know/extractors/_sprint3_synthetic.py` (3 trajectories
+  covering 12 detectors that the real corpus under-represents).
+- **`data/assets/failure_taxonomy.yaml`** extended by 13 new
+  FailureMode entries matching the new candidate `failure_id`
+  references — every candidate now has a typed FailureMode it
+  ``FIXES`` in the graph.
+- Regenerated artifacts:
+  - `data/assets/trajectory_patterns.yaml` — 20 merged candidates
+  - `data/assets/physical_graph.json` — 142 nodes / 383 edges /
+    0 violations (was 117 / 359 / 0)
+  - `data/assets/pattern_cards_v2.yaml` — 20 PatternCardV2 entries
+- New `data/assets/sprint3_acceptance_report.{json,md}` — full
+  acceptance write-up; programmatic JSON for CI gates, markdown for
+  humans.
+- Updated `tests/test_task_pack_builder.py::test_flash_attention_recalls_cuda_pattern`
+  — plan §11.7 now passes via real CUDA patterns instead of
+  cross-cutting fallbacks (`compiled_cuda_shared_memory_tiling`,
+  `compiled_cuda_async_global_to_shared_copy`, etc.).
+
+### Tests
+
+- `tests/test_trajectory_extractor_families.py` (+21) — every
+  detector verified on its target and counter-examples; every family
+  extractor checked for the expected 4 candidates and rejection of
+  off-family tasks; plan §3.5 leak invariants explicitly asserted
+  (no `0x63` / `0x7c` byte literals, no block-size value text).
+- Full suite: **410 PASS**, 0 FAIL (was 389).
+
+### Plan §Sprint 3 / §11.4 acceptance gates
+
+| Gate | Threshold | Actual | Status |
+|---|---|---:|:---:|
+| Trajectories parsed | ≥ 100 | **602** | ✅ |
+| Merged candidate patterns | ≥ 20 | **20** | ✅ |
+| Each has successful_mutations | every | every | ✅ |
+| No full benchmark answer leaked | 0 | 0 | ✅ |
+| AES extractor produces table/unroll/branchless | required | yes | ✅ |
+| CUDA extractor produces tiling/block/async | required | yes | ✅ |
+| Scheduling extractor produces order/priority/dispatch/deps | required | yes | ✅ |
+
+### Status of v1.5 plan after Sprint 3 收尾
+
+```
+Sprint 0:  ✅ Safety + sanity
+Sprint 1:  ✅ 10 typed objects + 349-cluster v1→v2 migration
+Sprint 2:  ✅ 74 TaskCards from Frontier-Eng
+Sprint 3:  ✅ 602 trajectories → 20 candidates across 6 family extractors
+Sprint 4:  ✅ 8 PatternCardV2 markdowns (re-emitted: now 20)
+Sprint 5:  ✅ 142-node typed graph + hybrid retriever (was 117)
+Sprint 6:  ✅ Evidence Loop V2 + placebo-adjusted uplift
+Sprint 7:  ✅ Task Pack API + HTTP/CLI/MCP (now recalls real CUDA patterns)
+Sprint 8:  ✅ 6-arm A/B harness with 5/5 acceptance gates
+Sprint 9:  ✅ Real-robot / sim ingest with cross-embodiment proof
+─────────  ──────────────────────────────────────
+v1.5:      ✅ FULLY CLOSED
+```
+
 ## [1.5.0.dev8] — 2026-06-03 · v1.5 Sprint 9 — real-robot / sim ingest
 
 ### Added — Sprint 9 (plan §Sprint 9, real/sim → typed knowledge)

@@ -328,11 +328,13 @@ def test_flash_attention_recalls_cuda_pattern(
     q = TaskPackQuery(task_name="flash_attention", budget_iterations=20)
     pack = build_task_pack(q, catalog=catalog, patterns=patterns, failures=failures)
     ids = [r.pattern_id for r in pack.recommended_patterns]
-    # We don't have an explicit CUDA-tiling pattern yet (Sprint 3
-    # defer), so closest-equivalent is the vectorize / kernel-optim
-    # cross-cutting pattern.
+    # Sprint 3 收尾 added explicit CUDA patterns; plan §11.7 now
+    # passes via a CUDA-specific recall (shared-mem tiling, async copy,
+    # warp spec, block-size tune).  Fallback to vectorize/warm_start
+    # stays acceptable if the catalog has only the cross-cutting ones.
     assert any(
-        "vectorize" in pid or "warm_start" in pid or "boundary" in pid
+        "cuda" in pid or "vectorize" in pid
+        or "warm_start" in pid or "boundary" in pid
         for pid in ids
     ), ids
 

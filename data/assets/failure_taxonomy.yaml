@@ -243,3 +243,194 @@ failures:
     contraindications:
       - "do not blindly warm-start when the task distribution has shifted"
     severity: info
+
+  # ── Sprint 3 收尾 — AES / cryptographic ───────────────────────────────
+  - id: failure_aes_byte_op_overhead
+    name: "AES Byte-Op Overhead"
+    domain: Systems_Compute
+    symptom_text: "Per-byte AES (sbox + shift + mix as separate ops) is dominated by byte arithmetic; throughput well below memory bandwidth."
+    normalized_symptom: "aes_per_byte_arithmetic_dominates"
+    observable_signals:
+      - throughput stays well below the CPU-memory ceiling
+      - profiler shows arithmetic-unit saturation
+    likely_causes:
+      - sbox and mix-columns implemented as discrete byte ops
+      - no T-table consolidation
+    contraindications:
+      - "do not just inline more — the win comes from merging ops, not unrolling them"
+    severity: warning
+
+  - id: failure_aes_branch_mispredict
+    name: "AES Round-Loop Branch Mispredict"
+    domain: Systems_Compute
+    symptom_text: "Loop over 10 AES rounds keeps a counter live and exposes a predictable but non-free branch each iteration."
+    normalized_symptom: "aes_round_loop_branch_cost"
+    observable_signals:
+      - profiler reports BR_MISP_RETIRED inside the round function
+      - per-block throughput plateaus despite cache hits
+    likely_causes:
+      - rounds expressed as a Python / C++ ``for`` loop
+      - "no #pragma unroll on the inner loop"
+    contraindications:
+      - "do not unroll past the I-cache size on small cores"
+    severity: info
+
+  - id: failure_aes_timing_side_channel
+    name: "AES Timing Side Channel"
+    domain: Systems_Compute
+    symptom_text: "Secret-dependent conditional moves leak whether the key bit was 0 or 1 via branch-predictor state."
+    normalized_symptom: "aes_secret_dependent_branch"
+    observable_signals:
+      - wall-clock differs measurably with key value
+      - timing-side-channel test in the verifier fails
+    likely_causes:
+      - ternary / if-else on a secret value in the hot path
+      - no branchless lowering of conditional ops
+    contraindications:
+      - "branchless rewrites on every comparison can hurt non-secret-dependent paths"
+    severity: warning
+
+  - id: failure_aes_early_exit_compare
+    name: "AES Early-Exit MAC Compare"
+    domain: Systems_Compute
+    symptom_text: "memcmp-style tag verification stops at the first mismatch, letting an attacker recover the tag one byte at a time."
+    normalized_symptom: "aes_tag_compare_early_exit"
+    observable_signals:
+      - verifier flags constant-time compare regression
+      - byte-by-byte wall-clock differential on injected mismatches
+    likely_causes:
+      - tag comparison via stock memcmp / standard equality
+      - no constant-time helper imported
+    contraindications:
+      - "do not roll your own constant-time compare — use the vetted helper"
+    severity: safety_critical
+
+  # ── Sprint 3 收尾 — CUDA / Triton kernel ──────────────────────────────
+  - id: failure_cuda_global_memory_bound
+    name: "CUDA Global-Memory-Bound Kernel"
+    domain: Systems_Compute
+    symptom_text: "Hot kernel re-reads the same input element from global memory across many threads; bandwidth, not compute, caps performance."
+    normalized_symptom: "cuda_global_memory_reuse"
+    observable_signals:
+      - Nsight reports memory throughput saturated and tensor cores idle
+      - tokens/sec scales with bandwidth, not FLOPs
+    likely_causes:
+      - inputs never promoted to shared memory
+      - tile loop missing
+    contraindications:
+      - "shared memory is scarce; over-tiling reduces occupancy"
+    severity: warning
+
+  - id: failure_cuda_occupancy_too_low
+    name: "CUDA Low-Occupancy Kernel"
+    domain: Systems_Compute
+    symptom_text: "Conservative block size leaves the SM underutilised; throughput stays well below theoretical peak."
+    normalized_symptom: "cuda_low_occupancy"
+    observable_signals:
+      - achieved occupancy < 50% on Nsight
+      - register spill warnings absent (compute under-used)
+    likely_causes:
+      - hand-picked BLOCK_M / BLOCK_N too small
+      - num_warps / num_stages defaults left untouched
+    contraindications:
+      - "do not hard-code the tuned value across SM counts"
+    severity: info
+
+  - id: failure_cuda_launch_overhead
+    name: "CUDA Kernel-Launch Overhead"
+    domain: Systems_Compute
+    symptom_text: "Two kernels chained back-to-back pay double launch cost and round-trip activations through global memory."
+    normalized_symptom: "cuda_back_to_back_launches"
+    observable_signals:
+      - wall-clock dominated by launch latency on small batches
+      - activations written then immediately re-read
+    likely_causes:
+      - softmax + matmul left as separate kernels
+      - missing fusion pass
+    contraindications:
+      - "fusion raises register pressure — watch for spill"
+    severity: info
+
+  - id: failure_cuda_load_compute_serialization
+    name: "CUDA Load/Compute Serialised"
+    domain: Systems_Compute
+    symptom_text: "Synchronous global → shared loads stall the warp and leave tensor cores idle between tiles."
+    normalized_symptom: "cuda_serialised_load_compute"
+    observable_signals:
+      - Nsight shows compute SOL much lower than memory SOL
+      - no overlap between load and MMA stages on the timeline
+    likely_causes:
+      - blocking ldg / __ldcs in the inner loop
+      - no warp specialization or async pipeline
+    contraindications:
+      - "warp specialization requires sm_80+; falls back hurts older devices"
+    severity: info
+
+  - id: failure_cuda_blocking_load
+    name: "CUDA Blocking Global Load"
+    domain: Systems_Compute
+    symptom_text: "Synchronous ldg / __ldcs stall the warp; compute cannot overlap with the next tile's load."
+    normalized_symptom: "cuda_blocking_global_load"
+    observable_signals:
+      - profiler reports memory stalls between MMA stages
+    likely_causes:
+      - cp.async / tl.async_copy not used
+    contraindications:
+      - "async copies require careful wait_group fences"
+    severity: info
+
+  # ── Sprint 3 收尾 — scheduling / dispatch ─────────────────────────────
+  - id: failure_sched_arrival_order_makespan
+    name: "Scheduler Arrival-Order Bias"
+    domain: Planning_Decision
+    symptom_text: "Baseline schedules in input order, leaving slack that any priority sort would recover."
+    normalized_symptom: "sched_arrival_order_only"
+    observable_signals:
+      - makespan exceeds known lower bound on standard instances
+      - utilization on bottleneck machine well below 100%
+    likely_causes:
+      - no sorting / priority pass on the job list
+    contraindications:
+      - "static priority rules struggle under high resource contention"
+    severity: warning
+
+  - id: failure_sched_no_priority_rule
+    name: "Scheduler Missing Priority Rule"
+    domain: Planning_Decision
+    symptom_text: "Ad-hoc dispatch lacks a named priority (SPT / EDD / LPT / slack), so behaviour does not scale with instance size."
+    normalized_symptom: "sched_unprincipled_dispatch"
+    observable_signals:
+      - performance gap widens with instance size
+      - ablation shows random priority beats the baseline
+    likely_causes:
+      - dispatch loop picks the first ready job verbatim
+    contraindications:
+      - "do not freeze the priority weights at the values that tuned one instance"
+    severity: warning
+
+  - id: failure_sched_greedy_dispatch_bias
+    name: "Scheduler Greedy Dispatch Bias"
+    domain: Planning_Decision
+    symptom_text: "Greedy ready-list selection without a named rule loses tail-end optimisations available to Johnson / FFD."
+    normalized_symptom: "sched_unnamed_greedy_dispatch"
+    observable_signals:
+      - schedule looks good early but late-job tardiness explodes
+      - same instance solved in more dispatch decisions than necessary
+    likely_causes:
+      - dispatch implemented inline without a named-rule abstraction
+    contraindications: []
+    severity: info
+
+  - id: failure_sched_dependency_violations
+    name: "Scheduler Dependency Violations"
+    domain: Planning_Decision
+    symptom_text: "Schedules emit infeasible orderings because precedence / resource caps are checked post-hoc rather than enforced during dispatch."
+    normalized_symptom: "sched_dependency_postcheck"
+    observable_signals:
+      - verifier reports precedence violation
+      - repair pass needed before every submission
+    likely_causes:
+      - precedence / resource constraints not propagated into the eligibility test
+    contraindications:
+      - "do not let repair loops grow without bound — fix the source"
+    severity: safety_critical

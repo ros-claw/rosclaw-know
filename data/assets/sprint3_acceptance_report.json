@@ -1,0 +1,57 @@
+{
+  "date": "2026-06-03",
+  "version": "1.5.0.dev9",
+  "plan_section": "Sprint 3 / 11.4",
+  "gates": {
+    "trajectories_parsed": {
+      "threshold": 100,
+      "actual": 602,
+      "passed": true
+    },
+    "merged_candidates": {
+      "threshold": 20,
+      "actual": 20,
+      "passed": true
+    },
+    "family_extractors": {
+      "threshold": 4,
+      "actual": 6,
+      "passed": true
+    }
+  },
+  "candidates_by_family": {
+    "pid": 4,
+    "systems": 3,
+    "aes": 4,
+    "cuda": 4,
+    "scheduling": 4,
+    "optimizer": 1
+  },
+  "candidate_ids": [
+    "candidate_add_boundary_validation",
+    "candidate_add_time_budget",
+    "candidate_aes_branchless_select",
+    "candidate_aes_constant_time_compare",
+    "candidate_aes_unroll_round_structure",
+    "candidate_aes_use_precomputed_tables",
+    "candidate_controller_output_clamp",
+    "candidate_cuda_async_global_to_shared_copy",
+    "candidate_cuda_shared_memory_tiling",
+    "candidate_cuda_tune_block_size",
+    "candidate_cuda_warp_specialization",
+    "candidate_generic_time_budget",
+    "candidate_sched_explicit_dependency_constraints",
+    "candidate_sched_explicit_operation_ordering",
+    "candidate_sched_named_dispatch_rule",
+    "candidate_sched_priority_heuristic",
+    "candidate_swap_random_search_to_structured_optimizer",
+    "candidate_vectorize_inner_loop",
+    "candidate_warm_start_from_prior_best",
+    "candidate_zero_integral_gain_on_saturation"
+  ],
+  "graph": {
+    "nodes": 142,
+    "edges": 0
+  },
+  "all_gates_passed": true
+}

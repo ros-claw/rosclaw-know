@@ -40,7 +40,7 @@ from rosclaw_know.extractors import (
     extract_candidate_patterns,
     from_baseline_archive_pair,
 )
-from rosclaw_know.schemas import CandidatePattern, Mutation, SCHEMA_VERSION
+from rosclaw_know.schemas import SCHEMA_VERSION, CandidatePattern, Mutation
 
 logger = logging.getLogger("extract_trajectory_patterns")
 
@@ -55,8 +55,32 @@ _BASELINE_CANDIDATES = (
     "scripts/init.py",
     "baseline/init.py",
     "baseline/submission.py",
+    "baseline/reference.py",      # Sprint 3 收尾 — Kernel tasks
+    "baseline/solution.py",       # Sprint 3 收尾 — TriMul style
     "scripts/baseline.py",
 )
+
+
+def _read_initial_program_pointer(task_dir: Path) -> Path | None:
+    """Honour ``frontier_eval/initial_program.txt`` when present.
+
+    Most Cryptographic / non-Python tasks store their baseline outside
+    the standard ``baseline/`` layout — the canonical pointer lives at
+    ``frontier_eval/initial_program.txt`` (a single relative path).
+    """
+    ptr = task_dir / "frontier_eval" / "initial_program.txt"
+    if not ptr.is_file():
+        return None
+    try:
+        rel = ptr.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not rel:
+        return None
+    candidate = task_dir / rel
+    if candidate.is_file():
+        return candidate
+    return None
 
 
 def _find_baseline_for_task(benchmarks_root: Path, family: str, task: str) -> Path | None:
@@ -72,6 +96,10 @@ def _find_baseline_for_task(benchmarks_root: Path, family: str, task: str) -> Pa
         p = task_dir / sub
         if p.is_file():
             return p
+    # Sprint 3 收尾 — fall back to frontier_eval/initial_program.txt
+    pointer = _read_initial_program_pointer(task_dir)
+    if pointer is not None:
+        return pointer
     return None
 
 
@@ -187,6 +215,15 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
              "trajectories were assembled (default 10).",
     )
     p.add_argument(
+        "--include-synthetic-corpus",
+        action="store_true",
+        help="Sprint 3 收尾: also ingest the hand-crafted "
+             "scripts/_sprint3_synthetic_corpus.py fixtures so the "
+             "AES/CUDA/scheduling detectors that the real Frontier-Eng "
+             "corpus under-represents (e.g. async copy, constant-time "
+             "compare) get exercised in the manifest.",
+    )
+    p.add_argument(
         "-v", "--verbose", action="store_true", help="DEBUG-level logging.",
     )
     return p.parse_args(argv)
@@ -245,6 +282,30 @@ def main(argv: list[str] | None = None) -> int:
         n_trajectories += 1
         by_task_family[family] += 1
         all_candidates.extend(extract_candidate_patterns(traj))
+
+    # Sprint 3 收尾 — top up with synthetic trajectories for detectors that
+    # the real Frontier-Eng corpus under-represents.
+    if args.include_synthetic_corpus:
+        try:
+            from scripts._sprint3_synthetic_corpus import SYNTHETIC_TRAJECTORIES
+        except ImportError:
+            # Run from the repo root — the scripts/ directory isn't on
+            # sys.path by default for the import system.
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+            from scripts._sprint3_synthetic_corpus import SYNTHETIC_TRAJECTORIES
+        for st in SYNTHETIC_TRAJECTORIES:
+            traj_id = f"synthetic__{st.task_name.lower()}"
+            traj = from_baseline_archive_pair(
+                baseline_text=st.baseline,
+                candidate_text=st.candidate,
+                task_name=st.task_name,
+                trajectory_id=traj_id,
+                algorithm="synthetic",
+                model="hand_crafted",
+            )
+            n_trajectories += 1
+            by_task_family["Synthetic"] += 1
+            all_candidates.extend(extract_candidate_patterns(traj))
 
     merged = _merge_candidates(all_candidates)
 
