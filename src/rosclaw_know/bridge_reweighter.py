@@ -38,15 +38,25 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterable, Mapping
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .config import ASSETS_DIR
 from .evidence_distill import (
     EvidenceStat,
+)
+from .evidence_distill import (
     is_demoted as v2_is_demoted,
+)
+from .evidence_distill import (
     is_promoted as v2_is_promoted,
 )
 from .feedback_distill import MIN_SAMPLE_SIZE, PatternMetric, is_demoted
+
+if TYPE_CHECKING:  # pragma: no cover — circular-import guard
+    from .evidence_distill import CoverageReport
+    from .schemas import EvidenceTrace
 
 logger = logging.getLogger("rosclaw_know.bridge_reweighter")
 
@@ -436,4 +446,86 @@ def _reweight_with_evidence_v2(
     }
 
 
-__all__ = ["reweight_bridge_index"]
+# ── Sprint 12: in-memory direct path ────────────────────────────────────
+
+
+def reweight_bridge_index_from_stats(
+    stats: Mapping[str, EvidenceStat],
+    *,
+    bridge_path: Path | None = None,
+    metrics_path: Path | None = None,
+) -> dict[str, int]:
+    """Reweight bridge_index using already-distilled in-memory stats.
+
+    Sprint 12 contract: identical bridge_index output to
+    :func:`reweight_bridge_index` when the latter is pointed at an
+    ``evidence_stats.json`` file produced from the same stats — but
+    without writing/reading that intermediate file.
+
+    Parameters
+    ----------
+    stats
+        ``dict[pattern_id, EvidenceStat]``.  Typically the first element
+        of :func:`evidence_distill.distill`'s return value, or
+        deserialised from ``evidence_stats.json`` for a what-if run.
+    bridge_path
+        Where ``bridge_index.json`` lives.  Defaults to
+        ``data/assets/bridge_index.json``.
+    metrics_path
+        ``pattern_metrics.json`` for v1 fallback.  Defaults to
+        ``data/assets/pattern_metrics.json``.
+
+    Returns
+    -------
+    dict[str, int]
+        Same summary shape as :func:`reweight_bridge_index`
+        (``clusters_touched``, ``_demoted``, ``_promoted``, ``_total``,
+        ``mode``).  ``mode`` is always ``"v2"`` since we have v2 stats.
+    """
+    bridge_path = bridge_path or (ASSETS_DIR / "bridge_index.json")
+    metrics_path = metrics_path or (ASSETS_DIR / "pattern_metrics.json")
+    if not bridge_path.exists():
+        logger.warning(
+            "bridge_index.json not found at %s — abort reweight",
+            bridge_path,
+        )
+        return {
+            "clusters_touched": 0, "clusters_demoted": 0,
+            "clusters_promoted": 0, "clusters_total": 0,
+            "mode": "v2",
+        }
+    return _reweight_with_evidence_v2(bridge_path, dict(stats), metrics_path)
+
+
+def reweight_bridge_index_from_traces(
+    traces: Iterable[EvidenceTrace],
+    *,
+    bridge_path: Path | None = None,
+    metrics_path: Path | None = None,
+) -> tuple[dict[str, int], CoverageReport]:
+    """Sprint 12 convenience: distill traces in-memory, then reweight.
+
+    Identical to running :func:`evidence_distill.distill` followed by
+    :func:`reweight_bridge_index_from_stats`, packaged as one call.
+
+    Returns ``(summary, coverage_report)`` — the coverage report is
+    returned alongside the reweight summary so callers can surface
+    Sprint 6's coverage gates (injection_id missing, post_score_3/5
+    coverage, code_diff_summary coverage) without re-distilling.
+    """
+    from .evidence_distill import distill
+
+    stats, coverage = distill(traces)
+    summary = reweight_bridge_index_from_stats(
+        stats,
+        bridge_path=bridge_path,
+        metrics_path=metrics_path,
+    )
+    return summary, coverage
+
+
+__all__ = [
+    "reweight_bridge_index",
+    "reweight_bridge_index_from_stats",
+    "reweight_bridge_index_from_traces",
+]

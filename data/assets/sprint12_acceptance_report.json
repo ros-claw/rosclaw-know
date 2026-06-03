@@ -1,0 +1,25 @@
+{
+  "summary_after_one_liner_on_sprint11_fixture": {
+    "clusters_touched": 5,
+    "clusters_demoted": 0,
+    "clusters_promoted": 1,
+    "clusters_total": 1,
+    "mode": "v2"
+  },
+  "demo_cluster_after_reweight": {
+    "id": "windup",
+    "associated_patterns": ["compiled_zero_integral_gain_on_saturation"],
+    "symptom_text": "demo",
+    "uplift_mean": 0.272,
+    "uplift_n": 5,
+    "win_rate": 1.0,
+    "placebo_adjusted_uplift": 0.224,
+    "priority": 1
+  },
+  "byte_for_byte_parity_with_disk_path": true,
+  "tests": {
+    "test_sprint12_bridge_direct.py": "10 passed",
+    "full_suite": "458 passed"
+  },
+  "intermediate_files_required": []
+}

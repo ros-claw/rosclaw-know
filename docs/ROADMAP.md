@@ -25,6 +25,7 @@ agents before they start.  Sprint plan source:
 | 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | ✅ shipped |
 | 10 | Auto-derived cross-embodiment transfer table (replaces Sprint 9 hand table) | ✅ shipped |
 | 11 | Self-improvement loop (real-robot → Sprint 6 promote + Sprint 4 discover) | ✅ shipped |
+| 12 | bridge_reweighter direct path (in-memory, no intermediate files) | ✅ shipped |
 
 ### Sprint 0 — Safety & sanity (shipped)
 
@@ -421,6 +422,25 @@ that clear placebo are turned into Sprint-4-ready CandidatePatterns:
 - Tests: +22 across two new files (`test_sprint11_robot_evidence_loop.py`
   + `test_sprint11_robot_trajectory_extractor.py`).  Full suite **448
   PASS**, 0 FAIL.
+
+### Sprint 12 — bridge_reweighter direct path (shipped)
+
+Closes the disk-hop between Sprint 11 ingest and Sprint 6 reweight.
+
+- `reweight_bridge_index_from_stats(stats, *, bridge_path, metrics_path)` —
+  accepts in-memory `dict[str, EvidenceStat]`; no `evidence_stats.json`
+  read.
+- `reweight_bridge_index_from_traces(traces, *, bridge_path, metrics_path)` —
+  distill + reweight in one call; returns `(summary, coverage)`.
+- `sim_ingest.reweight_bridge_from_robot_events(events, *, ...)` —
+  end-to-end one-liner: RobotEvent stream → bridge_index update.  Only
+  `bridge_index.json` touches disk.
+- Acceptance gate: **byte-for-byte parity** with the legacy disk path
+  (`test_direct_path_matches_disk_path_byte_for_byte`).  Same input
+  through either path produces identical bridge_index.json content —
+  same promotions, demotions, stale-field cleanup.
+- Tests: +10 in `tests/test_sprint12_bridge_direct.py`.  Full suite
+  **458 PASS**, 0 FAIL.
 
 ---
 

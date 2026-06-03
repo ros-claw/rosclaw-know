@@ -3,6 +3,65 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev12] — 2026-06-03 · v1.5 Sprint 12 — bridge_reweighter direct path
+
+### Added — Sprint 12 (user request: bridge_reweighter 直跑)
+
+Sprint 11 wired Sprint 9 RobotEvents into Sprint 6 evidence_distill via
+an intermediate `evidence_stats.json` file on disk.  Sprint 12 closes
+that gap so the entire self-improvement loop can run in memory.
+
+- **`bridge_reweighter.reweight_bridge_index_from_stats(stats, *, bridge_path, metrics_path)`** —
+  accepts an in-memory `Mapping[str, EvidenceStat]` directly.  No
+  `evidence_stats.json` read.  Same `dict[str, int]` summary as the
+  legacy `reweight_bridge_index`.
+- **`bridge_reweighter.reweight_bridge_index_from_traces(traces, *, bridge_path, metrics_path)`** —
+  higher-level convenience that runs `evidence_distill.distill` inline
+  then reweights.  Returns `(summary, coverage_report)` so callers can
+  surface Sprint 6 coverage gates without re-distilling.
+- **`sim_ingest.reweight_bridge_from_robot_events(events, *, bridge_path, metrics_path)`** —
+  the full end-to-end one-liner: real-robot RobotEvents → EvidenceTrace
+  → distill → bridge_index update.  Only `bridge_index.json` touches
+  disk; everything in between stays in memory.
+
+### Acceptance gate: byte-for-byte parity
+
+`test_direct_path_matches_disk_path_byte_for_byte` writes the same
+input through both paths (write `evidence_stats.json` and reweight from
+file vs. feed stats in-memory) and asserts the resulting
+`bridge_index.json` is identical — no difference in promotion,
+demotion, or stale-field cleanup.
+
+### Tests
+
+- **`tests/test_sprint12_bridge_direct.py`** (new, 10 cases):
+  - in-memory promote, demote, leave-unrelated-clusters-alone
+  - parity vs disk path
+  - `from_traces` returns summary + coverage
+  - one-liner `reweight_bridge_from_robot_events` end-to-end
+  - graceful noop on missing bridge_index.json
+  - graceful noop on no-envelope events
+  - public surface (importable from both `bridge_reweighter` and `sim_ingest`)
+
+### Demo
+
+```python
+from rosclaw_know.sim_ingest import (
+    read_robot_event_jsonl,
+    reweight_bridge_from_robot_events,
+)
+
+events = read_robot_event_jsonl("logs/today.rosbag.jsonl")
+summary, coverage = reweight_bridge_from_robot_events(events, bridge_path=BRIDGE)
+# {clusters_touched: 5, clusters_promoted: 1, mode: "v2"}
+```
+
+### Tests summary
+
+```
+pytest -q  →  458 passed (was 448; +10 Sprint 12 cases)
+```
+
 ## [1.5.0.dev11] — 2026-06-03 · v1.5 Sprint 11 — Self-improvement loop (real-robot ↔ catalog)
 
 ### Added — Sprint 11 (user request #4: 真机 trace 喂回 Sprint 6 / Sprint 3)

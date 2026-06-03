@@ -30,6 +30,7 @@ assertions.
 """
 from __future__ import annotations
 
+from .bridge_direct import reweight_bridge_from_robot_events
 from .cross_embodiment import (
     CrossEmbodimentReport,
     PatternReuseRow,
@@ -87,4 +88,5 @@ __all__ = (
     "load_default_transfer_table",
     "run_cross_embodiment_check",
     "render_cross_embodiment_markdown",
+    "reweight_bridge_from_robot_events",
 )
