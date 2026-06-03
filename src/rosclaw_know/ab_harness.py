@@ -625,12 +625,6 @@ def acceptance_report(
         )
     )
 
-    n_significant = sum(
-        1 for p in pvals.values()
-        if p is not None and p < sig_threshold
-        and deltas.get(_pval_task_for(p, pvals)) not in (None,)
-    )
-    # The list-comp above is too clever — recompute the right way:
     significant_tasks = [
         t for t, p in pvals.items()
         if p is not None and p < sig_threshold and (deltas.get(t) or 0) > 0
@@ -651,17 +645,6 @@ def acceptance_report(
     )
 
     return AcceptanceReport(gates=gates)
-
-
-def _pval_task_for(p: float, pvals: dict[str, float | None]) -> str | None:
-    """Reverse-lookup the task name for a p-value — used only by an
-    earlier (over-clever) comprehension above.  Kept harmless because
-    it's never called in the active code path.
-    """
-    for t, pv in pvals.items():
-        if pv == p:
-            return t
-    return None
 
 
 # ── report serialisation ────────────────────────────────────────────────

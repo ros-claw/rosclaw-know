@@ -27,6 +27,7 @@ agents before they start.  Sprint plan source:
 | 11 | Self-improvement loop (real-robot → Sprint 6 promote + Sprint 4 discover) | ✅ shipped |
 | 12 | bridge_reweighter direct path (in-memory, no intermediate files) | ✅ shipped |
 | 13 | Catalog expansion — 8/8 canonical event_types covered | ✅ shipped |
+| **Integration** | rosclaw merge — Phase 0-4 (smoke / vendored bridge / runtime tests / PyPI prep / asset CI) | ✅ shipped 2026-06-03 |
 
 ### Sprint 0 — Safety & sanity (shipped)
 

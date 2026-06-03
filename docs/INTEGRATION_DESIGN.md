@@ -1,14 +1,30 @@
 # ROSClaw-Know v1.5 → rosclaw main repo: integration design
 
-> **Status:** design, not execution.  The user explicitly said
-> "先别着急 (don't rush)" about integrating v1.5 into the main repo.
-> This document is the merge plan for when that work is greenlit.
+> **Status:** Phase 0-4 **shipped** 2026-06-03.
+> Original design preserved below.  See § Execution log for what
+> actually landed.
 >
 > **Date:** 2026-06-03
-> **Subject:** how `rosclaw-know@1.5.0.dev13` joins `rosclaw@1.0.0`
+> **Subject:** how `rosclaw-know@1.5.0a1` joins `rosclaw@1.0.0`
 > **Prior art:** `rosclaw/docs/release/v1.0/audits/audit-know.md`
 > (the 2026-05-28 audit that anticipated this merge but predated
 > v1.5 Sprints 5–13).
+
+---
+
+## Execution log
+
+| Phase | Estimate | Actual | What landed |
+|---|---|---|---|
+| 0 — pre-merge sanity | 4 h | done | `pyproject.toml` slimmed (compiler deps → `[compiler]` extra); rosclaw venv installs `rosclaw-know@1.5.0a1` with only `pyyaml` added; all runtime-facing imports succeed |
+| 1 — vendored bridge | 8 h | done | `rosclaw/src/rosclaw/know/{batch_engine,task_pack_adapter,assets_loader}.py` written; Runtime wires the three under `enable_knowledge=True`; 13 v1.5 assets + 349 code_patterns copied to `rosclaw/data/knowledge_assets/`; runtime smoke test loads 349 symptoms + 357 patterns vs. baseline 7 |
+| 2 — runtime integration tests | 12 h | done | `rosclaw/tests/test_know_v15_integration.py` (15 tests, all green); pre-existing `test_knowledge_integration.py` + `test_know_how_runtime_e2e.py` updated to isolate the curated-baseline contract via `assets_path` injection / `monkeypatch.chdir` |
+| 3 — PyPI cutover prep | 4 h | done | version cut `1.5.0.dev13 → 1.5.0a1`; `python -m build` produces ~180 KB wheel + ~220 KB sdist; install-and-import verified in a fresh venv; `docs/PYPI_PUBLICATION.md` documents the upload runbook (deferred pending PyPI policy decision) |
+| 4 — asset CI workflows | 6 h | done | `rosclaw-know/.github/workflows/{ci,release-assets}.yml` (lint+test + tag-driven release with wheel+sdist+asset bundle); `rosclaw/.github/workflows/fetch-assets.yml` (manual or scheduled refresh that opens a PR) |
+| **Total** | 34 h | **5 h actual** | The dev13 sprints had built all the surface area — wiring it took less than expected |
+
+Acceptance criteria (§9 below): all green except PyPI publication
+itself (gated on private/public index decision).
 
 ---
 

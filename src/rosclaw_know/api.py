@@ -69,44 +69,20 @@ def _get_task_pack_assets() -> dict:
 def _try_load_task_pack_assets() -> dict | None:
     """Best-effort lazy load of the task-pack YAMLs.
 
-    Returns ``None`` (and logs a warning) when any of the canonical
-    paths are missing — that's fine in early bootstrap / CI; the
-    endpoint surfaces a 503 instead of crashing the whole server.
+    Thin wrapper over :func:`rosclaw_know.asset_loader.load_task_pack_assets`
+    that reads ``config.ASSETS_DIR`` at call time so test fixtures that
+    monkey-patch the config after import still take effect.
     """
-    # Local imports so the api module can still be imported in CI
-    # environments where the data dir hasn't been provisioned.  Reading
-    # ``config.ASSETS_DIR`` at call time (not import time) makes the
-    # function robust against test fixtures that monkey-patch
-    # ``rosclaw_know.config.ASSETS_DIR`` after this module is imported.
-    import yaml as _yaml
-
     from . import config as _config
-    from .schemas import FailureMode, PatternCardV2, TaskCard
+    from .asset_loader import load_task_pack_assets
 
-    assets_dir = _config.ASSETS_DIR
-    paths = {
-        "tasks": assets_dir / "task_cards.yaml",
-        "patterns": assets_dir / "pattern_cards_v2.yaml",
-        "failures": assets_dir / "failure_taxonomy.yaml",
-    }
-    if not all(p.is_file() for p in paths.values()):
+    result = load_task_pack_assets(_config.ASSETS_DIR)
+    if result is None:
         logger.warning(
             "Task-pack assets incomplete in %s; /know/v1/task-pack/build will 503",
-            assets_dir,
+            _config.ASSETS_DIR,
         )
-        return None
-    try:
-        tasks_raw = _yaml.safe_load(paths["tasks"].read_text(encoding="utf-8")) or {}
-        patterns_raw = _yaml.safe_load(paths["patterns"].read_text(encoding="utf-8")) or {}
-        failures_raw = _yaml.safe_load(paths["failures"].read_text(encoding="utf-8")) or {}
-        return {
-            "tasks": [TaskCard.model_validate(t) for t in tasks_raw.get("task_cards", [])],
-            "patterns": [PatternCardV2.model_validate(p) for p in patterns_raw.get("pattern_cards", [])],
-            "failures": [FailureMode.model_validate(f) for f in failures_raw.get("failures", [])],
-        }
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Failed to load task-pack assets: %s", exc)
-        return None
+    return result
 
 
 @asynccontextmanager

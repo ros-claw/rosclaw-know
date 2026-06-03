@@ -49,6 +49,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from rosclaw_know.bridge_reweighter import reweight_bridge_index  # noqa: E402
 from rosclaw_know.feedback_distill import (  # noqa: E402
     MIN_SAMPLE_SIZE,
+    PatternMetric,
     distill,
     is_demoted,
 )
@@ -212,8 +213,6 @@ def _pull_stats_metrics(how_base: str) -> dict[str, PatternMetric]:
     The /stats endpoint already returns the aggregate per pattern_id, so we
     don't need a JSONL round-trip for evaluation.
     """
-    from rosclaw_know.feedback_distill import PatternMetric
-
     url = f"{how_base.rstrip('/').rstrip('/wiki/v1')}/wiki/v1/stats"
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:

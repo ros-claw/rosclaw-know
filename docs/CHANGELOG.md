@@ -3,6 +3,54 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0a1] — 2026-06-03 · alpha cut for rosclaw integration
+
+### Changed
+
+- **`pyproject.toml`** — moved compiler-only deps (`aiohttp`, `tqdm`,
+  `networkx`, `sentence-transformers`) into the new `[compiler]`
+  extra.  The runtime-facing install (`pip install rosclaw-know`)
+  now requires only `pydantic`, `pyyaml`, `python-dotenv` — drops the
+  wheel from ~2 GB transitive (torch) to ~180 KB.
+- Version cut: `1.5.0.dev13 → 1.5.0a1`.  Alpha series for the
+  rosclaw-main integration window.
+- `__version__` in `src/rosclaw_know/__init__.py` synced from stale
+  `0.1.0` to match `pyproject.toml`.
+
+### Added
+
+- **`src/rosclaw_know/asset_loader.py`** — promotes the previously
+  private `_try_load_task_pack_assets` to a public
+  `load_task_pack_assets(assets_dir)` API.  Runtime consumers (e.g.
+  `rosclaw.know.task_pack_adapter`) call this directly without
+  needing FastAPI.
+- `[compiler]` extra brings back the heavy deps when needed:
+  `pip install rosclaw-know[compiler]`.
+- `[all]` convenience extra for the full stack.
+
+### Fixed
+
+- 5 pre-existing ruff errors cleaned:
+  - `scripts/replay_benchmark.py` — `PatternMetric` import moved to
+    module level (was undefined at type-annotation sites).
+  - `src/rosclaw_know/ab_harness.py` — removed dead `n_significant`
+    counter and its helper `_pval_task_for` (replaced by
+    `significant_tasks` list-comp earlier).
+  - `tests/test_stats_analyze.py` — removed dead `snaps_for` lambda
+    + unused `all_snaps` shadow (the test uses `flat` instead).
+
+### Smoke-tested
+
+- `uv pip install -e .` inside the rosclaw venv (Python 3.11.15) — installs cleanly.
+- All runtime-facing imports succeed:
+  - `from rosclaw_know.sim_ingest import reweight_bridge_from_robot_events`
+  - `from rosclaw_know.task_pack_builder import build_task_pack`
+  - `from rosclaw_know.bridge_reweighter import reweight_bridge_index`
+  - `from rosclaw_know.asset_loader import load_task_pack_assets`
+- 458 tests pass (unchanged); ruff clean.
+- `python -m build` produces a 180 KB wheel + 220 KB sdist that
+  install-and-import correctly in a fresh venv.
+
 ## [1.5.0.dev13] — 2026-06-03 · v1.5 Sprint 13 — catalog expansion to 8/8 event_types
 
 ### Added — Sprint 13 (user request: more v1.5 optimizations + full validation)

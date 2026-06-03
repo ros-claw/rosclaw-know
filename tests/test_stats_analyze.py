@@ -134,12 +134,6 @@ class HistoryAndSnapshotTest(unittest.TestCase):
 
 class MarkdownRenderTest(unittest.TestCase):
     def test_groups_by_trend(self) -> None:
-        snaps_for = lambda series, pid="p": [_snap(_stats_for({pid: u})) for u in series]
-        all_snaps = (
-            snaps_for([0.05, 0.12, 0.18, 0.25], "gainer")
-            + snaps_for([0.25, 0.18, 0.12, 0.05], "loser")
-            + snaps_for([0.10, 0.101, 0.099, 0.100], "stable")
-        )
         # interleave so analyze_trends sees them
         flat: list = []
         for i in range(4):

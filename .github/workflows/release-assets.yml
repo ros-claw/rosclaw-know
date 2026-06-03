@@ -1,0 +1,77 @@
+name: Release Assets
+
+# Fires on annotated tag push (`v1.5.0a1`, `v1.5.0`, etc.).
+# Builds the wheel + sdist, then packages the catalog assets
+# (`data/assets/`) into a single tarball that consumers — including
+# the `rosclaw` runtime via `fetch-assets.yml` — can download
+# independently of the Python install.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  build-and-release:
+    name: Build and publish assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed for softprops/action-gh-release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for changelog generation
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build wheel + sdist
+        run: python -m build
+
+      - name: Verify wheel
+        run: |
+          python -m venv /tmp/verify
+          /tmp/verify/bin/pip install dist/*.whl
+          /tmp/verify/bin/python -c "import rosclaw_know; print('OK', rosclaw_know.__version__)"
+
+      - name: Package catalog assets
+        id: pack
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          ASSET_BUNDLE="knowledge_assets-${TAG}.tar.gz"
+          tar -czf "dist/${ASSET_BUNDLE}" \
+            --exclude='data/assets/sprint*_acceptance_report.*' \
+            --exclude='data/assets/_runtime_stats.json' \
+            -C data assets
+          echo "asset_bundle=${ASSET_BUNDLE}" >> "$GITHUB_OUTPUT"
+          ls -la dist/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref, 'a') || contains(github.ref, 'b') || contains(github.ref, 'rc') }}
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+
+      # Optional: publish to PyPI on stable tags only.  Gated behind
+      # the `pypi` environment so a maintainer must approve each run.
+      - name: Publish to PyPI
+        if: ${{ !contains(github.ref, 'a') && !contains(github.ref, 'b') && !contains(github.ref, 'rc') }}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -n "$TWINE_PASSWORD" ]; then
+            python -m twine upload dist/*.whl dist/*.tar.gz
+          else
+            echo "PYPI_API_TOKEN not configured — skipping PyPI upload"
+          fi
