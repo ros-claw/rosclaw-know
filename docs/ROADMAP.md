@@ -21,7 +21,7 @@ agents before they start.  Sprint plan source:
 | 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | ✅ shipped |
 | 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | ✅ shipped |
 | 7 | Task Pack API + MCP `rosclaw_task_pack` | ✅ shipped |
-| 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | planned |
+| 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | ✅ shipped |
 | 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | planned |
 
 ### Sprint 0 — Safety & sanity (shipped)
@@ -255,14 +255,52 @@ Deferred to a follow-up sprint:
 - Tests: +20 (`test_task_pack_builder.py`).  Full suite **299 PASS**,
   0 FAIL.
 
-### Sprint 8 — Frontier-Eng 6-arm A/B (next)
+### Sprint 8 — Frontier-Eng 6-arm A/B harness (shipped)
 
-With Sprints 1-7 the pipeline is end-to-end: an agent gets a
-TaskPack pre-flight, runs the search, the runtime writes
-EvidenceTraces, the distiller computes placebo-adjusted uplift, and
-bridge_reweighter promotes/demotes patterns.  Sprint 8 closes the
-quality loop by running the 6-arm A/B harness on Frontier-Eng
-benchmarks to ground-truth the pipeline.
+- New `src/rosclaw_know/ab_harness.py` — pure-framework 6-arm A/B
+  with rank-based per-task analysis (Frontier-Eng official rubric).
+  No Frontier-Eng dependency; callers plug in
+  `run_fn(task, arm, seed) → TaskRunResult`.
+- 6 arms: `baseline`, `true_know`, `placebo_know`, `shuffled_know`,
+  `task_pack_only`, `task_pack_plus_catalyst`.
+- Metrics:
+  - `avg_rank` (primary, lower better) — rank-based to avoid
+    pretending heterogeneous tasks share a scale (plan: "异构任务不能
+    直接混原始分数").
+  - `pairwise_win_rate`, `post_injection_delta_vs_baseline`,
+    `validity_preservation_rate`, `mean_hint_use_rate`.
+  - `performance_profile` curves at τ ∈ {1, 1.05, 1.1, 1.25, 1.5,
+    2, 5, 10} — fraction of tasks where the arm's mean score is
+    within τ of the best across arms.
+  - `paired_trend_p_value` per task via pure-stdlib Welch's t +
+    normal approximation (no scipy needed).
+- New `src/rosclaw_know/ab_synthetic.py` — deterministic synthetic
+  backend that produces realistic-shaped Frontier-Eng outcomes; per-
+  arm effect sizes, per-arm hint-adoption rates, per-arm
+  invalid-trial probabilities, per-task hashed offsets, direction
+  awareness.  Lets CI exercise the full pipeline without invoking
+  the real benchmark.
+- New `scripts/run_ab_harness.py` — CLI; runs the plan's 10
+  representative tasks × 6 arms × N seeds against either the
+  synthetic backend or an importable external `run_fn`.  Writes
+  `data/assets/ab_reports/sprint8_<tag>.{json,md}`.
+- Reference synthetic run on 10 tasks × 6 arms × 3 seeds (180 trials)
+  passes **5/5 plan §Sprint 8 acceptance gates**:
+  - True_Know.avg_rank = 2.0 < Placebo_Know.avg_rank = 4.4 ✓
+  - True_Know.avg_rank = 2.0 < Shuffled_Know.avg_rank = 5.8 ✓
+  - TaskPack+CATALYST.avg_rank = 1.0 < Baseline.avg_rank = 4.8 ✓
+  - 10/10 tasks have positive True_Know vs Baseline delta (≥6) ✓
+  - 10/10 tasks reach p < 0.1 (≥4) ✓
+- Tests: +25 (`test_ab_harness.py`).  Full suite **324 PASS**, 0 FAIL.
+
+### Sprint 9 — Real-robot / sim ingest (next)
+
+With Sprints 1-8 in place we have a measured, statistically-grounded
+pipeline working end-to-end on synthetic data.  Sprint 9 finishes
+v1.5 by wiring in real data sources: rosbag/mcap, Foxglove timelines,
+Isaac Sim logs, MuJoCo rollouts, controller configs, URDF/e-URDF,
+collision reports, safety-stop events.  This is what makes
+`source_quality = "S"` (ROSClaw self-verified) actually populate.
 
 ---
 

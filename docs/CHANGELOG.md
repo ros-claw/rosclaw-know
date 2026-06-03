@@ -3,6 +3,85 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev7] — 2026-06-03 · v1.5 Sprint 8 — Frontier-Eng 6-arm A/B harness
+
+### Added — Sprint 8 (plan §Sprint 8, rank-based heterogeneous A/B)
+
+- New `src/rosclaw_know/ab_harness.py` — pure-framework 6-arm harness
+  with no Frontier-Eng dependency.  Callers plug in a
+  `run_fn(task, arm, seed) → TaskRunResult` callback; the framework
+  computes all the analytics.
+  - 6 arms: `baseline`, `true_know`, `placebo_know`, `shuffled_know`,
+    `task_pack_only`, `task_pack_plus_catalyst`.
+  - Per-task arm ranking with fractional ties (scipy-style) and
+    direction-aware sorting (maximise vs minimise).
+  - Cross-task aggregates: `avg_rank` (primary metric, lower is
+    better — rank-based per Frontier-Eng official rubric, plan
+    §Sprint 8 "异构任务不能直接混原始分数"), `win_rate_vs_baseline`,
+    `avg_post_injection_delta_vs_baseline`,
+    `validity_preservation_rate`, `mean_hint_use_rate`.
+  - `pairwise_win_rate(a, b)` — direction-aware fraction of tasks
+    where arm A's mean strictly beats arm B's.
+  - `performance_profile` — for each task computes the best score
+    across arms, then the fraction of tasks where each arm is within
+    factor τ of the best (1.0, 1.05, 1.1, 1.25, 1.5, 2.0, 5.0, 10.0
+    by default).  This is the Frontier-Eng-style heterogeneous-task
+    summary metric.
+  - `paired_trend_p_value(arm)` — pure-stdlib Welch's t plus normal
+    approximation; reports per-task p-values for the trend gate
+    "True_Know is statistically better than baseline".
+  - `acceptance_report` enforces the five plan §Sprint 8 gates:
+    1. True_Know.avg_rank < Placebo_Know.avg_rank
+    2. True_Know.avg_rank < Shuffled_Know.avg_rank
+    3. TaskPack+CATALYST.avg_rank < Baseline.avg_rank
+    4. ≥ 6/10 tasks have positive True_Know vs Baseline delta
+    5. ≥ 4/10 tasks reach p < 0.1 with positive delta
+- New `src/rosclaw_know/ab_synthetic.py` — deterministic synthetic
+  backend.  Per-arm effect sizes (baseline=0, true_know=+0.15,
+  placebo_know=+0.02, shuffled_know=-0.03, task_pack_only=+0.09,
+  task_pack_plus_catalyst=+0.18); per-arm hint adoption rates and
+  invalid-trial probabilities; per-task hashed offset so heterogeneous
+  tasks don't cluster on the same score.  Direction-aware (sign
+  flipped for minimise).
+- New `scripts/run_ab_harness.py` — CLI that runs the plan's 10
+  representative tasks (pid_tuning / crypto_aes128 / flash_attention /
+  high_reliable_simulation / quadruped_gait / robot_arm_cycle_time /
+  battery_fast_charging / jobshop_abz / topology_optimization /
+  uav_inspection) × 6 arms × N seeds.  Default backend is synthetic
+  (CI-friendly); pass `--backend external --run-fn module.attr` to
+  swap in a real Frontier-Eng wrapper.  Writes JSON+markdown to
+  `data/assets/ab_reports/`.  Exits non-zero on any gate failure.
+- Generated `data/assets/ab_reports/sprint8_synthetic.json` +
+  `.md` — reference run; **5/5 acceptance gates passed**.
+
+### Real output of the reference run (synthetic, 10×6×3 = 180 trials)
+
+| arm | avg_rank ↓ | win_vs_baseline | Δ_post_injection | validity | mean_hint_use |
+|---|---:|---:|---:|---:|---:|
+| baseline                | 4.800 | 0%   | +0.0000 | 100% | 0%  |
+| true_know               | 2.000 | 100% | +0.1464 | 100% | 80% |
+| placebo_know            | 4.400 | 70%  | +0.0085 | 93%  | 0%  |
+| shuffled_know           | 5.800 | 10%  | -0.0305 | 100% | 10% |
+| task_pack_only          | 3.000 | 100% | +0.0885 | 97%  | 43% |
+| task_pack_plus_catalyst | 1.000 | 100% | +0.1923 | 100% | 80% |
+
+### Tests
+
+- `tests/test_ab_harness.py` (25 cases):
+  - Rank computation (maximise + minimise + ties + missing arms).
+  - Aggregate logic (mean / validity / hint-use; skip invalid runs).
+  - Pairwise win rate direction-aware.
+  - Post-injection delta direction-aware (positive = better).
+  - Paired p-value (identical → 1.0; clear separation → < 0.01;
+    insufficient data → None).
+  - Performance profile (τ=1 only the best, τ=∞ everyone).
+  - Acceptance report: 5/5 gates pass on synthetic matrix; first
+    gate fails on a stacked deck where placebo beats true_know.
+  - Synthetic run_fn determinism + direction awareness.
+  - render_markdown + to_jsonable round-trip.
+  - CLI integration via in-process call to `run_ab_harness.main`.
+- Full suite **324 PASS** (was 299 after Sprint 7, +25 new).
+
 ## [1.5.0.dev6] — 2026-06-03 · v1.5 Sprint 7 — Task Pack API (pre-flight knowledge for agents)
 
 ### Added — Sprint 7 (plan §10, §11.7)

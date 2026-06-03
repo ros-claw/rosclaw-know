@@ -1,0 +1,214 @@
+{
+  "schema_version": "1.0",
+  "n_trials": 180,
+  "tasks": [
+    "battery_fast_charging",
+    "crypto_aes128",
+    "flash_attention",
+    "high_reliable_simulation",
+    "jobshop_abz",
+    "pid_tuning",
+    "quadruped_gait",
+    "robot_arm_cycle_time",
+    "topology_optimization",
+    "uav_inspection"
+  ],
+  "arms": [
+    "baseline",
+    "true_know",
+    "placebo_know",
+    "shuffled_know",
+    "task_pack_only",
+    "task_pack_plus_catalyst"
+  ],
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "arm_summaries": {
+    "baseline": {
+      "arm": "baseline",
+      "avg_rank": 4.8,
+      "n_tasks": 10,
+      "n_tasks_with_data": 10,
+      "validity_preservation_rate": 1.0,
+      "mean_hint_use_rate": 0.0,
+      "win_rate_vs_baseline": 0.0,
+      "avg_post_injection_delta_vs_baseline": 0.0
+    },
+    "true_know": {
+      "arm": "true_know",
+      "avg_rank": 2.0,
+      "n_tasks": 10,
+      "n_tasks_with_data": 10,
+      "validity_preservation_rate": 1.0,
+      "mean_hint_use_rate": 0.8,
+      "win_rate_vs_baseline": 1.0,
+      "avg_post_injection_delta_vs_baseline": 0.146361
+    },
+    "placebo_know": {
+      "arm": "placebo_know",
+      "avg_rank": 4.4,
+      "n_tasks": 10,
+      "n_tasks_with_data": 10,
+      "validity_preservation_rate": 0.9333,
+      "mean_hint_use_rate": 0.0,
+      "win_rate_vs_baseline": 0.7,
+      "avg_post_injection_delta_vs_baseline": 0.008525
+    },
+    "shuffled_know": {
+      "arm": "shuffled_know",
+      "avg_rank": 5.8,
+      "n_tasks": 10,
+      "n_tasks_with_data": 10,
+      "validity_preservation_rate": 1.0,
+      "mean_hint_use_rate": 0.1,
+      "win_rate_vs_baseline": 0.1,
+      "avg_post_injection_delta_vs_baseline": -0.030475
+    },
+    "task_pack_only": {
+      "arm": "task_pack_only",
+      "avg_rank": 3.0,
+      "n_tasks": 10,
+      "n_tasks_with_data": 10,
+      "validity_preservation_rate": 0.9667,
+      "mean_hint_use_rate": 0.4333,
+      "win_rate_vs_baseline": 1.0,
+      "avg_post_injection_delta_vs_baseline": 0.088465
+    },
+    "task_pack_plus_catalyst": {
+      "arm": "task_pack_plus_catalyst",
+      "avg_rank": 1.0,
+      "n_tasks": 10,
+      "n_tasks_with_data": 10,
+      "validity_preservation_rate": 1.0,
+      "mean_hint_use_rate": 0.8,
+      "win_rate_vs_baseline": 1.0,
+      "avg_post_injection_delta_vs_baseline": 0.192276
+    }
+  },
+  "performance_profile": {
+    "baseline": {
+      "1.0": 0.0,
+      "1.05": 0.0,
+      "1.1": 0.0,
+      "1.25": 0.1,
+      "1.5": 0.4,
+      "2.0": 0.8,
+      "5.0": 1.0,
+      "10.0": 1.0
+    },
+    "true_know": {
+      "1.0": 0.0,
+      "1.05": 0.3,
+      "1.1": 0.5,
+      "1.25": 0.8,
+      "1.5": 1.0,
+      "2.0": 1.0,
+      "5.0": 1.0,
+      "10.0": 1.0
+    },
+    "placebo_know": {
+      "1.0": 0.0,
+      "1.05": 0.0,
+      "1.1": 0.0,
+      "1.25": 0.2,
+      "1.5": 0.5,
+      "2.0": 0.8,
+      "5.0": 1.0,
+      "10.0": 1.0
+    },
+    "shuffled_know": {
+      "1.0": 0.0,
+      "1.05": 0.0,
+      "1.1": 0.0,
+      "1.25": 0.0,
+      "1.5": 0.4,
+      "2.0": 0.8,
+      "5.0": 1.0,
+      "10.0": 1.0
+    },
+    "task_pack_only": {
+      "1.0": 0.0,
+      "1.05": 0.0,
+      "1.1": 0.0,
+      "1.25": 0.6,
+      "1.5": 0.8,
+      "2.0": 1.0,
+      "5.0": 1.0,
+      "10.0": 1.0
+    },
+    "task_pack_plus_catalyst": {
+      "1.0": 1.0,
+      "1.05": 1.0,
+      "1.1": 1.0,
+      "1.25": 1.0,
+      "1.5": 1.0,
+      "2.0": 1.0,
+      "5.0": 1.0,
+      "10.0": 1.0
+    }
+  },
+  "post_injection_deltas_true_know": {
+    "battery_fast_charging": 0.148102,
+    "crypto_aes128": 0.170299,
+    "flash_attention": 0.136637,
+    "high_reliable_simulation": 0.147919,
+    "jobshop_abz": 0.142857,
+    "pid_tuning": 0.137805,
+    "quadruped_gait": 0.141278,
+    "robot_arm_cycle_time": 0.133386,
+    "topology_optimization": 0.130456,
+    "uav_inspection": 0.174871
+  },
+  "paired_trend_p_values_true_know": {
+    "battery_fast_charging": 0.0,
+    "crypto_aes128": 0.0,
+    "flash_attention": 0.0,
+    "high_reliable_simulation": 0.0,
+    "jobshop_abz": 0.0,
+    "pid_tuning": 0.0,
+    "quadruped_gait": 0.0,
+    "robot_arm_cycle_time": 0.0,
+    "topology_optimization": 0.0,
+    "uav_inspection": 0.0
+  },
+  "acceptance": {
+    "n_passed": 5,
+    "n_total": 5,
+    "all_passed": true,
+    "gates": [
+      {
+        "name": "true_know_beats_placebo",
+        "description": "True_Know.avg_rank < Placebo_Know.avg_rank",
+        "passed": true,
+        "detail": "true_know.avg_rank=2.0 vs placebo_know.avg_rank=4.4"
+      },
+      {
+        "name": "true_know_beats_shuffled",
+        "description": "True_Know.avg_rank < Shuffled_Know.avg_rank",
+        "passed": true,
+        "detail": "true_know.avg_rank=2.0 vs shuffled_know.avg_rank=5.8"
+      },
+      {
+        "name": "pack_plus_catalyst_beats_baseline",
+        "description": "TaskPack+CATALYST.avg_rank < Baseline.avg_rank",
+        "passed": true,
+        "detail": "pack+catalyst.avg_rank=1.0 vs baseline.avg_rank=4.8"
+      },
+      {
+        "name": "positive_delta_majority",
+        "description": "≥6/10 tasks have positive True_Know vs Baseline delta",
+        "passed": true,
+        "detail": "10/10 positive"
+      },
+      {
+        "name": "significant_trend_count",
+        "description": "≥4/10 tasks reach p<0.1 with positive delta",
+        "passed": true,
+        "detail": "significant tasks: ['battery_fast_charging', 'crypto_aes128', 'flash_attention', 'high_reliable_simulation', 'jobshop_abz', 'pid_tuning', 'quadruped_gait', 'robot_arm_cycle_time', 'topology_optimization', 'uav_inspection']"
+      }
+    ]
+  }
+}
