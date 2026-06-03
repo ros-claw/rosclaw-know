@@ -3,6 +3,92 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev3] — 2026-06-03 · v1.5 Sprint 4 — Pattern Compiler V2
+
+### Added — Sprint 4 (CandidatePattern → action-template markdown)
+
+- `src/rosclaw_know/pattern_compiler_v2.py` — turns a Sprint-3
+  `CandidatePattern` (with optional `FailureMode` context) into a
+  Sprint-4 `PatternCardV2` and renders it to action-template markdown.
+  Pure-deterministic — no LLM call, every section comes from
+  structural mapping of typed fields.
+- `scripts/compile_pattern_cards.py` — CLI driver.  Reads Sprint-3's
+  `data/assets/trajectory_patterns.yaml` + Sprint-1's
+  `failure_taxonomy.yaml`, compiles each candidate to a markdown file
+  in `data/assets/compiled_patterns/`.  Pre-flight lint refuses to
+  write any card missing a required section.
+- `scripts/lint_pattern_v2.py` — strict structure linter.  Enforces
+  plan §11.6 acceptance:
+  - Every file has all 8 required section headings (Symptom,
+    Diagnosis, Preconditions, Next Experiment, Code Target, Expected
+    Verifier Signal, Anti-pattern, Contraindications).
+  - Every file declares `source_quality` ∈ {S, A, B, C, D}.
+  - Every file declares an `evidence` block with `n / avg_uplift /
+    win_rate`.
+  - `## Next Experiment`, `## Code Target`, `## Expected Verifier
+    Signal` sections must not contain bare float literals *in prose*
+    (fenced code blocks are exempt — patch sketches may show `0.0`).
+- `data/assets/compiled_patterns/pattern_v2_*.md` — 8 generated cards
+  compiled from Sprint-3 candidates.  All 8 lint clean (100% pass
+  rate, well above the §Sprint4 ≥ 90% gate).  Notable entries:
+  - `pattern_v2_zero_integral_gain_on_saturation.md` — backed by
+    `failure_pid_integrator_windup`, 9 source trajectories.
+  - `pattern_v2_controller_output_clamp.md` — backed by
+    `failure_actuator_clamp_missing`, 14 source trajectories.
+  - `pattern_v2_vectorize_inner_loop.md` — 45 source trajectories
+    across 11 task families.
+- `tests/test_pattern_compiler.py` (18 cases) — unit tests for every
+  compile branch (FailureMode override, source_quality assignment,
+  imperative-template construction, source-id truncation), renderer
+  invariants (every required section present, frontmatter is valid
+  YAML), linter unit tests (missing section / bad source_quality /
+  leak detection / code-block tolerance), and full end-to-end:
+  compile every Sprint-3 candidate, lint the result.
+
+### Changed — Sprint 4
+
+- `src/rosclaw_know/muse.py::_write_pattern_file` — extended to emit
+  the v2 section structure (Diagnosis / Preconditions / Next
+  Experiment / Code Target / Expected Verifier Signal /
+  Contraindications) alongside the legacy Fix / Anti-pattern / Patch
+  sections.  Missing fields fall back to
+  `_(no <thing> documented in source)_` placeholders, matching the
+  existing Phase 8 anti-pattern fallback.  Adds
+  `schema_version: "2.0"`, `source_quality: C`, and an empty
+  evidence block to muse-minted frontmatter so future muse output
+  passes the v2 linter without retrofitting.
+
+### Verified
+
+- `pytest -q` — **201 passed** (Sprint 3 baseline 183; +18 Sprint 4).
+- `compile_pattern_cards.py --apply` — wrote 8 markdown files; all 8
+  pass `lint_pattern_v2.py` at 100% (gate ≥ 90%).
+- Acceptance §11.6 — every compiled pattern includes Diagnosis /
+  Preconditions / Next Experiment / Expected Verifier Signal /
+  Contraindications ✓; every pattern declares source_quality ✓; the
+  patch-sketch section is allowed to show `0.0` inside code blocks
+  but not in agent-facing prose (enforced by linter).
+
+### Design notes
+
+- **Failure-mode-overrides-prose.**  When a candidate's `failure_id`
+  matches an entry in the failure taxonomy, the compiler uses the
+  taxonomy's `symptom_text` and merges in its `likely_causes` ahead
+  of the candidate's own diagnosis.  Curated phrasing wins.
+- **Source-quality grading.**  Sprint-4 compiled patterns land at A
+  (≥ 5 trajectories of evidence) or B (< 5).  S is reserved for
+  ROSClaw-self-verified patterns once Sprint 6's evidence loop comes
+  online.
+- **Priority.**  All Sprint-4 compiled patterns land at priority=0
+  (staging).  Promotion to priority=1 (production) needs Sprint-6's
+  placebo-adjusted uplift — until then, no candidate has earned the
+  badge.
+- **Patch-sketch shape vs answer.**  Patch sketches show *the shape*
+  of the change (`out = np.clip(out, -bound, bound)`) with named
+  symbols, not the verbatim baseline_archive code.  Plan §3.5
+  explicitly forbids embedding answer values; the linter enforces
+  this on agent-facing prose sections.
+
 ## [1.5.0.dev2] — 2026-06-03 · v1.5 Sprint 3 — Trajectory Mining
 
 ### Added — Sprint 3 (agent rollouts → CandidatePattern)

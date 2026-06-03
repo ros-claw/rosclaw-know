@@ -144,6 +144,17 @@ def _write_pattern_file(
     attr: dict,
     analogies: list[dict],
 ) -> Path:
+    """Write a muse-minted pattern markdown.
+
+    The on-disk shape conforms to Sprint-4 plan §11.6: every emitted
+    file carries Diagnosis / Preconditions / Next Experiment /
+    Code Target / Expected Verifier Signal / Anti-pattern /
+    Contraindications sections.  Most fields are populated with
+    placeholder text (``_(no <thing> documented in source)_``) when
+    the upstream extractor didn't supply them — muse is a salvage
+    pipeline over noisy wiki pages, so partial fills are expected and
+    the linter explicitly tolerates them.
+    """
     slug = _id_to_slug(node_id)
     out_path = config.CODE_PATTERNS_DIR / f"pattern_{slug}.md"
     diff = _make_unified_diff(
@@ -152,21 +163,76 @@ def _write_pattern_file(
     body = []
     body.append("---")
     body.append(f"pattern_id: pattern_{slug}")
+    body.append("schema_version: \"2.0\"")
     body.append(f"applicable_symptoms: [{node_id}]")
     body.append(f"domain: {attr['domain']}")
+    body.append("source_quality: C")  # muse-minted = C (curated list source)
+    body.append("evidence:")
+    body.append("  n: 0")
+    body.append("  avg_uplift: 0.0")
+    body.append("  win_rate: 0.0")
+    body.append("  hint_use_rate: 0.0")
     body.append("---")
     body.append("")
     body.append(f"# {attr['symptom']}")
     body.append("")
     body.append(f"**Domain**: `{attr['domain']}`")
     body.append("")
+    body.append("## Symptom")
+    body.append("")
+    body.append(attr["symptom"] or "_(no symptom documented)_")
+    body.append("")
+    body.append("## Diagnosis")
+    body.append("")
+    body.append(
+        attr.get("diagnosis")
+        or attr.get("fix")
+        or "_(no diagnosis documented in source — see Fix section)_"
+    )
+    body.append("")
+    body.append("## Preconditions")
+    body.append("")
+    body.append(attr.get("preconditions") or "_(no preconditions documented in source)_")
+    body.append("")
+    body.append("## Next Experiment")
+    body.append("")
+    body.append(
+        attr.get("next_experiment")
+        or attr.get("fix")
+        or "_(no next experiment documented; treat the Fix section as the recipe)_"
+    )
+    body.append("")
+    body.append("## Code Target")
+    body.append("")
+    body.append(attr.get("code_target") or "_(no code target documented in source)_")
+    body.append("")
     body.append("## Fix")
     body.append("")
     body.append(attr["fix"] or "_(no fix recorded)_")
     body.append("")
+    body.append("## Patch Sketch")
+    body.append("")
+    body.append("```diff")
+    body.append(diff)
+    body.append("```")
+    body.append("")
+    body.append("## Expected Verifier Signal")
+    body.append("")
+    body.append(
+        attr.get("expected_verifier_signal")
+        or "_(no expected verifier signal documented in source)_"
+    )
+    body.append("")
     body.append("## Anti-pattern")
     body.append("")
     body.append(attr.get("failed") or "_(no anti-pattern documented in source)_")
+    body.append("")
+    body.append("## Contraindications")
+    body.append("")
+    body.append(
+        attr.get("contraindications")
+        or "_(no contraindications documented in source)_"
+    )
     body.append("")
     if analogies:
         body.append("## Cross-domain analogies")
@@ -175,11 +241,6 @@ def _write_pattern_file(
             body.append(f"- **{a['source_domain']}** → {a['insight']}")
             body.append(f"  - related fix: {a['action_suggestion']}")
         body.append("")
-    body.append("## Patch")
-    body.append("")
-    body.append("```diff")
-    body.append(diff)
-    body.append("```")
     out_path.write_text("\n".join(body) + "\n", encoding="utf-8")
     return out_path
 

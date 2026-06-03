@@ -17,7 +17,7 @@ agents before they start.  Sprint plan source:
 | **1** | Typed knowledge objects + v1→v2 migration | ✅ shipped |
 | **2** | Frontier-Eng / Arena `TaskCard` extraction (47 tasks) | ✅ shipped |
 | **3** | Trajectory mining (Python / CUDA / crypto / scheduling features) | 🟡 partial (framework + 3/4 extractors) |
-| 4 | Pattern Compiler v2 (action-template markdown) | planned |
+| **4** | Pattern Compiler v2 (action-template markdown) | ✅ shipped |
 | 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | planned |
 | 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | planned |
 | 7 | Task Pack API + MCP `rosclaw_task_pack` | planned |
@@ -112,14 +112,34 @@ Deferred to a follow-up sprint:
   (eval.json per step).  `from_iteration_dir` handles it; Sprint 9
   (real-robot/sim ingest) provides the data.
 
-### Sprint 4 — Pattern Compiler v2 (next)
+### Sprint 4 — Pattern Compiler V2 (shipped)
 
-Once Sprint 3's CandidatePatterns + Sprint 2's TaskCards are stable,
-the next step is **compiling them into agent-facing action templates**.
-See plan §11.6 — every emitted markdown file must include
-Diagnosis / Next Experiment / Code Target / Expected Signal /
-Contraindication blocks, replacing the current narrative pattern
-format.
+- `src/rosclaw_know/pattern_compiler_v2.py` — deterministic
+  CandidatePattern → PatternCardV2 mapping with FailureMode-aware
+  symptom/diagnosis overlay.
+- `scripts/compile_pattern_cards.py` + `scripts/lint_pattern_v2.py` —
+  CLI + linter enforcing plan §11.6 acceptance.
+- 8 action-template markdowns generated to
+  `data/assets/compiled_patterns/`; all pass the linter (100% vs
+  ≥ 90% gate).  Notable entries:
+  - `pattern_v2_zero_integral_gain_on_saturation` (failure_pid_integrator_windup)
+  - `pattern_v2_controller_output_clamp` (failure_actuator_clamp_missing)
+  - `pattern_v2_vectorize_inner_loop` (cross-family, 45 trajectories)
+- `muse._write_pattern_file` extended to emit v2 sections so future
+  muse-minted pattern markdown passes the same linter.
+
+### Sprint 5 — Physical Knowledge Graph V2 (next)
+
+Sprint 4 leaves us with two parallel asset stores:
+
+- v1 `bridge_index.json` (rosclaw-how reads this verbatim)
+- v2 typed objects (TaskCard / CandidatePattern / FailureMode /
+  PatternCardV2)
+
+Sprint 5 plumbs them into a single multi-type `nx.MultiDiGraph` with
+the 11 edge kinds the plan §6.2 specifies (CAUSES, FIXES, VIOLATES,
+APPLIES_TO, …) and a hybrid retriever that boosts on
+`evidence_count`, `embodiment_type`, and `verifier_type`.
 
 ---
 
