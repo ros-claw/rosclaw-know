@@ -3,6 +3,69 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev1] — 2026-06-03 · v1.5 Sprint 2 — Benchmark Task Cards
+
+### Added — Sprint 2 (Frontier-Eng → TaskCard catalog)
+
+- `src/rosclaw_know/extractors/` — new package; first deliverable
+  `benchmark_extractor.py`. Reads a Frontier-Eng / Arena task directory
+  (`Task.md` + `frontier_eval/{initial_program,eval_command,constraints}.txt`)
+  and emits a fully-typed `TaskCard`.  Pure-structural, no LLM calls;
+  deterministic byte-identical output given the same inputs.
+- `scripts/extract_frontier_task_cards.py` — CLI wrapper that walks a
+  `benchmarks/` tree and writes `data/assets/task_cards.yaml`.  Has
+  acceptance gate `--min-cards 47` (the Frontier-Eng v1 task count) and
+  refuses to write when fewer cards were produced or when any card is
+  missing `objective_direction` / `artifact_type` / `verifier_type`.
+- `data/assets/task_cards.yaml` — generated catalog of **74 TaskCards**
+  spanning 22 task families.  Coverage:
+  - `objective_direction` / `artifact_type` / `verifier_type`: 74/74
+  - `common_failure_modes`: 74/74
+  - `hard_constraints`: 70/74 (4 tasks lack constraints.txt and a
+    matching ## Constraints section in their Task.md)
+  - Distribution: 70 python / 4 cpp · 41 checker_script / 24 simulator
+    / 9 benchmark_harness · 37 World_Physics / 15 Planning_Decision /
+    10 Control_Locomotion / 8 Systems_Compute / 4 Learning_Training ·
+    61 maximize / 13 minimize.
+- `tests/test_benchmark_extractor.py` (34 cases) — unit tests for the
+  heuristics (camel→snake, artifact-from-extension, metric-anchored
+  direction, parent-index detection, constraint extraction), end-to-end
+  tests building synthetic Task.md trees, and integration tests against
+  the real Frontier-Eng corpus (gated on its presence).
+
+### Design notes
+
+- **Metric-anchored direction.** Several Task.md files describe the
+  objective in prose that contradicts the actual scoring direction
+  (e.g. FlashAttention "minimize execution time" but
+  `combined_score = 1e9 / geom_mean_ns` is maximize).  The extractor
+  detects `metric_name` first, then consults a `METRIC_DIRECTION` table.
+  Only metrics not on the table fall through to a prose-direction scan.
+- **Parent-index filter.**  `benchmarks/EngDesign/Task.md` and
+  `benchmarks/MolecularMechanics/Task.md` are TOC stubs pointing at
+  subdirectories.  `is_parent_index` skips them by detecting either
+  (a) a child subdir with its own `Task.md`, or (b) a child with
+  `LLM_prompt.txt`, or (c) a stub body under 400 chars.
+- **Recommendation map invariants.**  `FAMILY_TO_DOMAIN` and
+  `FAMILY_RECOMMENDATIONS` are required to share the same key set; a
+  test enforces it so a half-edit can't silently produce cards with
+  empty `common_failure_modes`.  Every recommended pattern id is also
+  required to exist as a curated entry in `data/assets/code_patterns/`.
+
+### Verified
+
+- `pytest -q` — **161 passed** (Sprint 1 baseline was 127; +34 new
+  cases).
+- `scripts/extract_frontier_task_cards.py --apply` — wrote 74-card
+  catalog; round-trips back to TaskCard pydantic models cleanly.
+- `scripts/validate_bridge.py` — still OK on migrated bridge tree.
+- `scripts/migrate_assets_v1_to_v2.py --check` — clean (no drift).
+- Acceptance gates from plan §11.3 — all satisfied:
+  - 74 ≥ 47 task_cards ✓
+  - 74/74 cards with `objective_direction` ✓
+  - 74/74 cards with `artifact_type` ✓
+  - 74/74 cards with `verifier_type` ✓
+
 ## [1.5.0.dev0] — 2026-06-03 · v1.5 Sprint 0 + Sprint 1
 
 ### Added — Sprint 0 (safety + sanity)

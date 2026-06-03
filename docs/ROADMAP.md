@@ -15,7 +15,7 @@ agents before they start.  Sprint plan source:
 |---|---|---|
 | **0** | Safety + statistical sanity fixes | ✅ shipped |
 | **1** | Typed knowledge objects + v1→v2 migration | ✅ shipped |
-| 2 | Frontier-Eng / Arena `TaskCard` extraction (47 tasks) | planned |
+| **2** | Frontier-Eng / Arena `TaskCard` extraction (47 tasks) | ✅ shipped |
 | 3 | Trajectory mining (Python / CUDA / crypto / scheduling features) | planned |
 | 4 | Pattern Compiler v2 (action-template markdown) | planned |
 | 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | planned |
@@ -59,14 +59,35 @@ agents before they start.  Sprint plan source:
   +2 in the existing pytest run that now passes with the new pydantic
   env).  Full suite 127 PASS, 0 FAIL.
 
-### Sprint 2 — TaskCard extraction (next)
+### Sprint 2 — TaskCard extraction (shipped)
 
-The big leverage step.  Goal: every Frontier-Eng / ROSClaw Arena task
-gets a typed `TaskCard` with `objective_direction`, `metric_name`,
-`hard_constraints`, `verifier_type`, `common_failure_modes`,
-`recommended_patterns`.  See `src/rosclaw_know/schemas.py::TaskCard`
-for the shape; `extractors/benchmark_extractor.py` will land in
-this sprint.
+- New `src/rosclaw_know/extractors/benchmark_extractor.py` — reads a
+  Frontier-Eng task directory and emits one fully-typed `TaskCard`.
+  Deterministic, no LLM call required (purely structural).  Family
+  → domain and family → (failure_mode, pattern) maps live in the same
+  module and share key sets by test invariant.
+- New `scripts/extract_frontier_task_cards.py` — sweeps a
+  `benchmarks/` tree, validates each card via pydantic, refuses to
+  write below the `--min-cards 47` gate.
+- Real Frontier-Eng corpus generated **74 TaskCards** across 22 task
+  families.  Acceptance §11.3 satisfied:
+  - `objective_direction` / `artifact_type` / `verifier_type` present
+    on 74/74.
+  - `common_failure_modes` present on 74/74 (recommendation map
+    extended to cover every family in `FAMILY_TO_DOMAIN`).
+  - `hard_constraints` on 70/74 (4 tasks lack both constraints.txt and
+    a matching Task.md section).
+- Tests: +34 (`test_benchmark_extractor.py`).  Full suite 161 PASS,
+  0 FAIL.
+
+### Sprint 3 — Trajectory mining (next)
+
+Once Sprint 2's static catalog exists, the next leverage step is
+**learning from agent rollouts**.  Sprint 3 implements
+`extractors/trajectory_extractor.py` plus four family-specific feature
+extractors (PID / AES / CUDA / scheduling) so successful and failed
+mutations from real Frontier-Eng runs feed back into the pattern
+library.  See plan §5.3, §11.4 for shape.
 
 ---
 
