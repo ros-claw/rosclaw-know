@@ -77,7 +77,7 @@ def main() -> int:
         print("[1-2/6] skipped (--skip-research)")
 
     # ── Step 3 : init ────────────────────────────────────────────────────
-    print(f"[3/6] how.init(task_summary='Tune 12 PID gains for quadrotor') ...")
+    print("[3/6] how.init(task_summary='Tune 12 PID gains for quadrotor') ...")
     try:
         init = rc.how.init(task_summary="Tune 12 PID gains for 2D quadrotor with dead-time tolerance")
         print(f"      top_k={len(init.top_k_patterns)} curriculum_len={len(init.recommended_curriculum)}")

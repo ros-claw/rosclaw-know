@@ -9,7 +9,6 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-
 os.environ.setdefault("ROSCLAW_KNOW_MOCK_LLM", "1")
 os.environ.setdefault("DEEPSEEK_API_KEY", "")
 

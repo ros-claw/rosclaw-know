@@ -23,7 +23,6 @@ from rosclaw_know.hybrid_retriever import (
 )
 from rosclaw_know.schemas import EvidenceBlock, PatternCardV2
 
-
 # ── factory ──────────────────────────────────────────────────────────────
 
 

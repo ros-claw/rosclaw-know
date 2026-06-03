@@ -30,8 +30,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import aiohttp
 import networkx as nx

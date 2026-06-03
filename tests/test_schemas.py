@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from rosclaw_know.schemas import (
+    FRONTIER_DOMAINS,
     SCHEMA_VERSION,
     BridgeClusterV2,
     BridgeIndexV2,
@@ -15,14 +16,12 @@ from rosclaw_know.schemas import (
     EvidenceTrace,
     FailureMode,
     FixPattern,
-    FRONTIER_DOMAINS,
     PatternCardV2,
     SourceRecordV2,
     TaskCard,
     VerifierCard,
     validate_bridge,
 )
-
 
 # ── happy-path round trips ──────────────────────────────────────────────
 

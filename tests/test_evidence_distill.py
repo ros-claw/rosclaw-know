@@ -7,14 +7,11 @@ from typing import Literal
 import pytest
 
 from rosclaw_know.evidence_distill import (
-    ADJUSTED_DEMOTE_THRESHOLD,
-    ADJUSTED_PROMOTE_THRESHOLD,
     ALL_ARMS,
+    MIN_SAMPLE_SIZE,
     ArmStats,
     CoverageReport,
     EvidenceStat,
-    MIN_SAMPLE_SIZE,
-    WIN_DELTA_THRESHOLD,
     distill,
     is_demoted,
     is_promoted,
@@ -22,7 +19,6 @@ from rosclaw_know.evidence_distill import (
     write_stats,
 )
 from rosclaw_know.schemas import EvidenceTrace
-
 
 # ── factory ──────────────────────────────────────────────────────────────
 

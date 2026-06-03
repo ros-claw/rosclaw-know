@@ -14,7 +14,6 @@ from rosclaw_know.pattern_compiler_v2 import (
 )
 from rosclaw_know.schemas import (
     CandidatePattern,
-    EvidenceBlock,
     FailureMode,
     Mutation,
     PatternCardV2,
@@ -25,7 +24,6 @@ sys.path.insert(
     0, str(Path(__file__).resolve().parent.parent / "scripts")
 )
 import lint_pattern_v2 as linter  # noqa: E402
-
 
 # ── fixtures ──────────────────────────────────────────────────────────
 
@@ -42,7 +40,7 @@ def _make_candidate(
     mutations = [
         Mutation(
             kind=k,
-            description=f"set parameter to zero on Ki_z" if k == "set_parameter_zero"
+            description="set parameter to zero on Ki_z" if k == "set_parameter_zero"
                         else "added some intervention",
             target_identifier="Ki_z" if k == "set_parameter_zero" else None,
         )

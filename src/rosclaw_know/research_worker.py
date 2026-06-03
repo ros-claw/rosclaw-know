@@ -25,7 +25,6 @@ import os
 import time
 import urllib.error
 import urllib.request
-from typing import Any
 
 from . import config
 from .incremental_pipeline import run_incremental_ingest

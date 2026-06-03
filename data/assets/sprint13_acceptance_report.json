@@ -1,0 +1,52 @@
+{
+  "yaml_failures_added": 4,
+  "yaml_failures_skipped_existing": 0,
+  "graph_failures_added": 4,
+  "graph_fix_patterns_added": 7,
+  "graph_fixes_edges_added": 7,
+  "auto_derived_transfer_table_after_expansion": {
+    "actuator_saturation": [
+      "compiled_controller_output_clamp",
+      "compiled_zero_integral_gain_on_saturation"
+    ],
+    "collision": [
+      "compiled_collision_avoidance_replan"
+    ],
+    "controller_error": [
+      "compiled_gradient_clip_norm",
+      "compiled_mpc_replan_on_state_error",
+      "compiled_zero_integral_gain_on_saturation"
+    ],
+    "joint_limit_violation": [
+      "compiled_joint_limit_planner_clamp"
+    ],
+    "safety_stop": [
+      "compiled_safety_stop_supervised_resume"
+    ],
+    "sensor_outlier": [
+      "compiled_sensor_median_filter_guard"
+    ],
+    "task_timeout": [
+      "compiled_add_time_budget",
+      "compiled_generic_time_budget",
+      "compiled_warm_start_from_prior_best"
+    ],
+    "trajectory_deviation": [
+      "compiled_gradient_clip_norm",
+      "compiled_mpc_replan_on_state_error"
+    ]
+  },
+  "covered_event_types": [
+    "actuator_saturation",
+    "collision",
+    "controller_error",
+    "joint_limit_violation",
+    "safety_stop",
+    "sensor_outlier",
+    "task_timeout",
+    "trajectory_deviation"
+  ],
+  "uncovered_event_types": [],
+  "distinct_event_types": 8,
+  "canonical_total": 8
+}

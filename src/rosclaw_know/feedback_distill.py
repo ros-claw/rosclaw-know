@@ -23,12 +23,11 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import statistics
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable, Iterator
 
 from .config import ASSETS_DIR, PROJECT_ROOT
 

@@ -7,7 +7,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 os.environ.setdefault("ROSCLAW_KNOW_MOCK_LLM", "1")
 os.environ.setdefault("DEEPSEEK_API_KEY", "")
 
@@ -15,10 +14,10 @@ SRC = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC))
 
 from rosclaw_know.awesome_fetcher import (  # noqa: E402
+    AwesomeEntry,
     _classify,
     _slug,
     _write_entry_md,
-    AwesomeEntry,
     parse_readme,
 )
 

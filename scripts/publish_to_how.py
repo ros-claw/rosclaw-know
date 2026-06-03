@@ -36,7 +36,6 @@ sys.path.insert(0, str(SRC))
 
 from rosclaw_know.config import ASSETS_DIR, PROJECT_ROOT  # noqa: E402
 
-
 DEFAULT_HOW_ROOT = PROJECT_ROOT.parent / "rosclaw-how"
 
 

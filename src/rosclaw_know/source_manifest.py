@@ -30,10 +30,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
 
 from .config import DATA_DIR
 
@@ -76,7 +76,7 @@ class SourceManifest:
     files: dict[str, SourceRecord] = field(default_factory=dict)
 
     @classmethod
-    def load(cls, path: Path | None = None) -> "SourceManifest":
+    def load(cls, path: Path | None = None) -> SourceManifest:
         """Read manifest from disk, returning an empty one if absent or malformed."""
         path = path or DEFAULT_MANIFEST_PATH
         if not path.exists():

@@ -65,7 +65,7 @@ class ResearchStore:
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     @classmethod
-    def load(cls, path: Path | None = None) -> "ResearchStore":
+    def load(cls, path: Path | None = None) -> ResearchStore:
         path = path or DEFAULT_STORE_PATH
         store = cls(path=path)
         if not path.exists():

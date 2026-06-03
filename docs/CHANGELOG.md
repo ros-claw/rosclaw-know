@@ -3,6 +3,63 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev13] — 2026-06-03 · v1.5 Sprint 13 — catalog expansion to 8/8 event_types
+
+### Added — Sprint 13 (user request: more v1.5 optimizations + full validation)
+
+After Sprint 10 made the cross-embodiment transfer table an
+auto-derived join over `FailureMode ↔ FixPattern.failure_ids`, only
+3/8 canonical RobotEvent event_types had any matching FixPattern in
+the compiled graph.  Sprint 13 widens the catalog domain-side so the
+join now covers all 8.
+
+- **`data/assets/failure_taxonomy.yaml`** — 4 new FailureMode entries:
+  `failure_unhandled_collision_contact`, `failure_joint_limit_breach`,
+  `failure_sensor_spike_dropout`, `failure_safety_stop_no_recovery`.
+  Each pins its event_type vocabulary in the structural-identity
+  fields (`id` / `normalized_symptom` / `name`) that
+  `cross_embodiment._haystack_for` reads.
+- **`data/assets/physical_graph.json`** — 4 new FailureMode nodes
+  (mirroring YAML), 7 new FixPattern nodes, and 7 new FIXES edges.
+  The FixPatterns cover the 4 new failures plus three pre-existing
+  orphans (`failure_planning_divergence`,
+  `failure_kv_cache_unbounded_growth`, `failure_gradient_explosion`)
+  so the auto-derived table picks them up.
+- **`scripts/sprint13_expand_catalog.py`** — idempotent patcher.
+  Re-runs after a successful pass leave assets untouched.
+- **`tests/test_cross_embodiment_auto.py`** — `test_event_type_universe_covers_canonical_types`
+  floor raised from `>= 3` to `covered == canonical` (all 8 event_types).
+
+### Acceptance: 8/8 event_types covered
+
+```
+actuator_saturation     → 2 patterns (compiled_controller_output_clamp, …windup)
+collision               → 1 pattern  (compiled_collision_avoidance_replan)        ← new
+controller_error        → 3 patterns (added compiled_mpc_replan_on_state_error,   ← new
+                                       compiled_gradient_clip_norm)               ← new
+joint_limit_violation   → 1 pattern  (compiled_joint_limit_planner_clamp)         ← new
+safety_stop             → 1 pattern  (compiled_safety_stop_supervised_resume)     ← new
+sensor_outlier          → 1 pattern  (compiled_sensor_median_filter_guard)        ← new
+task_timeout            → 3 patterns (unchanged)
+trajectory_deviation    → 2 patterns (compiled_mpc_replan_on_state_error,         ← new
+                                       compiled_gradient_clip_norm)               ← new
+```
+
+### Why this matters
+
+After Sprint 13, *any* real-robot event_type produced by any
+adapter (rosbag / Foxglove / Isaac / MuJoCo) has at least one fix
+pattern the runtime can suggest — there is no longer a path through
+the system where a structurally-valid RobotEvent yields an empty
+cross-embodiment recommendation.
+
+### Tests
+
+```
+pytest -q   →  458 passed
+ruff check  →  all Sprint 13 files clean
+```
+
 ## [1.5.0.dev12] — 2026-06-03 · v1.5 Sprint 12 — bridge_reweighter direct path
 
 ### Added — Sprint 12 (user request: bridge_reweighter 直跑)

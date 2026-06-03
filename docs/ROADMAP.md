@@ -26,6 +26,7 @@ agents before they start.  Sprint plan source:
 | 10 | Auto-derived cross-embodiment transfer table (replaces Sprint 9 hand table) | ✅ shipped |
 | 11 | Self-improvement loop (real-robot → Sprint 6 promote + Sprint 4 discover) | ✅ shipped |
 | 12 | bridge_reweighter direct path (in-memory, no intermediate files) | ✅ shipped |
+| 13 | Catalog expansion — 8/8 canonical event_types covered | ✅ shipped |
 
 ### Sprint 0 — Safety & sanity (shipped)
 

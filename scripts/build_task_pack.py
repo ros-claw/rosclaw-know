@@ -28,7 +28,6 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Sequence
 
 import yaml
 
@@ -37,7 +36,6 @@ from rosclaw_know.schemas import (
     FailureMode,
     PatternCardV2,
     TaskCard,
-    TaskPack,
     TaskPackQuery,
 )
 from rosclaw_know.task_pack_builder import (

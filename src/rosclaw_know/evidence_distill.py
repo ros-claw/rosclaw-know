@@ -31,7 +31,7 @@ from __future__ import annotations
 import json
 import logging
 import statistics
-from collections import Counter, defaultdict
+from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path

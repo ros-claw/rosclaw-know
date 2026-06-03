@@ -46,12 +46,12 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+from rosclaw_know.bridge_reweighter import reweight_bridge_index  # noqa: E402
 from rosclaw_know.feedback_distill import (  # noqa: E402
     MIN_SAMPLE_SIZE,
     distill,
     is_demoted,
 )
-from rosclaw_know.bridge_reweighter import reweight_bridge_index  # noqa: E402
 
 logger = logging.getLogger("rosclaw_know.replay_benchmark")
 
@@ -205,7 +205,7 @@ def _trigger_export(how_root: Path) -> Path | None:
     return None
 
 
-def _pull_stats_metrics(how_base: str) -> dict[str, "PatternMetric"]:
+def _pull_stats_metrics(how_base: str) -> dict[str, PatternMetric]:
     """HTTP fallback: build PatternMetric instances directly from ``/stats``.
 
     Used when ``export_outcomes.py`` cannot open SeekDB (single-process lock).
@@ -240,7 +240,7 @@ def _pull_stats_metrics(how_base: str) -> dict[str, "PatternMetric"]:
 
 def evaluate(
     tag_map: dict[str, str],
-    metrics: dict[str, "PatternMetric"],
+    metrics: dict[str, PatternMetric],
     how_root: Path,
 ) -> tuple[bool, dict[str, Any]]:
     """Given ``metrics`` (already sourced), reweight and check tag agreement.

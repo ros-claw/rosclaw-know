@@ -26,8 +26,8 @@ from __future__ import annotations
 import logging
 import math
 import statistics
-from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Sequence
+from collections import defaultdict
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
 from typing import Literal
 

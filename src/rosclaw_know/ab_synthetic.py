@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import math
 import random
 
 from .ab_harness import ArmName, TaskRunResult, TaskSpec
@@ -88,7 +87,7 @@ def _stable_task_offset(task_id: str) -> float:
 
 def _seeded_rng(task_id: str, arm: str, seed: int) -> random.Random:
     """Per-trial deterministic RNG (task × arm × seed)."""
-    key = f"{task_id}::{arm}::{seed}".encode("utf-8")
+    key = f"{task_id}::{arm}::{seed}".encode()
     h = hashlib.sha256(key).digest()
     return random.Random(int.from_bytes(h[:8], "big"))
 

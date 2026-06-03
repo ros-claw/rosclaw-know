@@ -4,21 +4,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from rosclaw_know.ab_harness import (
     ALL_ARMS,
-    AcceptanceGate,
-    AcceptanceReport,
-    ArmSummary,
     TaskRunResult,
     TaskSpec,
     _aggregate_cells,
     _rank_arms_within_task,
     acceptance_report,
     compute_arm_summaries,
-    pairwise_win_rate,
     paired_trend_p_value,
+    pairwise_win_rate,
     performance_profile,
     post_injection_deltas,
     render_markdown,
@@ -26,7 +21,6 @@ from rosclaw_know.ab_harness import (
     to_jsonable,
 )
 from rosclaw_know.ab_synthetic import synthetic_run_fn
-
 
 # ── shorthand ───────────────────────────────────────────────────────────
 

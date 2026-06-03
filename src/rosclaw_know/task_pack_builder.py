@@ -23,10 +23,8 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
 
 from .hybrid_retriever import RankerQuery, ScoreBreakdown, top_k
-from .prompts import FRONTIER_DOMAINS
 from .schemas import (
     EmbodimentType,
     FailureMode,

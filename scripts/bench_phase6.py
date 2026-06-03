@@ -23,8 +23,6 @@ import time
 import urllib.request
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
-
 
 DEFAULT_BASE = "http://127.0.0.1:47820"
 DEFAULT_API_KEY = "rw_sk_dev_local"

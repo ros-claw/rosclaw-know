@@ -53,15 +53,10 @@ extractor's heuristic phrasing.
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass, field
-from typing import Iterable
 
 from rosclaw_know.schemas import (
-    SCHEMA_VERSION,
-    ArtifactType,
     CandidatePattern,
-    EmbodimentType,
     EvidenceBlock,
     FailureMode,
     PatternCardV2,

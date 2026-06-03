@@ -4,8 +4,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from rosclaw_know.evidence_writer import (
     EvidenceTraceWriter,
     compute_code_diff_hash,
@@ -14,7 +12,6 @@ from rosclaw_know.evidence_writer import (
     temp_writer,
 )
 from rosclaw_know.schemas import EvidenceTrace
-
 
 # ── factory ──────────────────────────────────────────────────────────────
 

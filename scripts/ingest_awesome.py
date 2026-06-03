@@ -75,7 +75,7 @@ def main() -> int:
         all_written.extend(r.path for r in results if r.path is not None)
 
     print()
-    print(f"=== awesome ingest summary ===")
+    print("=== awesome ingest summary ===")
     print(f"lists processed:   {len(args.url)}")
     print(f"corpus files written: {len(all_written)}")
     if all_written:

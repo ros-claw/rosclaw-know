@@ -54,8 +54,8 @@ from typing import Any
 
 from rosclaw_know import config
 from rosclaw_know.schemas import (
-    LifecycleStatus,
     SCHEMA_VERSION,
+    LifecycleStatus,
     SourceQualityLevel,
     validate_bridge,
 )

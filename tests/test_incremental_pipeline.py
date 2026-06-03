@@ -16,7 +16,6 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-
 os.environ.setdefault("ROSCLAW_KNOW_MOCK_LLM", "1")
 os.environ.setdefault("DEEPSEEK_API_KEY", "")
 

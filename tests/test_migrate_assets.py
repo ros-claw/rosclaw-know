@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
-import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import migrate_assets_v1_to_v2 as m  # noqa: E402

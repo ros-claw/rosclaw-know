@@ -273,13 +273,14 @@ def test_default_transfer_table_only_references_known_failure_ids() -> None:
 
 
 def test_event_type_universe_covers_canonical_types() -> None:
-    """The auto table should populate ≥3 of the 8 EVENT_TYPES.
+    """Sprint 13 raised the floor: the auto table must cover all 8 EVENT_TYPES.
 
-    Coverage is bounded by how many catalog FailureModes (a) match an
-    event_type and (b) have at least one FixPattern targeting them in
-    the compiled graph.  Three is the empirical floor for the current
-    v1.5 catalog; lower means a regression in the matcher (not the
-    catalog).
+    Coverage is the relational join *FailureMode matches an event_type
+    alias* ∧ *FixPattern targets that FailureMode*.  Sprint 10 set the
+    floor at 3/8 (current catalog state at the time); Sprint 13 expanded
+    the catalog so all eight canonical event_types have at least one
+    fix.  Dropping below 8 means either the matcher regressed or a
+    FixPattern was removed without replacement.
     """
     table = load_default_transfer_table()
     canonical = {
@@ -288,11 +289,10 @@ def test_event_type_universe_covers_canonical_types() -> None:
         "trajectory_deviation", "actuator_saturation",
     }
     covered = set(table.keys()) & canonical
-    assert len(covered) >= 3, (
-        f"only {len(covered)} of 8 canonical event_types covered: {covered}"
+    assert covered == canonical, (
+        f"expected full canonical coverage; missing {sorted(canonical - covered)}; "
+        f"got {sorted(covered)}"
     )
-    # And the three known-strong buckets must all be there.
-    assert {"actuator_saturation", "task_timeout", "controller_error"} <= covered
 
 
 # ── module surface: bare PATTERN_TRANSFER_TABLE removed ──────────────────

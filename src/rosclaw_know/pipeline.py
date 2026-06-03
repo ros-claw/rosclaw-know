@@ -1,7 +1,6 @@
 """Top-level pipeline orchestrator. Wires Harvester → Weaver → Muse → Publisher."""
 from __future__ import annotations
 
-import asyncio
 import logging
 import random
 from pathlib import Path

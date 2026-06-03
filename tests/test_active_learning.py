@@ -10,7 +10,6 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-
 os.environ.setdefault("ROSCLAW_KNOW_MOCK_LLM", "1")
 os.environ.setdefault("DEEPSEEK_API_KEY", "")
 
@@ -18,7 +17,6 @@ SRC = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC))
 
 from rosclaw_know.active_learning import (  # noqa: E402
-    MIN_SAMPLE_THRESHOLD,
     autodraft_for_blind_spots,
 )
 

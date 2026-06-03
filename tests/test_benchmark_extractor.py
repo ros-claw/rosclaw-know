@@ -4,10 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
 from rosclaw_know.extractors import (
-    ExtractInput,
     extract_from_corpus,
     extract_task_card,
     load_task_dir,
@@ -25,7 +23,6 @@ from rosclaw_know.extractors.benchmark_extractor import (
     is_parent_index,
 )
 from rosclaw_know.schemas import FRONTIER_DOMAINS, TaskCard
-
 
 # Real Frontier-Eng corpus.  Tests that read it are gated on its presence
 # so the suite still passes in a fresh checkout.

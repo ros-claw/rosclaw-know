@@ -1,7 +1,6 @@
 """Tests for the trajectory extraction pipeline (Sprint 3)."""
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 import pytest
@@ -15,8 +14,8 @@ from rosclaw_know.extractors import (
     summarize_diff,
 )
 from rosclaw_know.extractors.code_diff_summarizer import (
-    DiffSummary,
     _LEAK_RE,
+    DiffSummary,
     _scrub_descriptions,
 )
 from rosclaw_know.schemas import (
@@ -25,7 +24,6 @@ from rosclaw_know.schemas import (
     Trajectory,
     TrajectoryStep,
 )
-
 
 BASELINE_ARCHIVE = Path(
     "/root/workspace/rosclaw/rosclaw_wiki/Frontier-Engineering/baseline_archive"
@@ -246,8 +244,9 @@ def test_from_iteration_dir_handles_missing_dir(tmp_path: Path) -> None:
 def test_from_iteration_dir_reads_real_iterations(tmp_path: Path) -> None:
     """End-to-end: build a 3-step trajectory from synthetic
     iteration_NNN/{code.py,eval.json}."""
-    from rosclaw_know.extractors import from_iteration_dir
     import json
+
+    from rosclaw_know.extractors import from_iteration_dir
 
     (tmp_path / "iteration_000").mkdir()
     (tmp_path / "iteration_000" / "code.py").write_text("x = 1\n")

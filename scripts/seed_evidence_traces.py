@@ -13,10 +13,8 @@ on the JSONL only shows up when this script changes.
 from __future__ import annotations
 
 import argparse
-import json
 import random
 import sys
-from collections.abc import Iterable
 from pathlib import Path
 
 from rosclaw_know import config

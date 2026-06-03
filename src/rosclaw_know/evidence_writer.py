@@ -25,9 +25,9 @@ import logging
 import os
 import re
 import threading
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, Iterator
 
 from .schemas import EvidenceTrace
 
@@ -172,7 +172,7 @@ class EvidenceTraceWriter:
             except OSError as exc:
                 log.warning("error closing %s: %s", self.path, exc)
 
-    def __enter__(self) -> "EvidenceTraceWriter":
+    def __enter__(self) -> EvidenceTraceWriter:
         return self
 
     def __exit__(self, *exc_info: object) -> None:

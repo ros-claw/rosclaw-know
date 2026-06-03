@@ -26,7 +26,6 @@ from rosclaw_know.schemas import (
     FailureMode,
     PatternCardV2,
     TaskCard,
-    TaskPack,
     TaskPackQuery,
 )
 from rosclaw_know.task_pack_builder import (
@@ -34,7 +33,6 @@ from rosclaw_know.task_pack_builder import (
     build_task_pack,
     render_markdown,
 )
-
 
 # ── fixtures ─────────────────────────────────────────────────────────────
 

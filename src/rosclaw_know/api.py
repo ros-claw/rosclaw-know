@@ -22,7 +22,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -78,9 +78,10 @@ def _try_load_task_pack_assets() -> dict | None:
     # ``config.ASSETS_DIR`` at call time (not import time) makes the
     # function robust against test fixtures that monkey-patch
     # ``rosclaw_know.config.ASSETS_DIR`` after this module is imported.
+    import yaml as _yaml
+
     from . import config as _config
     from .schemas import FailureMode, PatternCardV2, TaskCard
-    import yaml as _yaml
 
     assets_dir = _config.ASSETS_DIR
     paths = {

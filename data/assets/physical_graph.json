@@ -4498,6 +4498,373 @@
         "schema_version": "2.0"
       },
       "id": "verifier_real_robot_log"
+    },
+    {
+      "id": "failure_unhandled_collision_contact",
+      "node_type": "FailureMode",
+      "domain": "Control_Locomotion",
+      "payload": {
+        "id": "failure_unhandled_collision_contact",
+        "name": "Unhandled Collision Contact",
+        "domain": "Control_Locomotion",
+        "symptom_text": "A robot link makes unintended contact with the environment and the controller keeps driving the same trajectory through the obstacle.",
+        "normalized_symptom": "collision_contact_no_replan",
+        "observable_signals": [
+          "contact force > F_max sustained for multiple control steps",
+          "trajectory tracking continues past first contact event",
+          "no replan trigger fired after collision detection"
+        ],
+        "likely_causes": [
+          "no collision response handler subscribed to contact stream",
+          "environment model stale or incomplete",
+          "safety margin set below sensor noise floor"
+        ],
+        "contraindications": [
+          "do not just retry the same trajectory — replan with the updated world model"
+        ],
+        "severity": "safety_critical",
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "failure_joint_limit_breach",
+      "node_type": "FailureMode",
+      "domain": "Control_Locomotion",
+      "payload": {
+        "id": "failure_joint_limit_breach",
+        "name": "Joint Limit Breach",
+        "domain": "Control_Locomotion",
+        "symptom_text": "A joint position or torque crosses the URDF / controller limit because the planner emitted an out-of-range setpoint and the runtime did not clamp it.",
+        "normalized_symptom": "joint_position_limit_exceeded",
+        "observable_signals": [
+          "joint angle reports > qmax or < qmin for one or more steps",
+          "torque command exceeds torque_max at the affected joint",
+          "controller error flag raised at the joint level"
+        ],
+        "likely_causes": [
+          "trajectory generator did not respect URDF joint limits",
+          "IK solver returned an out-of-range solution that was sent verbatim",
+          "missing post-IK joint-limit clamp in the runtime"
+        ],
+        "contraindications": [
+          "do not just clamp inside the low-level driver — fix the planner so the limit is respected upstream"
+        ],
+        "severity": "safety_critical",
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "failure_sensor_spike_dropout",
+      "node_type": "FailureMode",
+      "domain": "Perception_Vision",
+      "payload": {
+        "id": "failure_sensor_spike_dropout",
+        "name": "Sensor Spike or Dropout",
+        "domain": "Perception_Vision",
+        "symptom_text": "A sensor channel returns a value far outside its expected envelope (spike) or no value at all (dropout) and the value flows into the state estimator unfiltered.",
+        "normalized_symptom": "sensor_outlier_propagated_to_state",
+        "observable_signals": [
+          "sensor reading > 5σ from running mean for a single step",
+          "consecutive frames of missing measurements not flagged",
+          "state estimate jumps in lock-step with the bad reading"
+        ],
+        "likely_causes": [
+          "no median / Hampel filter on the sensor pipeline",
+          "no dropout detector raising a measurement_valid flag",
+          "estimator trusts every sample equally regardless of innovation"
+        ],
+        "contraindications": [
+          "do not blindly average across an outlier — flag it and let the planner decide"
+        ],
+        "severity": "warning",
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "failure_safety_stop_no_recovery",
+      "node_type": "FailureMode",
+      "domain": "Control_Locomotion",
+      "payload": {
+        "id": "failure_safety_stop_no_recovery",
+        "name": "Safety Stop Without Recovery Path",
+        "domain": "Control_Locomotion",
+        "symptom_text": "Safety controller triggers a halt and the runtime has no defined supervised-resume path; the agent retries the offending command without operator clearance.",
+        "normalized_symptom": "safety_halt_blocks_resumption",
+        "observable_signals": [
+          "safety_stop event followed by repeated identical command retries",
+          "no operator-clearance acknowledgement recorded before resumption",
+          "post-halt state divergent from pre-halt plan assumptions"
+        ],
+        "likely_causes": [
+          "missing supervised-resume protocol in the runtime",
+          "agent treats safety_stop as a transient error",
+          "no state-resync step between halt and resume"
+        ],
+        "contraindications": [
+          "do not auto-resume after a safety halt without operator acknowledgement"
+        ],
+        "severity": "safety_critical",
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "compiled_collision_avoidance_replan",
+      "node_type": "FixPattern",
+      "domain": "Control_Locomotion",
+      "payload": {
+        "id": "compiled_collision_avoidance_replan",
+        "failure_ids": [
+          "failure_unhandled_collision_contact"
+        ],
+        "domain": "Control_Locomotion",
+        "fix_summary": "On a collision event, abort the in-flight trajectory, re-snapshot the environment, and replan from the safe-stop pose before resuming.",
+        "preconditions": [
+          "collision detector emits a contact event with location / normal",
+          "a planner exists that can re-solve from the safe-stop pose"
+        ],
+        "implementation_steps": [
+          "- Subscribe to the collision/contact stream and gate command publication on a `collision_clear` flag.",
+          "- On contact, push a safe-stop pose and refresh the obstacle map before calling the planner again.",
+          "```python\n# Pseudo-loop\nif collision_event:\n    runtime.publish_safe_stop()\n    world_model.refresh()\n    plan = planner.replan(from_pose=runtime.current_pose())\n```"
+        ],
+        "code_targets": [
+          "collision response handler",
+          "replanner entry point"
+        ],
+        "expected_verifier_signals": [
+          "no second contact event on the same obstacle within the same episode",
+          "trajectory completion rate recovers after the replan"
+        ],
+        "anti_patterns": [
+          "Retrying the failing trajectory without updating the world model."
+        ],
+        "source_ids": [
+          "sprint13_seed::collision_recovery"
+        ],
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "compiled_joint_limit_planner_clamp",
+      "node_type": "FixPattern",
+      "domain": "Control_Locomotion",
+      "payload": {
+        "id": "compiled_joint_limit_planner_clamp",
+        "failure_ids": [
+          "failure_joint_limit_breach"
+        ],
+        "domain": "Control_Locomotion",
+        "fix_summary": "Apply the URDF joint limit envelope at the planner output, not just at the low-level driver — the planner sees the constraint and uses it to pick feasible IK branches.",
+        "preconditions": [
+          "URDF joint limits are available to the planner",
+          "the planner can backtrack when a candidate setpoint is infeasible"
+        ],
+        "implementation_steps": [
+          "- Inject the joint limit set into the IK solver's constraint list.",
+          "- Reject any candidate trajectory whose first violating step falls inside the limit envelope plus a safety margin.",
+          "```python\nfor q in candidate_traj:\n    if any(q[i] < qmin[i] + safety or q[i] > qmax[i] - safety for i in range(dof)):\n        raise InfeasibleSetpoint(joint=i)\n```"
+        ],
+        "code_targets": [
+          "IK solver constraint set",
+          "trajectory feasibility check"
+        ],
+        "expected_verifier_signals": [
+          "joint_limit_violation event count drops to zero across the suite",
+          "no torque saturation events at the affected joint within the planning horizon"
+        ],
+        "anti_patterns": [
+          "Clamping silently inside the low-level driver and hiding the bug upstream."
+        ],
+        "source_ids": [
+          "sprint13_seed::joint_limit_planner_fix"
+        ],
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "compiled_sensor_median_filter_guard",
+      "node_type": "FixPattern",
+      "domain": "Perception_Vision",
+      "payload": {
+        "id": "compiled_sensor_median_filter_guard",
+        "failure_ids": [
+          "failure_sensor_spike_dropout"
+        ],
+        "domain": "Perception_Vision",
+        "fix_summary": "Wrap each noisy sensor channel in a Hampel / rolling-median filter that rejects single-step >5σ outliers, and emit a measurement_valid flag the estimator can downweight.",
+        "preconditions": [
+          "a rolling-window of recent sensor samples is available",
+          "the estimator can consume a per-sample validity flag"
+        ],
+        "implementation_steps": [
+          "- Replace direct sensor reads with a Hampel filter that returns `(value, is_outlier)`.",
+          "- Have the estimator multiply the innovation by `0.0 if is_outlier else 1.0`.",
+          "```python\nv, outlier = hampel_filter(channel, window=21, k=3.0)\nif outlier:\n    innovation_weight = 0.0\n```"
+        ],
+        "code_targets": [
+          "sensor preprocessing layer",
+          "estimator innovation weighting"
+        ],
+        "expected_verifier_signals": [
+          "state-estimate variance no longer correlates with single-sample sensor spikes",
+          "downstream control jitter drops measurably"
+        ],
+        "anti_patterns": [
+          "Averaging across the outlier window — washes out the spike but also the real signal."
+        ],
+        "source_ids": [
+          "sprint13_seed::sensor_outlier_guard"
+        ],
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "compiled_safety_stop_supervised_resume",
+      "node_type": "FixPattern",
+      "domain": "Control_Locomotion",
+      "payload": {
+        "id": "compiled_safety_stop_supervised_resume",
+        "failure_ids": [
+          "failure_safety_stop_no_recovery"
+        ],
+        "domain": "Control_Locomotion",
+        "fix_summary": "Define an explicit supervised-resume protocol: after a safety stop, the agent must request an operator acknowledgement and re-sync state before the next command is published.",
+        "preconditions": [
+          "an operator-clearance channel exists (UI button / signed token / supervisor service)",
+          "the state estimator can re-sync from sensor truth on demand"
+        ],
+        "implementation_steps": [
+          "- On `safety_stop`, transition the runtime to a `HALTED` state and refuse to publish further commands.",
+          "- Require an `operator_clear` event before transitioning to `RESUMING`, then run a state re-sync, then resume.",
+          "```python\nif event == 'safety_stop':\n    runtime.state = 'HALTED'\n# blocking — waits for operator\nawait operator_clear_event()\nstate.resync()\nruntime.state = 'RESUMING'\n```"
+        ],
+        "code_targets": [
+          "runtime state machine",
+          "operator-clearance subscriber"
+        ],
+        "expected_verifier_signals": [
+          "no command publication between safety_stop and operator_clear in the trace",
+          "post-resume state error within tolerance of pre-halt plan assumptions"
+        ],
+        "anti_patterns": [
+          "Treating safety_stop as a transient error and retrying the same command."
+        ],
+        "source_ids": [
+          "sprint13_seed::safety_stop_recovery"
+        ],
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "compiled_mpc_replan_on_state_error",
+      "node_type": "FixPattern",
+      "domain": "Planning_Decision",
+      "payload": {
+        "id": "compiled_mpc_replan_on_state_error",
+        "failure_ids": [
+          "failure_planning_divergence"
+        ],
+        "domain": "Planning_Decision",
+        "fix_summary": "Replace open-loop trajectory following with an MPC loop that re-solves the optimisation every dt using the latest measured state, so plan and trajectory never drift far apart.",
+        "preconditions": [
+          "the optimisation problem solves within one control period",
+          "a state estimator publishes a fresh measurement every dt"
+        ],
+        "implementation_steps": [
+          "- Replace the static trajectory follower with an MPC loop bounded by horizon H and step dt.",
+          "- At each step: read measured state, re-solve the QP, publish the first command, discard the rest.",
+          "```python\nfor _ in range(steps):\n    x = state_estimator.read()\n    u = mpc.solve(x, horizon=H, dt=dt)\n    runtime.publish(u[0])\n```"
+        ],
+        "code_targets": [
+          "trajectory follower loop",
+          "MPC solver wrapper"
+        ],
+        "expected_verifier_signals": [
+          "position error stops growing monotonically",
+          "tracking error stays bounded across the full episode"
+        ],
+        "anti_patterns": [
+          "Stiffening feed-forward gains without addressing the open-loop drift root cause."
+        ],
+        "source_ids": [
+          "sprint13_seed::mpc_replan"
+        ],
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "compiled_kv_cache_sliding_window",
+      "node_type": "FixPattern",
+      "domain": "Memory_Reasoning",
+      "payload": {
+        "id": "compiled_kv_cache_sliding_window",
+        "failure_ids": [
+          "failure_kv_cache_unbounded_growth"
+        ],
+        "domain": "Memory_Reasoning",
+        "fix_summary": "Cap the per-layer KV cache at a sliding window of N tokens and evict the oldest entries on each forward pass; keep an optional global-attention sink for long-context recall.",
+        "preconditions": [
+          "the attention kernel supports a variable-length KV cache",
+          "the planner can tolerate a bounded context window"
+        ],
+        "implementation_steps": [
+          "- Fix `KV_WINDOW = N`.  On each forward, drop entries beyond the window.",
+          "- Optionally retain a fixed 'sink' prefix of K tokens that never evicts.",
+          "```python\nif kv.size > KV_WINDOW:\n    kv = kv[-KV_WINDOW:]\n# optional sink: kv = torch.cat([sink, kv[-(KV_WINDOW - SINK_LEN):]], dim=0)\n```"
+        ],
+        "code_targets": [
+          "KV-cache accumulator",
+          "attention forward pass"
+        ],
+        "expected_verifier_signals": [
+          "GPU memory rises sub-linearly with sequence length",
+          "throughput stays stable past the previous OOM threshold"
+        ],
+        "anti_patterns": [
+          "Cutting batch size to mask the leak — only delays the OOM by one batch."
+        ],
+        "source_ids": [
+          "sprint13_seed::kv_cache_window"
+        ],
+        "schema_version": "2.0"
+      }
+    },
+    {
+      "id": "compiled_gradient_clip_norm",
+      "node_type": "FixPattern",
+      "domain": "Learning_Training",
+      "payload": {
+        "id": "compiled_gradient_clip_norm",
+        "failure_ids": [
+          "failure_gradient_explosion"
+        ],
+        "domain": "Learning_Training",
+        "fix_summary": "Apply per-step gradient clipping (`clip_grad_norm_`) at a tuned threshold before the optimiser step, plus an automatic learning-rate halving when the clipped norm fires for K consecutive steps.",
+        "preconditions": [
+          "the optimiser exposes a step hook callable between backward and step",
+          "training step is the bottleneck (so the clip cost is amortised)"
+        ],
+        "implementation_steps": [
+          "- After `loss.backward()`, call `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=GRAD_CLIP).`",
+          "- Track how often the clip fires; if it fires for K steps in a row, halve `lr`.",
+          "```python\nloss.backward()\nnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=GRAD_CLIP)\nif norm > GRAD_CLIP:\n    consecutive_clips += 1\n    if consecutive_clips >= K:\n        for g in optim.param_groups: g['lr'] *= 0.5\nelse:\n    consecutive_clips = 0\noptim.step()\n```"
+        ],
+        "code_targets": [
+          "training step",
+          "lr scheduler hook"
+        ],
+        "expected_verifier_signals": [
+          "grad-norm distribution capped at GRAD_CLIP",
+          "no NaN in loss across a fixed-length training run"
+        ],
+        "anti_patterns": [
+          "Catching NaN after the fact and zeroing it out — the optimiser moment buffers are already corrupted."
+        ],
+        "source_ids": [
+          "sprint13_seed::grad_clip_norm"
+        ],
+        "schema_version": "2.0"
+      }
     }
   ],
   "edges": [
@@ -7180,6 +7547,55 @@
       "weight": 1.0,
       "source": "task_wireless_channel_simulation_high_reliable_simulation",
       "target": "verifier_checker_script_maximize",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_collision_avoidance_replan",
+      "target": "failure_unhandled_collision_contact",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_joint_limit_planner_clamp",
+      "target": "failure_joint_limit_breach",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_sensor_median_filter_guard",
+      "target": "failure_sensor_spike_dropout",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_safety_stop_supervised_resume",
+      "target": "failure_safety_stop_no_recovery",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_mpc_replan_on_state_error",
+      "target": "failure_planning_divergence",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_kv_cache_sliding_window",
+      "target": "failure_kv_cache_unbounded_growth",
+      "key": 0
+    },
+    {
+      "relation": "FIXES",
+      "weight": 1.0,
+      "source": "compiled_gradient_clip_norm",
+      "target": "failure_gradient_explosion",
       "key": 0
     }
   ]

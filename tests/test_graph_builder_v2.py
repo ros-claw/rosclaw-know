@@ -4,7 +4,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 
 from rosclaw_know.graph_builder_v2 import (
     ALL_RELATIONS,
@@ -20,7 +19,6 @@ from rosclaw_know.schemas import (
     TaskCard,
     VerifierCard,
 )
-
 
 # ── fixtures ─────────────────────────────────────────────────────────────
 

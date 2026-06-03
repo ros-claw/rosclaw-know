@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import random
 from typing import Any
 
@@ -175,7 +174,7 @@ def _mock_response(system: str, user: str, want_json: bool) -> str:
                 "failed_attempt": "MOCK anti-pattern: blindly increased gain",
             }
         )
-    return f"MOCK insight bridging the two domains via shared limiter mechanism."
+    return "MOCK insight bridging the two domains via shared limiter mechanism."
 
 
 __all__ = [

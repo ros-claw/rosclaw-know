@@ -33,8 +33,7 @@ import logging
 import math
 import re
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 from .schemas import EmbodimentType, EvidenceBlock, PatternCardV2
 
