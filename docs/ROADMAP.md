@@ -16,7 +16,7 @@ agents before they start.  Sprint plan source:
 | **0** | Safety + statistical sanity fixes | ✅ shipped |
 | **1** | Typed knowledge objects + v1→v2 migration | ✅ shipped |
 | **2** | Frontier-Eng / Arena `TaskCard` extraction (47 tasks) | ✅ shipped |
-| 3 | Trajectory mining (Python / CUDA / crypto / scheduling features) | planned |
+| **3** | Trajectory mining (Python / CUDA / crypto / scheduling features) | 🟡 partial (framework + 3/4 extractors) |
 | 4 | Pattern Compiler v2 (action-template markdown) | planned |
 | 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | planned |
 | 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | planned |
@@ -80,14 +80,46 @@ agents before they start.  Sprint plan source:
 - Tests: +34 (`test_benchmark_extractor.py`).  Full suite 161 PASS,
   0 FAIL.
 
-### Sprint 3 — Trajectory mining (next)
+### Sprint 3 — Trajectory mining (framework shipped; AES/CUDA/scheduling extractors deferred)
 
-Once Sprint 2's static catalog exists, the next leverage step is
-**learning from agent rollouts**.  Sprint 3 implements
-`extractors/trajectory_extractor.py` plus four family-specific feature
-extractors (PID / AES / CUDA / scheduling) so successful and failed
-mutations from real Frontier-Eng runs feed back into the pattern
-library.  See plan §5.3, §11.4 for shape.
+- New typed objects `Mutation`, `TrajectoryStep`, `Trajectory`,
+  `CandidatePattern` in `schemas.py`.
+- `extractors/code_diff_summarizer.py` — pure-Python AST + regex
+  classifier producing abstracted (no-leak) mutation descriptions.
+  Leak guard scrubs float literals from output.
+- `extractors/trajectory_extractor.py` — framework + 3 feature
+  extractors:
+  - **PID** family (anti-windup / controller clamp / time-budget /
+    optimizer-swap)
+  - **Systems** cross-family (vectorize_loop / boundary validation /
+    generic time-budget)
+  - **Optimizer** cross-family (warm-start / generic random→structured)
+- `scripts/extract_trajectory_patterns.py` — walks Frontier-Eng
+  `baseline_archive/`, treats each `(exp, algo, model, task)` as a
+  one-step trajectory, merges candidates across trajectories.
+- Real data: **375 trajectories**, **8 merged candidates** (each with
+  evidence_count ≥ 4) — well above plan §11.4's ≥100 trajectory gate.
+- Tests: 22 new cases including end-to-end synthetic
+  iteration-tree extraction + leak-free guarantee on real
+  baseline_archive data.
+
+Deferred to a follow-up sprint:
+
+- **AES / CUDA / scheduling feature extractors** — needed to hit plan
+  §11.4 acceptance "≥20 candidate patterns".  Slot in via the
+  `FeatureExtractor` protocol; no framework change.
+- **Failed-mutation extraction** — requires real iteration history
+  (eval.json per step).  `from_iteration_dir` handles it; Sprint 9
+  (real-robot/sim ingest) provides the data.
+
+### Sprint 4 — Pattern Compiler v2 (next)
+
+Once Sprint 3's CandidatePatterns + Sprint 2's TaskCards are stable,
+the next step is **compiling them into agent-facing action templates**.
+See plan §11.6 — every emitted markdown file must include
+Diagnosis / Next Experiment / Code Target / Expected Signal /
+Contraindication blocks, replacing the current narrative pattern
+format.
 
 ---
 

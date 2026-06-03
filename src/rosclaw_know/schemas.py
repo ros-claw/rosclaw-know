@@ -493,7 +493,146 @@ class BridgeIndexV2(_Base):
         return out
 
 
-# ── public helpers ──────────────────────────────────────────────────────
+# ── 12. Trajectory / Mutation / CandidatePattern (Sprint 3, plan §5.3) ──
+#
+# How agent experience flows back into the knowledge base:
+#
+#     RunArtifact (one (task, model, algo, seed) tuple)
+#         └── Trajectory (ordered list of TrajectoryStep)
+#               └── TrajectoryStep (one iteration: code → eval result)
+#
+# The :class:`Mutation` class describes one *abstracted* change between
+# two adjacent iterations.  Concrete numeric values are deliberately
+# scrubbed (see ``code_diff_summarizer`` and tests) so we never leak the
+# verbatim answer back into the knowledge base — see plan §3.5 on
+# answer-leak prevention.
+#
+# :class:`CandidatePattern` is the Sprint 3 product: a tentative pattern
+# extracted by the feature extractors.  It feeds Sprint 4's pattern
+# compiler.
+
+MutationKind = Literal[
+    "set_parameter_zero",      # zero out an integral gain, weight, etc.
+    "set_parameter_constant",  # any param ← literal
+    "add_output_clamp",        # np.clip / max / min added on output
+    "add_time_budget",         # explicit wall-clock budget guard
+    "add_input_validation",    # type or range check at boundary
+    "remove_assertion",        # debug-time guard removed
+    "swap_optimizer",          # random search → CMA-ES / Bayesian etc.
+    "vectorize_loop",          # explicit Python loop → numpy/array form
+    "cache_repeated_call",     # memoize an expensive call
+    "switch_algorithm_class",  # algorithm-family change
+    "raise_iteration_count",   # n_iter ↑
+    "lower_iteration_count",   # n_iter ↓
+    "add_initialization_seed", # use prior-best as init
+    "other",                   # anything not yet classified
+]
+
+
+class Mutation(_Base):
+    """One abstracted change between two iterations.
+
+    The :attr:`description` is the agent-facing string: it must NOT
+    contain concrete numeric magnitudes that would let a downstream
+    agent copy-paste the answer.  Use phrases like
+    "set integral gain to zero" instead of "Ki_z = 0.142".  The
+    abstraction guarantee is enforced by the code-diff summariser, with
+    tests in ``test_trajectory_extractor.py``.
+    """
+
+    kind: MutationKind
+    description: str
+    target_identifier: str | None = None
+    """The variable / function / module the mutation touched, if known.
+
+    Stays at the symbol level — never carry the symbol's *value*.
+    """
+    score_delta: float | None = None
+    """Score change associated with this mutation.
+
+    Optional because some mutations are batched (i.e. several mutations
+    landed before the next eval).
+    """
+    schema_version: str = SCHEMA_VERSION
+
+
+class TrajectoryStep(_Base):
+    """One iteration in a Trajectory: the code that was tried + its eval."""
+
+    iteration: int
+    score: float | None = None
+    valid: bool = True
+    """``False`` if the candidate failed feasibility (e.g. simulator
+    crashed, returncode != 0, constraint violation).
+    """
+    mutations: list[Mutation] = Field(default_factory=list)
+    """Mutations that distinguish this step from the *previous* step."""
+    schema_version: str = SCHEMA_VERSION
+
+    @field_validator("iteration")
+    @classmethod
+    def _check_iteration(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(f"iteration must be ≥ 0, got {v}")
+        return v
+
+
+class Trajectory(_Base):
+    """An ordered sequence of TrajectoryStep observations for one run.
+
+    Sourced from either:
+
+    * Real ``iteration_NNN/code.{py,cpp}`` + ``iteration_NNN/eval.json``
+      directories (the canonical format).
+    * Degenerate single-step trajectories built from a
+      ``baseline_archive/<task>/program.py`` final-best (see
+      ``trajectory_extractor.from_baseline_archive``).
+    """
+
+    trajectory_id: str
+    task_name: str
+    benchmark: str | None = None
+    algorithm: str | None = None
+    """Search algorithm class (e.g. ``openevolve``, ``abmcts``)."""
+    model: str | None = None
+    """LLM model used in the agent loop."""
+    steps: list[TrajectoryStep] = Field(default_factory=list)
+    best_delta: float | None = None
+    """``best_score - baseline_score`` — convenience field."""
+    notes: list[str] = Field(default_factory=list)
+    schema_version: str = SCHEMA_VERSION
+
+
+class CandidatePattern(_Base):
+    """Tentative pattern extracted by Sprint 3 feature extractors.
+
+    Sprint 4's pattern compiler turns these into real
+    :class:`PatternCardV2` markdown files.  We keep them separate so
+    candidate patterns can be reviewed before being elevated.
+    """
+
+    id: str = Field(pattern=r"^candidate_[a-z0-9_]+$")
+    task_family: str
+    """Where the pattern came from (e.g. ``robotics_optimization``)."""
+    failure_id: str | None = None
+    """Matching FailureMode id, if the extractor could identify one."""
+    diagnosis: str
+    successful_mutations: list[Mutation] = Field(default_factory=list)
+    failed_mutations: list[Mutation] = Field(default_factory=list)
+    expected_verifier_signal: str = ""
+    contraindications: list[str] = Field(default_factory=list)
+    evidence_count: int = 0
+    """How many independent trajectories produced this candidate.
+
+    Plan §3.5: ``evidence_count >= 2`` is the lower bound for
+    promotion in Sprint 4.
+    """
+    avg_score_delta: float | None = None
+    source_trajectory_ids: list[str] = Field(default_factory=list)
+    schema_version: str = SCHEMA_VERSION
+
+
+
 
 
 def validate_bridge(data: dict[str, Any]) -> BridgeIndexV2:
@@ -531,5 +670,10 @@ __all__ = [
     "ClusterMetadataV2",
     "BridgeClusterV2",
     "BridgeIndexV2",
+    "MutationKind",
+    "Mutation",
+    "TrajectoryStep",
+    "Trajectory",
+    "CandidatePattern",
     "validate_bridge",
 ]
