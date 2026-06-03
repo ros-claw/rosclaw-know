@@ -1,0 +1,160 @@
+# failure_taxonomy.yaml — canonical failure-mode seed catalog.
+#
+# Each entry maps a ROSClaw-Know v1.5 :class:`FailureMode` ID to its
+# structural metadata.  The seed list below covers every curated
+# pattern's underlying failure mode so the migration script
+# (`scripts/migrate_assets_v1_to_v2.py`) can attach `failure_ids` to the
+# corresponding v1 cluster on first migration.
+#
+# Authoring rules:
+#   * `id` MUST start with `failure_` and use lowercase + underscores.
+#   * `domain` MUST be one of `FRONTIER_DOMAINS` (see prompts.py).
+#   * `severity` ∈ {info, warning, safety_critical}.
+#   * Keep the entry to ≤8 lines so it stays scannable on review.
+#   * Trajectory miner / autodraft writes additions here later — keep
+#     curated entries above an `# --- autodraft ---` marker.
+#
+# Schema lives in `src/rosclaw_know/schemas.py::FailureMode`.
+
+schema_version: "2.0"
+
+failures:
+
+  - id: failure_pid_integrator_windup
+    name: "PID Integrator Windup"
+    domain: Control_Locomotion
+    symptom_text: "Actuator saturates while integral term keeps accumulating; recovery after setpoint change is slow."
+    normalized_symptom: "actuator_saturation_with_unbounded_integral"
+    observable_signals:
+      - actuator output clipped to limit for many control steps
+      - overshoot grows after error persists
+      - settling time blows up after setpoint reversal
+    likely_causes:
+      - unconditional integration during saturation
+      - missing back-calculation term
+      - integral gain too high for current actuator range
+    contraindications:
+      - "do not simply increase Ki when output is already saturated"
+      - "do not remove the output limiter"
+    severity: safety_critical
+
+  - id: failure_actuator_output_unbounded
+    name: "Actuator Output Unbounded"
+    domain: Control_Locomotion
+    symptom_text: "Controller command exceeds the physical actuator limit; torque or velocity command grows without bound."
+    normalized_symptom: "unbounded_command_exceeds_actuator_limit"
+    observable_signals:
+      - torque command > torque_max
+      - simulator emits saturation warning
+      - hardware E-stop or thermal trip
+    likely_causes:
+      - missing clamp on controller output
+      - feed-forward not bounded
+      - tracking gain too aggressive
+    contraindications:
+      - "do not raise torque_max to mask the bug"
+    severity: safety_critical
+
+  - id: failure_kv_cache_unbounded_growth
+    name: "KV-cache Unbounded Growth"
+    domain: Memory_Reasoning
+    symptom_text: "Long-context inference accumulates an unbounded key/value cache and OOMs."
+    normalized_symptom: "kv_cache_growth_to_oom"
+    observable_signals:
+      - GPU memory rises linearly with sequence length
+      - throughput collapses past a context threshold
+      - CUDA OOM error
+    likely_causes:
+      - no eviction policy on KV cache
+      - context not paged or windowed
+      - prefetch + reuse mismatch
+    contraindications:
+      - "do not just shrink batch size — wastes utilization"
+      - "do not silently truncate without telling the planner"
+    severity: warning
+
+  - id: failure_gradient_explosion
+    name: "Gradient Explosion"
+    domain: Learning_Training
+    symptom_text: "Training loss spikes to NaN; gradient norm grows by orders of magnitude in a few steps."
+    normalized_symptom: "gradient_norm_diverges_to_nan"
+    observable_signals:
+      - loss curve flips to NaN
+      - grad-norm > 1e3 within a window
+      - reward variance explodes (RL)
+    likely_causes:
+      - missing grad-norm clipping
+      - learning rate too high
+      - residual / projection layer reinitialised wrong
+    contraindications:
+      - "do not turn off the offending layer wholesale"
+    severity: warning
+
+  - id: failure_actuator_clamp_missing
+    name: "Output Clamp Missing"
+    domain: Control_Locomotion
+    symptom_text: "Final controller command is not bounded before it reaches the actuator interface."
+    normalized_symptom: "missing_command_clamp"
+    observable_signals:
+      - command magnitude tracks raw PID output
+      - actuator saturation flag never set by driver
+    likely_causes:
+      - clamp removed during debugging
+      - feed-forward path bypasses clamp
+    contraindications:
+      - "do not implement clamp inside the integrator step — keep it on the output"
+    severity: safety_critical
+
+  - id: failure_planning_divergence
+    name: "Planning / Trajectory Divergence"
+    domain: Planning_Decision
+    symptom_text: "Open-loop plan drifts from the realised trajectory; agent does not replan when state deviates."
+    normalized_symptom: "open_loop_plan_diverges_from_state"
+    observable_signals:
+      - position error grows monotonically
+      - velocity discontinuity at replan boundary
+      - safety margin shrinks below threshold
+    likely_causes:
+      - planning horizon too long
+      - no state-error trigger for replanning
+      - localization drift unmonitored
+    contraindications:
+      - "do not just shorten the horizon — fix the trigger"
+    severity: safety_critical
+
+  - id: failure_simulator_compile_failure
+    name: "Simulator / Compile Failure"
+    domain: Systems_Compute
+    symptom_text: "Simulation backend or build step fails transiently (network blip, dep resolver hiccup, GPU contention)."
+    normalized_symptom: "transient_build_or_sim_crash"
+    observable_signals:
+      - return code != 0 once, succeeds on retry
+      - error string mentions network, timeout, lock
+    likely_causes:
+      - missing retry logic
+      - back-off interval too short
+      - resource not released between attempts
+    contraindications:
+      - "do not retry without exponential back-off + jitter — thundering herd"
+    severity: info
+
+  - id: failure_ppo_entropy_collapse
+    name: "PPO Entropy Collapse"
+    domain: Learning_Training
+    symptom_text: "Policy entropy decays to near zero too early; agent becomes deterministic before exploration is complete."
+    normalized_symptom: "policy_entropy_decays_prematurely"
+    observable_signals:
+      - mean entropy < threshold within first 10% of training
+      - reward plateaus at a sub-optimal mode
+      - new tasks produce the same action
+    likely_causes:
+      - entropy bonus coefficient too low
+      - clip range too tight
+      - lr decay too fast
+    contraindications:
+      - "do not just raise lr — re-add entropy bonus first"
+    severity: warning
+
+# --- autodraft ---
+# Trajectory miner and autodraft additions go below this line.
+# Keep them clearly distinct from curated entries above.

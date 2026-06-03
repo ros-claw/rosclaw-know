@@ -3,6 +3,78 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev0] — 2026-06-03 · v1.5 Sprint 0 + Sprint 1
+
+### Added — Sprint 0 (safety + sanity)
+
+- `scripts/validate_bridge.py` — pydantic-backed v2 schema validator
+  over `bridge_index.json`. Exits non-zero on any structural problem
+  so it can gate CI / pre-deploy. Validates 349-cluster file in <1 s.
+
+### Added — Sprint 1 (typed knowledge objects)
+
+- `src/rosclaw_know/schemas.py` — pydantic v2 models for 10 typed
+  knowledge artefacts (`FailureMode`, `FixPattern`, `ConstraintPattern`,
+  `EmbodimentCard`, `TaskCard`, `VerifierCard`, `EvidenceTrace`,
+  `SourceRecordV2`, `PatternCardV2`) plus the unified bridge view
+  (`BridgeClusterV2`, `ClusterMetadataV2`, `BridgeIndexV2`). Strict
+  validation: `domain` ∈ `FRONTIER_DOMAINS`, `priority` ∈
+  `{-1, 0, 1, None}`, `objective_direction` ∈ `{maximize, minimize}`,
+  `id` patterns enforced where it matters.
+- `data/assets/failure_taxonomy.yaml` — seed catalog with 8 canonical
+  `FailureMode` entries covering every curated pattern's failure
+  surface.
+- `scripts/migrate_assets_v1_to_v2.py` — non-destructive, idempotent
+  v1→v2 migration. Adds a `metadata` block (lifecycle_status,
+  source_quality, evidence aggregate, task_families,
+  embodiment_types, …) to every cluster without modifying any v1
+  field rosclaw-how reads. `--check` exits 1 on drift; `--apply`
+  writes atomically (tmp + rename).
+- `tests/test_schemas.py` (28 cases) + `tests/test_migrate_assets.py`
+  (19 cases) — covers round-trip, strict validation, idempotency,
+  lifecycle inference, source-quality inference, safety_label_index
+  normalization, CLI exit codes.
+
+### Changed — Sprint 0
+
+- `config.DEEPSEEK_EXTRACTOR_MODEL` / `DEEPSEEK_MUSE_MODEL` defaults
+  now point at `deepseek-chat` (battle-tested, returns `content`).
+  Prior releases shipped `deepseek-v4-flash` / `deepseek-v4-pro`,
+  which are reasoning models that put their answer in
+  `reasoning_content` and return an empty `content` field — silently
+  producing 0 extractions when `.env` was not overridden. Defaults
+  are now safe.
+- `scripts/verify_frontier_eng.py` — same default change.
+- `AGENTS.md` "Do NOT trust" section updated: the model-default
+  warning is now a history note rather than a live gotcha.
+- `pyproject.toml` — added `pydantic>=2.6` and `pyyaml>=6.0` as
+  runtime dependencies; added `pytest-asyncio>=0.23` to dev. Bumped
+  version to `1.5.0.dev0`.
+
+### Migrated
+
+- `data/assets/bridge_index.json` ran through `migrate_assets_v1_to_v2.py`:
+  349 clusters now carry v2 `metadata`. Lifecycle inferred from
+  priority: **production 2 · staging 23 · demoted 3 · needs_validation
+  321**. All v1 top-level fields preserved verbatim
+  (`standard_name`, `domain`, `matched_keywords`,
+  `cross_domain_analogies`, `associated_patterns`, `priority`,
+  `uplift_mean`, `uplift_n`, `win_rate`, `last_seen`, `safety_label`,
+  `source`). how reads it identically. `safety_label_index` values
+  normalized from `str` to `list[str]`.
+
+### Verified
+
+- `pytest -q` — **127 passed**, 0 failed, 0 skipped, 1.99 s.
+- `scripts/validate_bridge.py` — OK on migrated tree
+  (`with_metadata: 349 / 349`).
+- `scripts/lint_bridge.py` — no regressions (4 pre-existing
+  anomalies: 1 duplicate name + 3 stale demotions, all present before
+  Sprint 0).
+- Backward-compat: how-style read on every cluster
+  (`standard_name | domain | sorted(associated_patterns) | sorted(matched_keywords) | json(analogies) | int(priority)`)
+  produces 349 OK / 0 broken.
+
 ## [0.8.1] — 2026-05-19 · Phase 8 hardening
 
 ### Fixed

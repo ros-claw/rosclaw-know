@@ -21,18 +21,18 @@ WIKI_DIR = PROJECT_ROOT / os.environ.get("WIKI_DIR", "wiki")
 
 # DeepSeek API
 #
-# IMPORTANT — model selection gotcha:
-#   `deepseek-v4-flash` and `deepseek-v4-pro` are *reasoning* models — they
-#   return their answer in the `reasoning_content` field, leaving the
-#   public `content` field empty. The harvester/Muse code reads `content`,
-#   so configuring those models silently produces 0 extractions.
-#   Production deployments override both of these to `deepseek-chat` via
-#   .env. The defaults below are placeholders; do NOT assume they're the
-#   battle-tested production choice.
+# Defaults are the battle-tested production choice (`deepseek-chat`).
+# History: prior releases shipped `deepseek-v4-flash` / `deepseek-v4-pro`
+# as defaults — these are *reasoning* models that return the answer in
+# `reasoning_content` and leave the public `content` field empty, which
+# silently produced 0 extractions when the env was not overridden.
+# Sprint 0 of the v1.5 plan fixed this: defaults now point at the
+# non-reasoning chat model directly. If you actually want the reasoning
+# tier, override DEEPSEEK_*_MODEL in .env explicitly.
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
-DEEPSEEK_EXTRACTOR_MODEL = os.environ.get("DEEPSEEK_EXTRACTOR_MODEL", "deepseek-v4-flash")
-DEEPSEEK_MUSE_MODEL = os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-v4-pro")
+DEEPSEEK_EXTRACTOR_MODEL = os.environ.get("DEEPSEEK_EXTRACTOR_MODEL", "deepseek-chat")
+DEEPSEEK_MUSE_MODEL = os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-chat")
 
 # Concurrency
 HARVESTER_CONCURRENCY = int(os.environ.get("HARVESTER_CONCURRENCY", "5"))

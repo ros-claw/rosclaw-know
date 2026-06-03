@@ -4,20 +4,24 @@ If you're an LLM agent (Claude, GPT, DeepSeek, …) doing a depth-first scan
 of this repo, **read these files in this order**:
 
 1. [`README.md`](README.md) — one-paragraph elevator + current phase status
-2. [`docs/ROADMAP.md`](docs/ROADMAP.md) — **canonical** Phase 1-8 completion summary + Phase 9 plan
-3. [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — per-phase commit history
-4. [`docs/DEPLOY.md`](docs/DEPLOY.md) — operator workflows
-5. [`data/assets/_runtime_stats.json`](data/assets/_runtime_stats.json) — current stats (nodes, edges, clusters, domains)
+2. [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) — **canonical** implementation reference (modules, data contracts, scripts, API, gotchas)
+3. [`docs/ROADMAP.md`](docs/ROADMAP.md) — Phase 1-8 completion summary + Phase 9 plan + v1.5 sprint plan
+4. [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — per-phase commit history
+5. [`docs/DEPLOY.md`](docs/DEPLOY.md) — operator workflows
+6. [`data/assets/_runtime_stats.json`](data/assets/_runtime_stats.json) — current stats (nodes, edges, clusters, domains)
 
 ## Do NOT trust
 
 - `docs/phase1_status.md` — frozen 2026-05-16 historical snapshot. The
   "80 clusters / 240 analogies" numbers are no longer current.
-- `config.py` default values for `DEEPSEEK_EXTRACTOR_MODEL` and
-  `DEEPSEEK_MUSE_MODEL`. The defaults (`deepseek-v4-flash` / `-v4-pro`)
-  are placeholders — production uses `deepseek-chat` (set via `.env`).
-  The v4-flash / v4-pro reasoning models return empty `content` fields
-  because their tokens all go to `reasoning_content`.
+- **History note** (no longer applies as of v1.5 Sprint 0): the
+  defaults for `DEEPSEEK_EXTRACTOR_MODEL` / `DEEPSEEK_MUSE_MODEL` used
+  to ship as `deepseek-v4-flash` / `deepseek-v4-pro`, which are
+  reasoning models that put their answer in `reasoning_content` and
+  return an empty `content` field — silently producing 0 extractions.
+  As of commit fixing Sprint 0 of the v1.5 plan, both defaults are
+  `deepseek-chat` (battle-tested, returns `content`). The reasoning
+  models are still available via explicit `.env` override.
 
 ## Verifying claims about runtime state
 

@@ -1,7 +1,72 @@
 # ROSClaw-Know ROADMAP
 
-Eight phases shipped. Phase 9 is the immediate next milestone (real-agent
-A/B), with longer-horizon directions sketched after.
+Eight phases shipped (Phase 1-8 closed loop).  v1.5 upgrade in progress:
+upgrade the system from a *wiki refinery* into a **Physical-AI
+knowledge compiler** by typing every knowledge object, tracking
+provenance and evidence per use, and exposing task-pack priors to
+agents before they start.  Sprint plan source:
+`../ROSClaw-Know v1.5 的优化实施方案.md` in the workspace root.
+
+---
+
+## v1.5 — Physical-AI Knowledge Compiler (in flight)
+
+| Sprint | Focus | Status |
+|---|---|---|
+| **0** | Safety + statistical sanity fixes | ✅ shipped |
+| **1** | Typed knowledge objects + v1→v2 migration | ✅ shipped |
+| 2 | Frontier-Eng / Arena `TaskCard` extraction (47 tasks) | planned |
+| 3 | Trajectory mining (Python / CUDA / crypto / scheduling features) | planned |
+| 4 | Pattern Compiler v2 (action-template markdown) | planned |
+| 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | planned |
+| 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | planned |
+| 7 | Task Pack API + MCP `rosclaw_task_pack` | planned |
+| 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | planned |
+| 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | planned |
+
+### Sprint 0 — Safety & sanity (shipped)
+
+- DeepSeek default model: `deepseek-v4-flash` / `deepseek-v4-pro`
+  (reasoning, silently return empty `content`) → `deepseek-chat` for
+  BOTH extractor and Muse.  See `AGENTS.md` history note.
+- `scripts/validate_bridge.py` — pydantic-backed schema validator over
+  `bridge_index.json`.  Exits non-zero on any structural violation;
+  intended for CI / pre-deploy gates.
+- Secret scan over tracked files: clean.
+
+### Sprint 1 — Typed knowledge objects + v1→v2 migration (shipped)
+
+- New `src/rosclaw_know/schemas.py` (pydantic v2) — 10 typed objects:
+  `FailureMode`, `FixPattern`, `ConstraintPattern`, `EmbodimentCard`,
+  `TaskCard`, `VerifierCard`, `EvidenceTrace`, `SourceRecordV2`,
+  `PatternCardV2`, plus `BridgeClusterV2` / `BridgeIndexV2` /
+  `ClusterMetadataV2`.  Strict validation: `domain` ∈ `FRONTIER_DOMAINS`,
+  `priority` ∈ `{-1, 0, 1, None}`, `objective_direction` ∈
+  `{maximize, minimize}`, `id` patterns enforced.
+- New `data/assets/failure_taxonomy.yaml` — seed catalog with 8
+  failure modes covering every curated pattern.
+- New `scripts/migrate_assets_v1_to_v2.py` — non-destructive, idempotent
+  migration that injects a `metadata` block onto every cluster.  Maps
+  v1 `priority` → `metadata.lifecycle_status`; infers
+  `source_quality` from existing `source` field; preserves Phase 4
+  fields (`uplift_mean`, `uplift_n`, `win_rate`) verbatim and mirrors
+  them into `metadata.evidence`.
+- Real `bridge_index.json` migrated: 349 clusters, **all v1 top-level
+  fields untouched** (how reads them as before), **all 349 now carry
+  v2 metadata**.  Lifecycle inferred:
+  `production 2 · staging 23 · demoted 3 · needs_validation 321`.
+- Tests: +49 (47 in `test_schemas.py` + `test_migrate_assets.py`,
+  +2 in the existing pytest run that now passes with the new pydantic
+  env).  Full suite 127 PASS, 0 FAIL.
+
+### Sprint 2 — TaskCard extraction (next)
+
+The big leverage step.  Goal: every Frontier-Eng / ROSClaw Arena task
+gets a typed `TaskCard` with `objective_direction`, `metric_name`,
+`hard_constraints`, `verifier_type`, `common_failure_modes`,
+`recommended_patterns`.  See `src/rosclaw_know/schemas.py::TaskCard`
+for the shape; `extractors/benchmark_extractor.py` will land in
+this sprint.
 
 ---
 

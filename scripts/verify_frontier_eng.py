@@ -91,7 +91,7 @@ def _call_agent(symptom: str, treatment_context: str = "") -> str:
 
     payload = json.dumps(
         {
-            "model": os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-v4-pro"),
+            "model": os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-chat"),
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
