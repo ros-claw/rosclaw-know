@@ -177,5 +177,269 @@ class ReweightTest(unittest.TestCase):
         self.assertEqual(stats["clusters_total"], 0)
 
 
+def _write_evidence_stats(
+    path: Path,
+    patterns: dict,
+    *,
+    coverage: dict | None = None,
+) -> None:
+    """Write a Sprint-6 evidence_stats.json fixture."""
+    payload = {
+        "schema_version": "2.0",
+        "win_delta_threshold": 0.05,
+        "min_sample_size": MIN_SAMPLE_SIZE,
+        "adjusted_promote_threshold": 0.03,
+        "adjusted_demote_threshold": -0.03,
+        "coverage": coverage
+        or {
+            "total": 0, "catalyst_total": 0,
+            "catalyst_with_injection_id": 0,
+            "catalyst_with_post_score_3": 0,
+            "catalyst_with_post_score_5": 0,
+            "catalyst_with_code_diff_summary": 0,
+            "violations": [],
+        },
+        "patterns": patterns,
+    }
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+def _v2_stat(
+    pid: str,
+    *,
+    placebo_adj: float | None,
+    true_n: int = MIN_SAMPLE_SIZE,
+    avg_uplift_5: float = 0.05,
+    win_rate: float = 0.5,
+) -> dict:
+    """Build a serialised EvidenceStat dict for fixtures."""
+    arm_true = {
+        "arm": "true", "n": true_n,
+        "avg_uplift_1": None, "avg_uplift_3": None,
+        "avg_uplift_5": avg_uplift_5,
+        "win_rate": win_rate,
+        "regression_rate": 0.0,
+        "validity_preservation_rate": 1.0,
+    }
+    arm_placebo = {
+        "arm": "placebo", "n": true_n,
+        "avg_uplift_1": None, "avg_uplift_3": None,
+        "avg_uplift_5": 0.0,
+        "win_rate": 0.0,
+        "regression_rate": 0.0,
+        "validity_preservation_rate": 1.0,
+    }
+    arm_zero = {
+        "arm": "baseline", "n": 0,
+        "avg_uplift_1": None, "avg_uplift_3": None,
+        "avg_uplift_5": None, "win_rate": 0.0,
+        "regression_rate": 0.0, "validity_preservation_rate": 0.0,
+    }
+    return {
+        "pattern_id": pid,
+        "n": true_n * 2,
+        "n_by_arm": {"baseline": 0, "true": true_n, "placebo": true_n, "shuffled": 0},
+        "by_arm": {
+            "baseline": {**arm_zero, "arm": "baseline"},
+            "true": arm_true,
+            "placebo": arm_placebo,
+            "shuffled": {**arm_zero, "arm": "shuffled"},
+        },
+        "hint_use_rate": 0.8,
+        "placebo_adjusted_uplift": placebo_adj,
+        "shuffled_adjusted_uplift": None,
+        "raw_uplift_mean": avg_uplift_5,
+        "last_seen": "2026-06-03T00:00:00Z",
+        "is_promoted": False,
+        "is_demoted": False,
+    }
+
+
+class ReweightV2Test(unittest.TestCase):
+    """Sprint 6 plan §11.8: bridge_reweighter must consult adjusted uplift."""
+
+    def test_promote_when_adjusted_above_threshold(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            stats_path = Path(td) / "evidence_stats.json"
+            _write_bridge(
+                bridge,
+                {
+                    "windup": {
+                        "standard_name": "PID Windup",
+                        "domain": "Control_Locomotion",
+                        "associated_patterns": ["compiled_anti_windup"],
+                    }
+                },
+            )
+            _write_metrics(metrics, {})
+            _write_evidence_stats(
+                stats_path,
+                {
+                    "compiled_anti_windup": _v2_stat(
+                        "compiled_anti_windup",
+                        placebo_adj=0.15,  # well above +0.03
+                        avg_uplift_5=0.15,
+                        win_rate=0.9,
+                    )
+                },
+            )
+            stats = reweight_bridge_index(
+                bridge_path=bridge,
+                metrics_path=metrics,
+                evidence_stats_path=stats_path,
+            )
+            self.assertEqual(stats["mode"], "v2")
+            self.assertEqual(stats["clusters_promoted"], 1)
+            self.assertEqual(stats["clusters_demoted"], 0)
+            body = _read_bridge(bridge)
+            cluster = body["symptom_clusters"]["windup"]
+            self.assertEqual(cluster["priority"], 1)
+            self.assertAlmostEqual(cluster["placebo_adjusted_uplift"], 0.15, places=3)
+
+    def test_demote_when_adjusted_below_threshold(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            stats_path = Path(td) / "evidence_stats.json"
+            _write_bridge(
+                bridge,
+                {
+                    "windup": {
+                        "standard_name": "Windup",
+                        "domain": "Control_Locomotion",
+                        "associated_patterns": ["compiled_bad_pattern"],
+                    }
+                },
+            )
+            _write_metrics(metrics, {})
+            _write_evidence_stats(
+                stats_path,
+                {
+                    "compiled_bad_pattern": _v2_stat(
+                        "compiled_bad_pattern",
+                        placebo_adj=-0.10,
+                        avg_uplift_5=-0.10,
+                        win_rate=0.0,
+                    )
+                },
+            )
+            stats = reweight_bridge_index(
+                bridge_path=bridge,
+                metrics_path=metrics,
+                evidence_stats_path=stats_path,
+            )
+            self.assertEqual(stats["mode"], "v2")
+            self.assertEqual(stats["clusters_demoted"], 1)
+            self.assertEqual(_read_bridge(bridge)["symptom_clusters"]["windup"]["priority"], -1)
+
+    def test_hold_when_adjusted_inconclusive(self) -> None:
+        """placebo_adj in (-0.03, +0.03) → no promote, no demote."""
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            stats_path = Path(td) / "evidence_stats.json"
+            _write_bridge(
+                bridge,
+                {
+                    "noisy": {
+                        "standard_name": "Inconclusive",
+                        "domain": "Systems_Compute",
+                        "associated_patterns": ["compiled_meh"],
+                    }
+                },
+            )
+            _write_metrics(metrics, {})
+            _write_evidence_stats(
+                stats_path,
+                {
+                    "compiled_meh": _v2_stat(
+                        "compiled_meh", placebo_adj=0.01, avg_uplift_5=0.01,
+                    )
+                },
+            )
+            stats = reweight_bridge_index(
+                bridge_path=bridge,
+                metrics_path=metrics,
+                evidence_stats_path=stats_path,
+            )
+            self.assertEqual(stats["mode"], "v2")
+            self.assertEqual(stats["clusters_promoted"], 0)
+            self.assertEqual(stats["clusters_demoted"], 0)
+            cluster = _read_bridge(bridge)["symptom_clusters"]["noisy"]
+            self.assertNotIn("priority", cluster)
+
+    def test_v2_falls_back_to_v1_for_unknown_patterns(self) -> None:
+        """A cluster whose patterns aren't in evidence_stats.json should
+        still use the v1 demote path (covers partial v2 rollout)."""
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            stats_path = Path(td) / "evidence_stats.json"
+            _write_bridge(
+                bridge,
+                {
+                    "legacy": {
+                        "standard_name": "Legacy",
+                        "domain": "Memory_Reasoning",
+                        "associated_patterns": ["pattern_legacy_v1_only"],
+                    }
+                },
+            )
+            _write_metrics(
+                metrics,
+                {
+                    "pattern_legacy_v1_only": _metric(
+                        "pattern_legacy_v1_only", n=10, uplift=-0.10, win_rate=0.0,
+                    )
+                },
+            )
+            _write_evidence_stats(stats_path, {})  # empty stats
+            stats = reweight_bridge_index(
+                bridge_path=bridge,
+                metrics_path=metrics,
+                evidence_stats_path=stats_path,
+            )
+            self.assertEqual(stats["mode"], "v2")
+            self.assertEqual(stats["clusters_demoted"], 1)
+
+    def test_force_v1_ignores_evidence_stats(self) -> None:
+        """force_v1=True must skip the v2 path even when stats are present."""
+        with tempfile.TemporaryDirectory() as td:
+            bridge = Path(td) / "bridge.json"
+            metrics = Path(td) / "metrics.json"
+            stats_path = Path(td) / "evidence_stats.json"
+            _write_bridge(
+                bridge,
+                {
+                    "cluster": {
+                        "standard_name": "x",
+                        "domain": "Systems_Compute",
+                        "associated_patterns": ["compiled_x"],
+                    }
+                },
+            )
+            _write_metrics(metrics, {})
+            _write_evidence_stats(
+                stats_path,
+                {
+                    "compiled_x": _v2_stat(
+                        "compiled_x", placebo_adj=0.15, avg_uplift_5=0.15,
+                    )
+                },
+            )
+            stats = reweight_bridge_index(
+                bridge_path=bridge,
+                metrics_path=metrics,
+                evidence_stats_path=stats_path,
+                force_v1=True,
+            )
+            self.assertEqual(stats["mode"], "v1")
+            self.assertEqual(stats["clusters_promoted"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

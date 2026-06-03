@@ -18,7 +18,10 @@ data/source_manifest.json
 data/benchmarks/
 data/reports/
 data/stats_history/
-data/exports/
+data/exports/*
+!data/exports/.gitkeep
+# Commit the Sprint-6 deterministic seed JSONL so CI has data to chew on.
+!data/exports/evidence_traces_seed.jsonl
 
 # Fetched / drafted corpus — regeneratable via:
 #   scripts/ingest_awesome.py   (Phase 8 sources)

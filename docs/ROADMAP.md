@@ -19,7 +19,7 @@ agents before they start.  Sprint plan source:
 | **3** | Trajectory mining (Python / CUDA / crypto / scheduling features) | 🟡 partial (framework + 3/4 extractors) |
 | **4** | Pattern Compiler v2 (action-template markdown) | ✅ shipped |
 | 5 | Physical Knowledge Graph v2 (multi-type + hybrid retrieval) | ✅ shipped |
-| 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | planned |
+| 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | ✅ shipped |
 | 7 | Task Pack API + MCP `rosclaw_task_pack` | planned |
 | 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | planned |
 | 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | planned |
@@ -167,14 +167,68 @@ Deferred to a follow-up sprint:
   - World_Physics query not dominated by Planning_Decision ✓
   - Demoted patterns excluded from top-k ✓
 
-### Sprint 6 — Evidence Loop V2 (next)
+### Sprint 6 — Evidence Loop V2 (shipped)
 
-Sprint 5 makes the graph and the retriever work, but the
-`EvidenceTrace` node type currently has zero instances — the runtime
-doesn't yet write traces.  Sprint 6 closes that loop by extending the
-how-side `submit_outcome` to capture `code_diff_summary`,
-`hint_features`, and `used_hint`, then training the bridge reweighter
-on **adjusted uplift** (true − placebo) instead of raw uplift.
+- New `src/rosclaw_know/evidence_writer.py`:
+  - `EvidenceTraceWriter` — atomic append-only JSONL writer with
+    fsync barrier and per-thread lock.
+  - `compute_code_diff_hash(before, after)` — sha256 over
+    normalised source (comment-, trailing-WS- and blank-line-
+    stripped); lets the distiller de-dup near-identical diffs.
+  - `detect_hint_use(diff_summary, hint_features)` — case-insensitive
+    OR-match of regex feature patterns against the diff prose.
+  - `stream_traces(path)` — streaming validated reader; logs and
+    skips malformed lines.
+- New `src/rosclaw_know/evidence_distill.py` — Sprint-6 distiller
+  that separates the four arms (`baseline / true / placebo /
+  shuffled`) per plan §8.3 and computes:
+  - `placebo_adjusted_uplift = mean(true.delta_5) − mean(placebo.delta_5)`
+  - `shuffled_adjusted_uplift` (mirror against shuffled)
+  - `hint_use_rate` — true-arm only by construction
+  - per-arm `ArmStats`: `n / avg_uplift_1/3/5 / win_rate /
+    regression_rate / validity_preservation_rate`
+  - `CoverageReport` with the plan §Sprint 6 acceptance gates:
+    every CATALYST trace has `injection_id`, ≥ 80% have
+    `post_score_3`+`post_score_5`, ≥ 50% have a non-empty
+    `code_diff_summary`.
+  - `is_promoted(stat)` / `is_demoted(stat)` — gate
+    decisions driven by `placebo_adjusted_uplift` (thresholds
+    ±0.03) with `n_true ≥ MIN_SAMPLE_SIZE`.
+- `src/rosclaw_know/bridge_reweighter.py` upgraded:
+  - Auto-detects `data/assets/evidence_stats.json` and switches to
+    the v2 reweight path; falls back to v1 per-cluster when a
+    cluster's patterns haven't been distilled into v2 yet.
+  - Per plan §11.8 acceptance: "priority 晋级不能只看 raw
+    uplift，要看 adjusted uplift" — v2 path uses
+    `placebo_adjusted_uplift`.
+  - New `force_v1=True` knob for rollout safety.
+- New `data/assets/hint_features.yaml` — 13 patterns × 77 regex
+  features covering PID, Systems / kernel optim, optimiser swap,
+  warm-start, boundary validation, robotics, crypto, KV-cache.
+- New `scripts/seed_evidence_traces.py` — deterministic generator
+  for the seed JSONL (rng_seed=42 → 48 traces across 4 arms × 2
+  patterns × 6 samples).
+- New `scripts/distill_evidence.py` — CLI: reads every
+  `data/exports/evidence_traces*.jsonl`, prints per-pattern
+  PROMOTE/HOLD/DEMOTE table + coverage card, writes
+  `data/assets/evidence_stats.json`, exits non-zero on any
+  acceptance gate violation.
+- Real seed data → 36/36 CATALYST with `injection_id`, `post_score_3`,
+  `post_score_5`; 24/36 (67%) with `code_diff_summary`.  Both seed
+  patterns clear the +0.03 adjusted-uplift threshold and would be
+  PROMOTED by the bridge reweighter.
+- Tests: +47 (19 in `test_evidence_writer.py`, 23 in
+  `test_evidence_distill.py`, 5 v2 cases appended to
+  `test_bridge_reweighter.py`).  Full suite **279 PASS**, 0 FAIL.
+
+### Sprint 7 — Task Pack API (next)
+
+With Sprints 1-6 in place we have typed objects, a typed graph, a
+hybrid retriever, and a causal evidence loop.  Sprint 7 exposes all
+of that to agents as a structured task-pack: an HTTP/MCP endpoint
+that returns recommended patterns, expected failure modes, and the
+verifier signature for a given `task_id`, before the agent's first
+mutation.
 
 ---
 

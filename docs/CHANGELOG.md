@@ -3,6 +3,99 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev5] — 2026-06-03 · v1.5 Sprint 6 — Evidence Loop V2 (placebo-adjusted uplift)
+
+### Added — Sprint 6 (causal evidence + adjusted uplift promotion)
+
+- `src/rosclaw_know/evidence_writer.py` — helpers for the runtime side
+  of the loop:
+  - `EvidenceTraceWriter` — atomic append-only JSONL writer with an
+    fsync barrier (so a mid-write crash can't truncate the file
+    mid-record).  Per-thread lock; designed to be opened once per
+    worker.
+  - `compute_code_diff_hash(before, after)` — sha256 over the
+    *normalised* (comment-, trailing-WS- and blank-line-stripped)
+    before/after pair, prefixed with `sha256:`.  Lets the distiller
+    de-dup near-identical diffs across runs without being fooled by
+    cosmetic edits.
+  - `detect_hint_use(diff_summary, hint_features)` — case-insensitive
+    OR-match of regex feature patterns against the diff prose;
+    returns `(used_hint, matched_features)`.  Skips bad regex
+    silently with a WARNING log.
+  - `stream_traces(path)` — streaming JSONL reader that validates
+    each line into an `EvidenceTrace` and skips malformed lines.
+- `src/rosclaw_know/evidence_distill.py` — Sprint-6 distiller that
+  separates the four arms (`baseline / true / placebo / shuffled`)
+  per the plan §8.3 causal-evidence design:
+  - **placebo_adjusted_uplift** = mean(true.best_delta_5)
+    − mean(placebo.best_delta_5).  Returns `None` when either arm
+    has no samples (refuses to compute `treatment - 0`).
+  - **shuffled_adjusted_uplift** — same against the shuffled control.
+  - **hint_use_rate** — fraction of *true-arm* traces with
+    `used_hint=True`.  Off-arm hint-use is ignored by construction.
+  - Per-arm `ArmStats`: `n / avg_uplift_1 / 3 / 5 / win_rate /
+    regression_rate / validity_preservation_rate`.
+  - `CoverageReport` enforces plan §Sprint 6 acceptance gates:
+    every CATALYST trace has `injection_id`, ≥ 80% have
+    `post_score_3` + `post_score_5`, ≥ 50% have a non-empty
+    `code_diff_summary`.  Returned via `violations` list — callers
+    pick hard-fail vs soft-fail.
+  - Promotion rules: `is_promoted(stat)` requires `n_true ≥
+    MIN_SAMPLE_SIZE` *and* `placebo_adjusted_uplift ≥ +0.03`.
+    `is_demoted` is the mirror at `-0.03`.
+- `src/rosclaw_know/bridge_reweighter.py` updated for Sprint 6:
+  - Auto-detects `data/assets/evidence_stats.json` and switches to
+    the **v2 reweight path** when present.  Promotion / demotion are
+    driven by `placebo_adjusted_uplift`, not raw uplift (plan §11.8
+    acceptance: "priority 晋级不能只看 raw uplift，要看 adjusted
+    uplift").
+  - `cluster.placebo_adjusted_uplift` field now propagates onto each
+    cluster so rosclaw-how can surface the causal signal in the
+    UI / log line.
+  - `force_v1=True` knob lets ops fall back to the legacy path during
+    rollout.
+  - Per-cluster fallback: a cluster whose patterns aren't yet in
+    `evidence_stats.json` is still reweighted via the v1 metrics so
+    a partial Sprint-6 deploy doesn't lose its existing demote logic.
+- `data/assets/hint_features.yaml` — 13-pattern hint-feature registry
+  (77 regex features total) covering PID, Systems / kernel optim,
+  optimiser swap, warm-start, boundary validation, robotics, crypto,
+  and KV-cache families.  Per plan §8.2 task-type taxonomy.
+- `scripts/seed_evidence_traces.py` — deterministic generator for the
+  Sprint-6 seed JSONL.  Default seed (rng_seed=42) produces 48 traces
+  across 4 arms × 2 patterns × 6 samples, with effect sizes calibrated
+  to give a clear placebo-adjusted uplift while still landing in the
+  plan §Sprint 6 coverage bands.
+- `data/exports/evidence_traces_seed.jsonl` — the actual seed file
+  (48 traces) so CI has something to chew on.
+- `scripts/distill_evidence.py` — CLI runner.  Reads every
+  `data/exports/evidence_traces*.jsonl`, distils them, prints a
+  per-pattern verdict table (PROMOTE / HOLD / DEMOTE) and the coverage
+  card, and writes `data/assets/evidence_stats.json` atomically.
+  Exits non-zero on any acceptance violation.
+- `tests/test_evidence_writer.py` (19 cases): hash determinism +
+  insensitivity to cosmetic edits, writer round-trip via streamer,
+  bad-regex tolerance, malformed-line skipping.
+- `tests/test_evidence_distill.py` (23 cases): every metric formula,
+  all four arms, hint-use restricted to true arm, coverage-gate
+  enforcement (injection_id missing, post_score < 80%, diff < 50%),
+  promotion / demotion thresholds, integration distil of the seed.
+- `tests/test_bridge_reweighter.py` extended (+5 v2 cases): promote
+  when adjusted ≥ +0.03, demote at ≤ −0.03, hold in-between, partial
+  v2 rollout falls back to v1 per-cluster, `force_v1` knob.
+
+### Output
+
+- Seed JSONL distils to:
+  - `compiled_zero_integral_gain_on_saturation`: placebo_adj=+0.13,
+    hint_use=1.0 → PROMOTE
+  - `compiled_vectorize_inner_loop`: placebo_adj=+0.11,
+    hint_use=0.5 → PROMOTE
+  - Coverage: 36/36 CATALYST have `injection_id`, `post_score_3`,
+    `post_score_5`; 24/36 (67%) have `code_diff_summary` — all gates
+    cleanly pass.
+- 279 pytest cases pass (was 232 after Sprint 5, +47 new).
+
 ## [1.5.0.dev4] — 2026-06-03 · v1.5 Sprint 5 — Physical Knowledge Graph V2 + hybrid retrieval
 
 ### Added — Sprint 5 (typed multi-relation graph + hybrid retrieval)
