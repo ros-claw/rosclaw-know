@@ -29,3 +29,10 @@ wiki/awesome_corpus/
 # Legacy wiki source corpus — deployer mounts or symlinks it themselves
 wiki/
 /wiki
+
+# 测试生成文件
+.coverage
+.pytest_cache/
+*.egg-info/
+__pycache__/
+*.pyc
