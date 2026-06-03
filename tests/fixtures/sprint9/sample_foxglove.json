@@ -1,0 +1,6 @@
+[
+  {"id": "ann_001", "start_time": "2026-06-02T20:11:33.500Z", "label": "Wrist clipped table", "category": "collision", "embodiment_id": "ur5", "metadata": {"object_a": "ur5/wrist_3_link", "object_b": "table"}},
+  {"id": "ann_002", "start_time": "2026-06-02T20:11:35.000Z", "label": "E-stop pressed by operator", "category": "estop", "embodiment_id": "ur5", "metadata": {"reason": "manual"}},
+  {"id": "ann_003", "start_time": "2026-06-02T20:11:40.000Z", "label": "PID windup on rotor", "category": "controller_error", "embodiment_id": "quadrotor", "metadata": {"controller": "attitude_pid"}},
+  {"id": "ann_004", "start_time": "2026-06-02T20:11:42.000Z", "label": "Wrist FT outlier", "category": "sensor_outlier", "embodiment_id": "ur5", "metadata": {"sensor": "wrist_ft_sensor"}}
+]

@@ -22,7 +22,7 @@ agents before they start.  Sprint plan source:
 | 6 | Evidence Loop v2 (placebo-adjusted uplift, hint_use_rate) | ✅ shipped |
 | 7 | Task Pack API + MCP `rosclaw_task_pack` | ✅ shipped |
 | 8 | Frontier-Eng strict 6-arm A/B (True/Placebo/Shuffled) | ✅ shipped |
-| 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | planned |
+| 9 | Real-robot / sim ingest (rosbag / Foxglove / Isaac / MuJoCo) | ✅ shipped |
 
 ### Sprint 0 — Safety & sanity (shipped)
 
@@ -293,14 +293,54 @@ Deferred to a follow-up sprint:
   - 10/10 tasks reach p < 0.1 (≥4) ✓
 - Tests: +25 (`test_ab_harness.py`).  Full suite **324 PASS**, 0 FAIL.
 
-### Sprint 9 — Real-robot / sim ingest (next)
+### Sprint 9 — Real-robot / sim ingest (shipped)
 
-With Sprints 1-8 in place we have a measured, statistically-grounded
-pipeline working end-to-end on synthetic data.  Sprint 9 finishes
-v1.5 by wiring in real data sources: rosbag/mcap, Foxglove timelines,
-Isaac Sim logs, MuJoCo rollouts, controller configs, URDF/e-URDF,
-collision reports, safety-stop events.  This is what makes
-`source_quality = "S"` (ROSClaw self-verified) actually populate.
+Closes v1.5 by wiring real data sources into the typed-knowledge graph:
+rosbag/mcap, Foxglove timelines, Isaac Sim logs, MuJoCo rollouts,
+controller configs, URDF/e-URDF, collision reports, safety-stop events.
+
+- New `src/rosclaw_know/sim_ingest/` package — pure-Python, no rosbag /
+  mcap / ROS / Isaac SDK dependencies (CI in a plain container works).
+  Common `RobotEvent` envelope with 8 canonical event categories
+  (`collision`, `safety_stop`, `joint_limit_violation`,
+  `controller_error`, `sensor_outlier`, `task_timeout`,
+  `trajectory_deviation`, `actuator_saturation`).
+- Four adapters: `read_rosbag_jsonl` (8 canonical topic suffixes,
+  per-joint event expansion on `/joint_states`),
+  `read_isaac_jsonl` (11 Isaac event vocabularies),
+  `read_mujoco_jsonl` (contacts + per-step event strings +
+  follow-error), `read_foxglove_jsonl` (annotation export, JSON-array
+  and JSONL formats).
+- `urdf_parser.py` — stdlib `xml.etree` parse → `URDFJoint` (with
+  limit / effort / velocity), sensors, transmissions.  Companion
+  `parse_controller_config(yaml)` reads ros2_control config.
+  `urdf_to_embodiment()` and `urdf_to_constraints()` emit
+  `EmbodimentCard` + one `ConstraintPattern` per joint × limit.
+- `event_to_failure.EventToFailureMapper` — stateful dedup by
+  `(event_type, fingerprint)` *across* embodiments → one
+  `MappedFailure` whose `embodiments_seen` collects every body that
+  exhibited the same symptom.  Curated `likely_causes` +
+  `contraindications` per event type.
+- `event_to_evidence.event_to_evidence_trace` — converts a
+  `RobotEvent` carrying a `task_run` envelope into a valid
+  `EvidenceTrace` ready for Sprint 6's distiller.
+- `cross_embodiment.run_cross_embodiment_check` — Sprint 9 acceptance
+  harness.  Curated `PATTERN_TRANSFER_TABLE` maps event_type to
+  applicable pattern ids; reports which patterns are observed on ≥2
+  distinct embodiments (plan §Sprint 9 primary gate).
+- `scripts/ingest_sim_logs.py` — CLI driver with repeatable
+  `--rosbag` / `--isaac` / `--mujoco` / `--foxglove` / `--urdf`.
+- Reference run persisted at
+  `data/assets/sprint9_ingest_reference.{json,md}`: 26 events from 4
+  adapters + 1 URDF → 21 FailureMode + 18 ConstraintPattern.  **3
+  patterns** (`add_boundary_validation`, `anti_windup`,
+  `controller_output_clamp`) confirmed cross-embodiment-transferable
+  between **ur5 and quadrotor**.
+- Acceptance gates (plan §Sprint 9):
+  - Real/sim logs → FailureMode ✓ (21 from fixtures)
+  - Sandbox collision report → ConstraintPattern ✓ (18 from URDF)
+  - Same pattern survives on ≥2 embodiments ✓ (3 patterns)
+- Tests: +65 across 5 new files.  Full suite **389 PASS**, 0 FAIL.
 
 ---
 

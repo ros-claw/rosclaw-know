@@ -3,6 +3,132 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.5.0.dev8] — 2026-06-03 · v1.5 Sprint 9 — real-robot / sim ingest
+
+### Added — Sprint 9 (plan §Sprint 9, real/sim → typed knowledge)
+
+- New `src/rosclaw_know/sim_ingest/` package — pure-Python adapters,
+  no rosbag / mcap / ROS / Isaac SDK dependencies (so CI in a plain
+  container can exercise the entire ingest pipeline):
+  - `event_schema.py` — frozen `RobotEvent` envelope with 8 canonical
+    `EVENT_TYPES`: `collision`, `safety_stop`, `joint_limit_violation`,
+    `controller_error`, `sensor_outlier`, `task_timeout`,
+    `trajectory_deviation`, `actuator_saturation`.  `stable_key()`
+    returns `(event_type, embodiment_id, fingerprint)` for dedup.
+  - `rosbag_reader.py` — `read_rosbag_jsonl(path)` consumes the JSONL
+    you get from `mcap cat my_bag.mcap --json` and recognises 8
+    canonical topic suffixes (e-stop, contacts, joint_states,
+    controller_state, trajectory_status, task_status, sensor_alert).
+    Suffix-matches so namespaced topics (`/r1/safety/e_stop`) work.
+    Tolerates malformed lines (warn + skip), per-joint event
+    expansion on `/joint_states`, noise-floor on contact forces.
+  - `isaac_reader.py` — Isaac Sim rollout JSONL → `RobotEvent` stream.
+    Recognises 11 Isaac event vocabularies (`collision`, `self_collision`,
+    `joint_limit`, `torque_saturation`, `velocity_saturation`,
+    `sensor_dropout`, `imu_spike`, `task_terminated`, `task_failed`,
+    `policy_diverged`, `trajectory_error`).  `task_terminated`
+    filters to `reason in (timeout|time_limit)` so successful
+    terminations don't pollute the failure stream.
+  - `mujoco_reader.py` — MuJoCo step JSONL → `RobotEvent`.  Three
+    routes per row: `contact[]` (noise floor 1.0 N, severity
+    promotes at 50 N), per-step `events` strings
+    (`actuator_limit:i`, `nan_in_ctrl`, `joint_limit:name`,
+    `imu_spike:name`, `rollout_timeout`), and `follow_error` vs
+    `follow_tolerance` for trajectory deviation.
+  - `foxglove_reader.py` — Foxglove timeline annotation export
+    (`.json` array or `.jsonl`).  Recognises 11 categories
+    including `estop` / `e_stop` / `safety_stop`, derives stable
+    fingerprints from metadata where possible.
+  - `urdf_parser.py` — stdlib `xml.etree.ElementTree` walk that
+    extracts `URDFJoint` (with limit / effort / velocity),
+    sensors, transmissions; companion
+    `parse_controller_config(yaml)` reads ros2_control config
+    (`controller_manager.ros__parameters` + `joint_limits`).
+    `urdf_to_embodiment()` infers `EmbodimentType` from robot name
+    + joint inventory; `urdf_to_constraints()` emits one
+    `ConstraintPattern` per (joint × position|velocity|effort) tuple
+    with `check_method` strings the verifier can run.
+- New `event_to_failure.py` — stateful `EventToFailureMapper` with
+  dedup by `(event_type, fingerprint)` *across* embodiments (so the
+  same anti-windup symptom on UR5 and quadrotor collapses to a single
+  `FailureMode` whose `embodiments_seen` has both).  `MappedFailure`
+  dataclass carries the FailureMode + source events + occurrence
+  count + embodiments seen.  Includes hand-curated `likely_causes`
+  and `contraindications` per event type (e.g. "Do not auto-resume
+  e-stop without operator clearance.").
+- New `event_to_evidence.py` — `event_to_evidence_trace(event)`
+  converts a `RobotEvent` carrying a `task_run` envelope
+  (`run_id` + `task_name` + `pre_score` + ...) into a valid
+  `EvidenceTrace` ready for Sprint 6's evidence-loop V2 distiller.
+  Returns `None` for events without the envelope.
+- New `cross_embodiment.py` — Sprint 9 acceptance harness.  Curated
+  `PATTERN_TRANSFER_TABLE` maps event_type → tuple of canonical
+  pattern_ids (`controller_error → (anti_windup, controller_output_clamp,
+  add_boundary_validation)`, etc.).  `run_cross_embodiment_check()`
+  computes:
+  - **failure-level reuse**: `MappedFailure` instances with
+    `len(embodiments_seen) ≥ 2`;
+  - **pattern-level reuse**: pattern_ids whose mapped event_types
+    were observed on ≥2 distinct embodiments — this is plan
+    §Sprint 9's primary acceptance gate ("anti-windup applies to
+    both quadrotor PID and arm joint PID").
+- New `scripts/ingest_sim_logs.py` — CLI driver.  Accepts repeatable
+  `--rosbag`, `--isaac`, `--mujoco`, `--foxglove`, `--urdf` flags plus
+  optional `--controller-config`; emits markdown summary + JSON
+  artefact dump and exits non-zero unless ≥1 acceptance gate clears.
+- New fixtures under `tests/fixtures/sprint9/`:
+  - `sample.rosbag.jsonl` (9 messages) — UR5 e-stop, table collision,
+    joint-limit, windup, follow-error, task-timeout, sensor alert,
+    plus quadrotor windup + e-stop-not-pressed.
+  - `sample_isaac.jsonl` (8 rows) — UR5 + quadrotor mixed events.
+  - `sample_mujoco.jsonl` (7 rows) — contact / nan / actuator-limit /
+    follow-error / rollout-timeout.
+  - `sample_foxglove.json` — 4 operator annotations.
+  - `ur5.urdf` — 6-DOF arm with full URDF `<limit>` blocks.
+  - `controller_config.yaml` — ros2_control joint→controller map
+    plus `joint_limits:` overrides (yaml 2.5 < URDF 3.15 velocity
+    cap, so the override path is exercised).
+- New reference run persisted at
+  `data/assets/sprint9_ingest_reference.{json,md}`: 26 events from 4
+  adapters + 1 URDF → 21 distinct FailureMode + 18 ConstraintPattern.
+  Cross-embodiment pattern reuse: **3 patterns**
+  (`add_boundary_validation`, `anti_windup`, `controller_output_clamp`)
+  serve **both ur5 and quadrotor**.  ✅ Plan §Sprint 9 acceptance.
+
+### Tests
+
+- `tests/test_sim_ingest_rosbag.py` (+11)
+- `tests/test_sim_ingest_sim_adapters.py` (+15) — Isaac + MuJoCo + Foxglove
+- `tests/test_sim_ingest_urdf.py` (+13)
+- `tests/test_sim_ingest_mappers.py` (+15) — failure + evidence mappers
+- `tests/test_sim_ingest_cross_embodiment.py` (+11)
+- Full suite: **389 PASS**, 0 FAIL.  Sprint 9 added +65 cases.
+
+### Plan §Sprint 9 acceptance gates
+
+| Gate | Status |
+|---|---|
+| Real/sim logs → `FailureMode` | ✅ (21 from fixtures) |
+| Sandbox collision report → `ConstraintPattern` | ✅ (18 from URDF) |
+| Same pattern survives on ≥2 embodiments | ✅ (anti_windup, +2 others) |
+
+### Status of v1.5 plan after Sprint 9
+
+```
+Sprint 0:  ✅ Safety + sanity
+Sprint 1:  ✅ 10 typed objects + 349-cluster v1→v2 migration
+Sprint 2:  ✅ 74 TaskCards from Frontier-Eng
+Sprint 3:  🟡 framework done; AES/CUDA/scheduling extractors deferred
+Sprint 4:  ✅ 8 PatternCardV2 markdowns lint-clean
+Sprint 5:  ✅ 117-node typed graph + hybrid retriever
+Sprint 6:  ✅ Evidence Loop V2 + placebo-adjusted uplift
+Sprint 7:  ✅ Task Pack API + HTTP/CLI/MCP
+Sprint 8:  ✅ 6-arm A/B harness with 5/5 acceptance gates
+Sprint 9:  ✅ Real-robot / sim ingest with cross-embodiment proof
+─────────  ──────────────────────────────────────
+v1.5:      ✅ CLOSED (Sprint 3 extractor work tracked separately)
+```
+
 ## [1.5.0.dev7] — 2026-06-03 · v1.5 Sprint 8 — Frontier-Eng 6-arm A/B harness
 
 ### Added — Sprint 8 (plan §Sprint 8, rank-based heterogeneous A/B)

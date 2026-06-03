@@ -1,0 +1,7 @@
+{"step": 1, "wall_time": 0.01, "embodiment_id": "quadrotor", "contact": [{"force": 22.0, "geom1": "quadrotor/rotor_a", "geom2": "obstacle"}], "events": []}
+{"step": 2, "wall_time": 0.02, "embodiment_id": "quadrotor", "events": ["nan_in_ctrl"]}
+{"step": 3, "wall_time": 0.03, "embodiment_id": "quadrotor", "events": ["actuator_limit:2"]}
+{"step": 4, "wall_time": 0.04, "embodiment_id": "ur5", "events": ["joint_limit:shoulder_pan_joint"]}
+{"step": 5, "wall_time": 0.05, "embodiment_id": "ur5", "follow_error": 0.21, "follow_tolerance": 0.05, "goal_id": "g_99"}
+{"step": 6, "wall_time": 0.06, "embodiment_id": "ur5", "events": ["rollout_timeout"]}
+{"step": 7, "wall_time": 0.07, "embodiment_id": "ur5", "events": ["imu_spike:wrist_imu"]}

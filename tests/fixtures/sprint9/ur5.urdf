@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<robot name="ur5">
+  <link name="base_link"/>
+  <link name="shoulder_link"/>
+  <link name="upper_arm_link"/>
+  <link name="forearm_link"/>
+  <link name="wrist_1_link"/>
+  <link name="wrist_2_link"/>
+  <link name="wrist_3_link"/>
+
+  <joint name="shoulder_pan_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="shoulder_link"/>
+    <limit lower="-3.14159" upper="3.14159" effort="150.0" velocity="3.15"/>
+  </joint>
+
+  <joint name="shoulder_lift_joint" type="revolute">
+    <parent link="shoulder_link"/>
+    <child link="upper_arm_link"/>
+    <limit lower="-3.14159" upper="3.14159" effort="150.0" velocity="3.15"/>
+  </joint>
+
+  <joint name="elbow_joint" type="revolute">
+    <parent link="upper_arm_link"/>
+    <child link="forearm_link"/>
+    <limit lower="-3.14159" upper="3.14159" effort="150.0" velocity="3.15"/>
+  </joint>
+
+  <joint name="wrist_1_joint" type="revolute">
+    <parent link="forearm_link"/>
+    <child link="wrist_1_link"/>
+    <limit lower="-6.28" upper="6.28" effort="28.0" velocity="3.2"/>
+  </joint>
+
+  <joint name="wrist_2_joint" type="revolute">
+    <parent link="wrist_1_link"/>
+    <child link="wrist_2_link"/>
+    <limit lower="-6.28" upper="6.28" effort="28.0" velocity="3.2"/>
+  </joint>
+
+  <joint name="wrist_3_joint" type="revolute">
+    <parent link="wrist_2_link"/>
+    <child link="wrist_3_link"/>
+    <limit lower="-6.28" upper="6.28" effort="28.0" velocity="3.2"/>
+  </joint>
+
+  <joint name="ft_sensor_joint" type="fixed">
+    <parent link="wrist_3_link"/>
+    <child link="ft_sensor"/>
+  </joint>
+
+  <link name="ft_sensor"/>
+
+  <transmission name="shoulder_pan_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="shoulder_pan_joint"/>
+  </transmission>
+
+  <gazebo>
+    <sensor name="wrist_ft_sensor" type="force_torque"/>
+    <sensor name="front_realsense" type="camera"/>
+  </gazebo>
+</robot>

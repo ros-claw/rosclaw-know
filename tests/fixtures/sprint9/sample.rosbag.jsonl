@@ -1,0 +1,10 @@
+{"topic": "/safety/e_stop", "msg_type": "std_msgs/Bool", "timestamp": "ros_time:1717459200.250", "embodiment_id": "ur5", "data": {"data": true}}
+{"topic": "/collision/contact", "msg_type": "gazebo_msgs/ContactsState", "timestamp": "ros_time:1717459201.500", "embodiment_id": "ur5", "data": {"contacts": [{"normal_force_mag": 95.0, "object_a": "ur5/wrist_3_link", "object_b": "table"}]}}
+{"topic": "/joint_states", "msg_type": "sensor_msgs/JointState", "timestamp": "ros_time:1717459202.000", "embodiment_id": "ur5", "data": {"name": ["shoulder_pan_joint", "elbow_joint"], "position": [3.20, 1.2], "velocity": [0.5, 0.2], "effort": [12.0, 2.0], "in_violation": [true, false]}}
+{"topic": "/controller_state", "msg_type": "control_msgs/ControllerState", "timestamp": "ros_time:1717459203.000", "embodiment_id": "ur5", "data": {"status": "windup", "controller": "joint_trajectory_controller", "error_norm": 0.78}}
+{"topic": "/trajectory_status", "msg_type": "control_msgs/JointTrajectoryControllerState", "timestamp": "ros_time:1717459204.000", "embodiment_id": "ur5", "data": {"goal_id": "g_42", "follow_error": 0.18, "tolerance": 0.05}}
+{"topic": "/task_status", "msg_type": "rosclaw_msgs/TaskStatus", "timestamp": "ros_time:1717459205.000", "embodiment_id": "ur5", "data": {"task_name": "pick_apple_off_table", "outcome": "timeout", "elapsed_seconds": 30.0, "budget_seconds": 20.0}}
+{"topic": "/sensor_alert", "msg_type": "rosclaw_msgs/SensorAlert", "timestamp": "ros_time:1717459206.000", "embodiment_id": "ur5", "data": {"sensor": "front_realsense", "kind": "dropout", "value": null}}
+# Below is the same anti-windup symptom from a quadrotor — proves cross-embodiment reuse.
+{"topic": "/uav/controller_state", "msg_type": "control_msgs/ControllerState", "timestamp": "ros_time:1717459207.000", "embodiment_id": "quadrotor", "data": {"status": "windup", "controller": "attitude_pid", "error_norm": 1.21}}
+{"topic": "/uav/safety/e_stop", "msg_type": "std_msgs/Bool", "timestamp": "ros_time:1717459208.000", "embodiment_id": "quadrotor", "data": {"data": false}}

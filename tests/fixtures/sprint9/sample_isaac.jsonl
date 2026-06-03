@@ -1,0 +1,8 @@
+{"step": 12, "sim_time": 0.24, "embodiment_id": "ur5", "events": [{"type": "joint_limit", "joint": "shoulder_pan", "delta": 0.05}]}
+{"step": 24, "sim_time": 0.48, "embodiment_id": "ur5", "events": [{"type": "collision", "body_a": "ur5/wrist_3_link", "body_b": "table", "force": 110.0}]}
+{"step": 30, "sim_time": 0.60, "embodiment_id": "quadrotor", "events": [{"type": "torque_saturation", "joint": "rotor_a", "torque": 1.0}]}
+{"step": 36, "sim_time": 0.72, "embodiment_id": "ur5", "events": [{"type": "policy_diverged", "policy": "lstm_pid"}]}
+{"step": 60, "sim_time": 1.20, "embodiment_id": "ur5", "events": [{"type": "task_terminated", "reason": "timeout", "task_name": "pick_apple_off_table"}]}
+{"step": 80, "sim_time": 1.60, "embodiment_id": "ur5", "events": [{"type": "sensor_dropout", "sensor": "wrist_ft_sensor"}]}
+{"step": 90, "sim_time": 1.80, "embodiment_id": "ur5", "events": [{"type": "task_terminated", "reason": "success"}]}
+{"step": 100, "sim_time": 2.00, "embodiment_id": "quadrotor", "events": [{"type": "policy_diverged", "policy": "attitude_pid"}]}
