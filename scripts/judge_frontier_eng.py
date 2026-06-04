@@ -13,11 +13,15 @@ Writes the judgments back into ``summary.json`` as a sibling array
 
 Final stdout report:
 
-  task_id              control  treatment  Δ  verdict
-  ERR_001_PID_runaway  6        9          +3 treatment_better
-  ERR_002_CUDA_OOM     7        7           0 tie
-  ───────────────────────────────────────────────────────
-  Average uplift (treatment − control): +1.5
+  task_id                       control  treatment  Δ  verdict
+  TASK_001_PIDTuning            7        8          +1 treatment_better
+  TASK_002_QuadrupedGait        6        9          +3 treatment_better
+  ...
+  ──────────────────────────────────────────────────────────────────
+  Tasks scored: 10   treatment_better: 7   control_better: 2   tie: 1
+  Pairwise win rate (treatment): 70%   (7/10)
+  Average uplift  (treatment − control): +1.40
+  Median uplift   (treatment − control): +1.5
 
 This is the §5.5 ‘Frontier-Eng 统计指标’ smoke — one A/B run per task,
 no seeding/budgeting yet — that gives an automated read on whether
@@ -157,22 +161,65 @@ async def _judge_all(report_dir: Path) -> dict:
 
 
 # Pulled from scripts/verify_frontier_eng.py so we don't have to read
-# private state from it.
+# private state from it.  Keep in sync when expanding BENCHMARK_SUITE.
 _SYMPTOM_BY_ID = {
-    "ERR_001_PID_runaway": (
+    "TASK_001_PIDTuning": (
         "PID controller drives a robotic-arm joint into sustained oscillation when "
         "the integral term saturates. Latency from sensor to actuator is 30 ms."
     ),
-    "ERR_002_CUDA_OOM": (
-        "A vision-language-navigation model's KV-cache grows linearly with "
-        "trajectory length, causing CUDA OOM after ~800 steps."
+    "TASK_002_QuadrupedGait": (
+        "A quadruped robot's trot-gait policy diverges on uneven terrain: foot "
+        "slip events cause the center-of-mass tracking error to grow each cycle "
+        "until the robot falls within ~3 seconds of stepping onto loose gravel."
+    ),
+    "TASK_003_RobotArmCycleTime": (
+        "A 6-DOF pick-and-place robot arm has a 4.2 s cycle time but the customer "
+        "needs <=3.0 s. Profiling shows 60% of the cycle is joint-space motion that "
+        "decelerates to zero between via-points, even when the via-points are colinear."
+    ),
+    "TASK_004_HighReliableSimulation": (
+        "A reliability simulation of a redundant power-electronics inverter needs "
+        "to estimate p(failure) ~ 1e-8 per operating hour. Naive Monte Carlo on "
+        "10^6 samples returns 0 failures and gives no useful estimate."
+    ),
+    "TASK_005_AES128_Throughput": (
+        "An AES-128-CBC implementation in pure C achieves 80 MB/s on a modern "
+        "x86_64 server, but the requirement is 1 GB/s. Profiling shows the inner "
+        "SubBytes/MixColumns loop dominates."
+    ),
+    "TASK_006_FlashAttention": (
+        "A transformer's self-attention layer hits CUDA OOM at 8K context length "
+        "because the NxN attention matrix is materialized in HBM.  Inference "
+        "throughput is also bandwidth-bound, not compute-bound."
+    ),
+    "TASK_007_BatteryFastCharging": (
+        "A Li-ion fast-charging profile that delivers 4C constant-current from "
+        "10%->80% SOC accelerates capacity fade to >2% per 100 cycles on "
+        "graphite anodes, far above the 0.5%/100c spec."
+    ),
+    "TASK_008_JobShop_abz": (
+        "A job-shop scheduler on the abz5 benchmark instance produces makespans "
+        "around 1400 (known optimum 1234) with a greedy dispatch rule and "
+        "stagnates after 10K iterations of local search."
+    ),
+    "TASK_009_TopologyOptimization": (
+        "A SIMP-based topology optimizer for a 2D cantilever-beam compliance "
+        "problem produces checkerboard artifacts and mesh-dependent solutions: "
+        "halving the element size doubles the apparent number of struts."
+    ),
+    "TASK_010_UAVInspection": (
+        "A quadrotor inspecting a wind-turbine blade with an onboard RGB camera "
+        "produces motion-blurred frames at the tip flyby (15 m/s relative "
+        "velocity, 100 mm focal length, 1/120s shutter), so defect detection "
+        "recall drops from 0.9 (stationary) to 0.4 (flyby)."
     ),
 }
 
 
 def _print_report(summary: list[dict]) -> int:
-    print(f"{'task_id':<26} {'control':>7} {'treatment':>9} {'Δ':>4} verdict")
-    deltas = []
+    print(f"{'task_id':<30} {'control':>7} {'treatment':>9} {'Δ':>4} verdict")
+    deltas: list[int] = []
+    verdicts: list[str] = []
     for entry in summary:
         j = entry.get("judgment", {})
         c = j.get("control", {}).get("score")
@@ -180,24 +227,53 @@ def _print_report(summary: list[dict]) -> int:
         d = (t - c) if (c is not None and t is not None) else None
         if d is not None:
             deltas.append(d)
+        verdicts.append(j.get("verdict", "?"))
         d_str = f"{d:+d}" if d is not None else "  - "
         print(
-            f"{entry['task_id']:<26} "
+            f"{entry['task_id']:<30} "
             f"{('-' if c is None else c):>7} "
             f"{('-' if t is None else t):>9} "
             f"{d_str:>4} {j.get('verdict','?')}"
         )
-    print("─" * 60)
-    if deltas:
-        avg = statistics.mean(deltas)
-        print(f"Average uplift (treatment − control): {avg:+.2f}  (n={len(deltas)})")
-        if avg > 0:
-            return 0
-        # An average <= 0 across tasks is a meaningful smoke-test failure,
-        # but we don't want to break CI on a 2-task panel — flag it loud
-        # and return 0 so the operator can decide.  Tighten when the
-        # benchmark suite grows past ~10 tasks.
-        print("WARNING: treatment did not beat control on average — manual review.")
+    print("─" * 70)
+
+    if not deltas:
+        print("No scored tasks — judge returned no usable scores.")
+        return 1
+
+    n_total = len(verdicts)
+    n_treat = verdicts.count("treatment_better")
+    n_ctrl = verdicts.count("control_better")
+    n_tie = verdicts.count("tie")
+    avg = statistics.mean(deltas)
+    med = statistics.median(deltas)
+
+    # Pairwise win rate per outline §5.5: treatment_better / total
+    # (ties don't count as wins, but they don't count as losses either,
+    #  so the denominator stays as the full panel).
+    win_rate = n_treat / n_total
+
+    # The outline (§5.6 phase-1 acceptance) sets pairwise win rate ≥ 55%
+    # as the smoke-acceptance bar for "hermes_how_only > hermes_no_knowhow".
+    # On a 10-task panel ≥6/10 wins clears the bar; ≥5 wins is borderline.
+    print(
+        f"Tasks scored: {n_total}   treatment_better: {n_treat}   "
+        f"control_better: {n_ctrl}   tie: {n_tie}"
+    )
+    print(f"Pairwise win rate (treatment): {win_rate:.0%}   ({n_treat}/{n_total})")
+    print(f"Average uplift  (treatment − control): {avg:+.2f}")
+    print(f"Median uplift   (treatment − control): {med:+.1f}")
+
+    if win_rate >= 0.55 and avg > 0:
+        print("PASS: outline §5.6 phase-1 smoke bar met (win rate ≥55%, avg uplift > 0).")
+        return 0
+
+    print(
+        "WARNING: did not clear outline §5.6 phase-1 bar (win rate ≥55% AND avg uplift > 0). "
+        "Manual review of per-task verdicts above."
+    )
+    # Don't fail CI on a single-seed run — the outline calls for 5 seeds
+    # before a hard verdict.  Return 0 and let the operator decide.
     return 0
 
 

@@ -21,11 +21,14 @@ sys.path.insert(0, str(SRC))
 
 from rosclaw_know.config import ASSETS_DIR, BENCHMARKS_DIR, ensure_dirs  # noqa: E402
 
-# Same set as in the Phase 1 doc — these symptoms exercise the cross-domain
-# analogies we expect bridge_index.json to provide.
+# Frontier-Eng smoke suite — 10 tasks chosen to span the categories in
+# the test outline §5.2 (control, sim, systems-perf, high-reliability,
+# energy, combinatorial, structural, inspection).  Each task pairs a
+# concrete failure scenario with a sharp evaluation_hint so a judge can
+# score 0-10 against an unambiguous rubric.
 BENCHMARK_SUITE = [
     {
-        "task_id": "ERR_001_PID_runaway",
+        "task_id": "TASK_001_PIDTuning",
         "symptom": (
             "PID controller drives a robotic-arm joint into sustained oscillation when "
             "the integral term saturates. Latency from sensor to actuator is 30 ms."
@@ -33,12 +36,126 @@ BENCHMARK_SUITE = [
         "evaluation_hint": "should mention anti-windup clamp / derivative-on-measurement / gain scheduling",
     },
     {
-        "task_id": "ERR_002_CUDA_OOM",
+        "task_id": "TASK_002_QuadrupedGait",
         "symptom": (
-            "A vision-language-navigation model's KV-cache grows linearly with "
-            "trajectory length, causing CUDA OOM after ~800 steps."
+            "A quadruped robot's trot-gait policy diverges on uneven terrain: foot "
+            "slip events cause the center-of-mass tracking error to grow each cycle "
+            "until the robot falls within ~3 seconds of stepping onto loose gravel."
         ),
-        "evaluation_hint": "should propose sliding-window/circular-buffer KV-cache truncation",
+        "evaluation_hint": (
+            "should propose foot-contact-aware MPC OR domain-randomized RL training "
+            "with terrain perturbations OR a slip-detection reflex that re-plans "
+            "the swing foot trajectory"
+        ),
+    },
+    {
+        "task_id": "TASK_003_RobotArmCycleTime",
+        "symptom": (
+            "A 6-DOF pick-and-place robot arm has a 4.2 s cycle time but the customer "
+            "needs <=3.0 s. Profiling shows 60% of the cycle is joint-space motion that "
+            "decelerates to zero between via-points, even when the via-points are colinear."
+        ),
+        "evaluation_hint": (
+            "should propose trajectory blending / time-optimal path parameterization "
+            "(TOPP) / via-point smoothing so the arm never stops at intermediate poses, "
+            "OR jerk-limited S-curve profiles that hold acceleration through blends"
+        ),
+    },
+    {
+        "task_id": "TASK_004_HighReliableSimulation",
+        "symptom": (
+            "A reliability simulation of a redundant power-electronics inverter needs "
+            "to estimate p(failure) ~ 1e-8 per operating hour. Naive Monte Carlo on "
+            "10^6 samples returns 0 failures and gives no useful estimate."
+        ),
+        "evaluation_hint": (
+            "should propose importance sampling / subset simulation / cross-entropy "
+            "method / splitting (RESTART) - i.e. a rare-event variance-reduction "
+            "technique, NOT just 'run more samples'"
+        ),
+    },
+    {
+        "task_id": "TASK_005_AES128_Throughput",
+        "symptom": (
+            "An AES-128-CBC implementation in pure C achieves 80 MB/s on a modern "
+            "x86_64 server, but the requirement is 1 GB/s. Profiling shows the inner "
+            "SubBytes/MixColumns loop dominates."
+        ),
+        "evaluation_hint": (
+            "should propose AES-NI / vectorized intrinsics (_mm_aesenc_si128) OR "
+            "GCM/CTR mode with hardware PCLMULQDQ, AND mention bitslicing as the "
+            "portable fallback when AES-NI is unavailable"
+        ),
+    },
+    {
+        "task_id": "TASK_006_FlashAttention",
+        "symptom": (
+            "A transformer's self-attention layer hits CUDA OOM at 8K context length "
+            "because the NxN attention matrix is materialized in HBM.  Inference "
+            "throughput is also bandwidth-bound, not compute-bound."
+        ),
+        "evaluation_hint": (
+            "should propose FlashAttention-style tiled / online-softmax attention "
+            "that keeps the softmax computation in SRAM and never materializes the "
+            "full attention matrix, OR sliding-window / circular-buffer KV-cache "
+            "truncation as a second-best"
+        ),
+    },
+    {
+        "task_id": "TASK_007_BatteryFastCharging",
+        "symptom": (
+            "A Li-ion fast-charging profile that delivers 4C constant-current from "
+            "10%->80% SOC accelerates capacity fade to >2% per 100 cycles on "
+            "graphite anodes, far above the 0.5%/100c spec."
+        ),
+        "evaluation_hint": (
+            "should propose multi-stage CC-CV with SOC-dependent current taper, "
+            "OR pulse charging with rest intervals, OR temperature-aware current "
+            "limiting - the underlying mechanism is avoiding lithium plating at "
+            "high SOC"
+        ),
+    },
+    {
+        "task_id": "TASK_008_JobShop_abz",
+        "symptom": (
+            "A job-shop scheduler on the abz5 benchmark instance produces makespans "
+            "around 1400 (known optimum 1234) with a greedy dispatch rule and "
+            "stagnates after 10K iterations of local search."
+        ),
+        "evaluation_hint": (
+            "should propose tabu search with critical-path moves / disjunctive-graph "
+            "neighborhood, OR a genetic-algorithm crossover designed for JSP "
+            "(e.g. operation-based or precedence-preserving), OR simulated annealing "
+            "with shift moves - NOT just 'try a better dispatch rule'"
+        ),
+    },
+    {
+        "task_id": "TASK_009_TopologyOptimization",
+        "symptom": (
+            "A SIMP-based topology optimizer for a 2D cantilever-beam compliance "
+            "problem produces checkerboard artifacts and mesh-dependent solutions: "
+            "halving the element size doubles the apparent number of struts."
+        ),
+        "evaluation_hint": (
+            "should propose density filtering / sensitivity filtering / Helmholtz "
+            "PDE filter / projection schemes (Heaviside / threshold) to enforce "
+            "mesh-independent length scale and eliminate checkerboarding"
+        ),
+    },
+    {
+        "task_id": "TASK_010_UAVInspection",
+        "symptom": (
+            "A quadrotor inspecting a wind-turbine blade with an onboard RGB camera "
+            "produces motion-blurred frames at the tip flyby (15 m/s relative "
+            "velocity, 100 mm focal length, 1/120s shutter), so defect detection "
+            "recall drops from 0.9 (stationary) to 0.4 (flyby)."
+        ),
+        "evaluation_hint": (
+            "should propose either (a) shorter exposure with higher ISO / global-"
+            "shutter sensor, (b) hover-and-stare waypoints replacing the continuous "
+            "flyby, OR (c) per-frame deblurring (Wiener / RL-based) using IMU-"
+            "predicted blur kernels"
+        ),
     },
 ]
 
