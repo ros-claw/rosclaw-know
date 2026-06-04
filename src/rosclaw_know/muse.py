@@ -23,7 +23,7 @@ import networkx as nx
 
 from . import config
 from .llm import DEEPSEEK_MUSE_MODEL, chat
-from .prompts import MUSE_PROMPT
+from .prompts import MUSE_JUDGE_PROMPT, MUSE_PROMPT
 
 log = logging.getLogger("rosclaw_know.muse")
 
@@ -139,6 +139,70 @@ async def _generate_analogy(
     return raw.strip().strip('"')
 
 
+# Regex for parsing the judge's single-line verdict.  Tolerates both
+# ``=`` and ``:`` after VERDICT/REASON because LLMs sometimes substitute
+# them, and the judge is temperature 0 so we don't need fuzzier parsing
+# beyond that.
+_JUDGE_VERDICT_RX = re.compile(
+    r"VERDICT\s*[=:]\s*(KEEP|REJECT)\s*REASON\s*[=:]\s*(.+)",
+    re.IGNORECASE,
+)
+
+
+async def _judge_analogy(
+    session: aiohttp.ClientSession,
+    *,
+    domain_a: str,
+    symptom_a: str,
+    fix_a: str,
+    domain_b: str,
+    symptom_b: str,
+    candidate: str,
+) -> tuple[bool, str]:
+    """Second-pass LLM-as-judge over a candidate analogy.
+
+    Empirical observation that drove this gate: muse occasionally produces
+    word-overlap analogies that an engineer would never trust in practice
+    (e.g. "Use pinhole projection to model actuation noise as extrinsic
+    uncertainty" — projecting foot-slip events through a camera intrinsic
+    matrix is physically meaningless, yet the surface vocabulary —
+    "projection / uncertainty / extrinsic" — survives semantic similarity).
+    The Frontier-Eng A/B harness caught that one specific failure (TASK_002
+    QuadrupedGait swing -5 vs. control); the judge is a generic filter so
+    we don't have to wait for benchmark to expose the next instance.
+
+    Returns ``(keep, reason)``.  ``reason`` is the judge's one-line
+    justification (recorded in logs but not exposed in bridge_index.json
+    to keep the file diff-stable).
+    """
+    prompt = MUSE_JUDGE_PROMPT.format(
+        domain_a=domain_a,
+        symptom_a=symptom_a,
+        fix_a=fix_a,
+        domain_b=domain_b,
+        symptom_b=symptom_b,
+        candidate=candidate,
+    )
+    raw = await chat(
+        session,
+        None,
+        prompt,
+        model=DEEPSEEK_MUSE_MODEL,
+        max_tokens=120,
+        temperature=0.0,  # judge is a measurement instrument — stable
+    )
+    if not raw:
+        # Fail-open: if the judge call itself failed (network, rate-limit,
+        # etc.) we keep the analogy rather than silently dropping work.
+        return True, "judge returned empty — defaulting to KEEP"
+    m = _JUDGE_VERDICT_RX.search(raw.strip())
+    if not m:
+        return True, f"unparseable judge reply (kept): {raw[:160]}"
+    keep = m.group(1).upper() == "KEEP"
+    reason = m.group(2).strip()[:200]
+    return keep, reason
+
+
 def _write_pattern_file(
     node_id: str,
     attr: dict,
@@ -252,6 +316,7 @@ async def compile_muse_assets(
     max_analogies_per_node: int = 3,
     max_nodes: int | None = None,
     concurrency: int = 8,
+    analogy_qc: bool = True,
 ) -> dict:
     """Run the Muse compiler and emit assets.
 
@@ -259,7 +324,14 @@ async def compile_muse_assets(
     or skip before deciding to try the next analogy), but per-node work is
     fanned out via a semaphore so 8 nodes proceed in parallel.
 
-    Returns a summary dict with counts and paths.
+    ``analogy_qc`` (default ``True``) gates every candidate analogy
+    through ``_judge_analogy`` before it lands in ``bridge_index.json``.
+    The judge is a second LLM call per analogy — roughly 2x token cost,
+    paid once per Muse run, never on the runtime query path.  Disable
+    only for unit tests or when reproducing pre-QC numbers.
+
+    Returns a summary dict with counts and paths (including QC stats
+    when enabled).
     """
     config.ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     config.CODE_PATTERNS_DIR.mkdir(parents=True, exist_ok=True)
@@ -280,6 +352,7 @@ async def compile_muse_assets(
 
     bridge_index: dict[str, object] = {"schema_version": "v2", "symptom_clusters": {}}
     written_patterns: list[str] = []
+    qc_stats = {"generated": 0, "kept": 0, "rejected": 0}
     semaphore = asyncio.Semaphore(concurrency)
     bridge_lock = asyncio.Lock()
 
@@ -300,6 +373,7 @@ async def compile_muse_assets(
                 return
 
             analogies: list[dict] = []
+            local_qc = {"generated": 0, "kept": 0, "rejected": 0}
             for neighbor in cross_pool:
                 if len(analogies) >= max_analogies_per_node:
                     break
@@ -314,6 +388,30 @@ async def compile_muse_assets(
                 )
                 if not insight:
                     continue
+                local_qc["generated"] += 1
+
+                if analogy_qc:
+                    keep, reason = await _judge_analogy(
+                        session,
+                        domain_a=neigh_attr["domain"],
+                        symptom_a=neigh_attr["symptom"],
+                        fix_a=neigh_attr.get("fix", ""),
+                        domain_b=domain,
+                        symptom_b=symptom,
+                        candidate=insight,
+                    )
+                    if not keep:
+                        local_qc["rejected"] += 1
+                        log.info(
+                            "Muse QC REJECT [%s → %s]: %r — %s",
+                            neigh_attr["domain"],
+                            domain,
+                            insight[:80],
+                            reason,
+                        )
+                        continue
+                local_qc["kept"] += 1
+
                 analogies.append(
                     {
                         "source_domain": neigh_attr["domain"],
@@ -324,6 +422,12 @@ async def compile_muse_assets(
                 )
 
             if not analogies:
+                # Still record QC stats from rejected analogies — useful
+                # signal that a node was visited even when no analogy
+                # survived the gate.
+                async with bridge_lock:
+                    for k, v in local_qc.items():
+                        qc_stats[k] += v
                 return
 
             slug = _id_to_slug(node)
@@ -340,6 +444,8 @@ async def compile_muse_assets(
             async with bridge_lock:
                 bridge_index["symptom_clusters"][node] = entry
                 written_patterns.append(rel)
+                for k, v in local_qc.items():
+                    qc_stats[k] += v
 
     async with aiohttp.ClientSession() as session:
         await asyncio.gather(*(process_node(session, n) for n in nodes))
@@ -350,14 +456,20 @@ async def compile_muse_assets(
         encoding="utf-8",
     )
     log.info(
-        "Muse: %d symptom clusters, %d code patterns written",
+        "Muse: %d symptom clusters, %d code patterns written "
+        "(QC: %d generated, %d kept, %d rejected — %.0f%% reject rate)",
         len(bridge_index["symptom_clusters"]),
         len(written_patterns),
+        qc_stats["generated"],
+        qc_stats["kept"],
+        qc_stats["rejected"],
+        (100.0 * qc_stats["rejected"] / qc_stats["generated"]) if qc_stats["generated"] else 0.0,
     )
     return {
         "clusters": len(bridge_index["symptom_clusters"]),
         "patterns": len(written_patterns),
         "bridge_path": str(bridge_path),
+        "qc": qc_stats,
     }
 
 

@@ -206,6 +206,45 @@ MECHANISM (e.g. "sliding-window truncation", "anti-windup clamp", "gain scheduli
 Reply with the single sentence only — no preamble, no quotation marks.
 """
 
+MUSE_JUDGE_PROMPT = """You are a cross-domain engineering analogy quality gate.
+
+A candidate analogy was proposed to transfer a fix from Domain A to Domain B.
+Your job is to REJECT analogies that are vague metaphor / word-overlap with no
+shared mechanism, and KEEP analogies that name a transferable mechanism with
+concrete shared structure.
+
+Domain A ({domain_a}) symptom: {symptom_a}
+Domain A fix:                  {fix_a}
+Domain B ({domain_b}) symptom: {symptom_b}
+
+Candidate analogy:
+\"\"\"{candidate}\"\"\"
+
+ACCEPT criteria (ALL must hold):
+- A specific mechanism is named (bounded accumulation, anti-windup, sliding
+  window, gradient clipping, closed-loop verification, etc.) — not a vague
+  noun like "uncertainty", "alignment", "balance".
+- The mechanism solves Domain B's symptom by the same operational structure
+  it solves Domain A's: same KIND of fix (clipping, filtering, scheduling,
+  caching, projection-into-subspace, etc.), just with different variables.
+- An engineer in Domain B could implement the fix directly from the analogy
+  without needing the analogy's metaphor to be literally true.
+
+REJECT criteria (ANY one is enough):
+- The analogy connects the two by surface vocabulary only (e.g. "projection"
+  / "error" / "uncertainty" appears in both but means different things).
+- The proposed mechanism makes physical/mathematical nonsense in Domain B
+  (e.g. modelling foot-slip as camera extrinsic [R|t] — slip is a stochastic
+  contact event, not a geometric projection).
+- The analogy is a generic platitude ("use feedback", "add a safety
+  margin", "consider robustness") with no transferable specifics.
+- The mechanism would already be the obvious first thing an experienced
+  Domain B engineer would try — no information transfer happens.
+
+Reply in this format on a SINGLE line, nothing else:
+VERDICT=<KEEP|REJECT>  REASON=<one short sentence, <120 chars>
+"""
+
 __all__ = [
     "EXTRACTOR_PROMPT",
     "EXTRACTOR_PROMPT_PAPER",
@@ -214,6 +253,7 @@ __all__ = [
     "EXTRACTOR_PROMPT_WEB",
     "PLANNER_PROMPT",
     "MUSE_PROMPT",
+    "MUSE_JUDGE_PROMPT",
     "FRONTIER_DOMAINS",
     "extractor_prompt_for",
 ]
