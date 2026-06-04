@@ -42,6 +42,7 @@ from .muse import (
     _extract_meaningful_keywords,
     _generate_analogy,
     _id_to_slug,
+    _judge_analogy,
     _write_pattern_file,
 )
 from .source_manifest import SourceManifest
@@ -78,8 +79,19 @@ async def _muse_node(
     *,
     bfs_depth: int,
     max_analogies: int,
+    analogy_qc: bool = True,
+    qc_stats: dict[str, int] | None = None,
 ) -> dict | None:
-    """Run Muse for a single node. Returns the new cluster dict or None."""
+    """Run Muse for a single node. Returns the new cluster dict or None.
+
+    ``analogy_qc`` (default True) routes every candidate through the
+    ``_judge_analogy`` gate.  This mirrors ``muse.compile_muse_assets``
+    behavior for the *incremental* path so research-driven ingest
+    (``scripts/research_5topics.py``, ``research_worker.py``) doesn't
+    bypass the analogy filter.  ``qc_stats`` is the caller's shared
+    counter dict — kept-rejected-generated tallies accrue into it for
+    final reporting.
+    """
     attr = g.nodes[node]
     symptom = attr["symptom"]
     domain = attr["domain"]
@@ -109,6 +121,30 @@ async def _muse_node(
         )
         if not insight:
             continue
+        if qc_stats is not None:
+            qc_stats["generated"] = qc_stats.get("generated", 0) + 1
+
+        if analogy_qc:
+            keep, reason = await _judge_analogy(
+                session,
+                domain_a=neigh_attr["domain"],
+                symptom_a=neigh_attr["symptom"],
+                fix_a=neigh_attr.get("fix", ""),
+                domain_b=domain,
+                symptom_b=symptom,
+                candidate=insight,
+            )
+            if not keep:
+                if qc_stats is not None:
+                    qc_stats["rejected"] = qc_stats.get("rejected", 0) + 1
+                log.info(
+                    "Muse QC REJECT [%s → %s]: %r — %s",
+                    neigh_attr["domain"], domain, insight[:80], reason,
+                )
+                continue
+        if qc_stats is not None:
+            qc_stats["kept"] = qc_stats.get("kept", 0) + 1
+
         analogies.append({
             "source_domain": neigh_attr["domain"],
             "neighbor_id": neighbor,
@@ -140,16 +176,24 @@ async def compile_muse_incremental(
     bfs_depth: int = 2,
     max_analogies_per_node: int = 3,
     concurrency: int = 8,
-) -> dict[str, dict]:
-    """Run Muse on the given nodes only, returning ``node_id -> cluster_entry``.
+    analogy_qc: bool = True,
+) -> tuple[dict[str, dict], dict[str, int]]:
+    """Run Muse on the given nodes only.
 
-    Existing cluster entries are not touched. The caller merges these into
-    the bridge_index.
+    Returns ``(node_id -> cluster_entry, qc_stats)``.  ``qc_stats`` is
+    ``{"generated": N, "kept": N, "rejected": N}`` over all candidate
+    analogies that the LLM produced (zero-filled when ``analogy_qc=False``
+    since nothing is judged).  Existing cluster entries are not touched
+    — the caller merges these into the bridge_index.
+
+    ``analogy_qc`` (default True) forwards to ``_muse_node``; disable
+    only when reproducing pre-QC numbers.
     """
     config.CODE_PATTERNS_DIR.mkdir(parents=True, exist_ok=True)
     sem = asyncio.Semaphore(concurrency)
     targets = list(new_node_ids)
     results: dict[str, dict] = {}
+    qc_stats: dict[str, int] = {"generated": 0, "kept": 0, "rejected": 0}
 
     async def run_one(session: aiohttp.ClientSession, node: str) -> None:
         async with sem:
@@ -157,21 +201,26 @@ async def compile_muse_incremental(
                 session, g, node,
                 bfs_depth=bfs_depth,
                 max_analogies=max_analogies_per_node,
+                analogy_qc=analogy_qc,
+                qc_stats=qc_stats,
             )
             if entry is not None:
                 results[node] = entry
 
     if not targets:
         log.info("Incremental Muse: nothing to do (0 target nodes)")
-        return results
+        return results, qc_stats
 
     async with aiohttp.ClientSession() as session:
         await asyncio.gather(*(run_one(session, n) for n in targets))
     log.info(
-        "Incremental Muse: produced %d new clusters from %d candidate nodes",
+        "Incremental Muse: produced %d new clusters from %d candidate nodes "
+        "(QC: %d generated, %d kept, %d rejected — %.0f%% reject rate)",
         len(results), len(targets),
+        qc_stats["generated"], qc_stats["kept"], qc_stats["rejected"],
+        (100.0 * qc_stats["rejected"] / qc_stats["generated"]) if qc_stats["generated"] else 0.0,
     )
-    return results
+    return results, qc_stats
 
 
 def merge_into_bridge(new_clusters: dict[str, dict]) -> dict[str, int]:
@@ -267,8 +316,11 @@ async def run_incremental_ingest(
     new_graph_ids = [n for n in g.nodes if n not in existing_ids]
     summary["new_graph_nodes"] = len(new_graph_ids)
 
-    new_clusters = await compile_muse_incremental(g, new_graph_ids)
-    summary["muse"] = {"new_clusters_minted": len(new_clusters)}
+    new_clusters, qc_stats = await compile_muse_incremental(g, new_graph_ids)
+    summary["muse"] = {
+        "new_clusters_minted": len(new_clusters),
+        "qc": qc_stats,
+    }
 
     merge_stats = merge_into_bridge(new_clusters)
     summary["bridge_merge"] = merge_stats

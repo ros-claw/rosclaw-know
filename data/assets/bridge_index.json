@@ -20240,6 +20240,1382 @@
           "placebo_adjusted_uplift": null
         }
       }
+    },
+    "pid_antiwindup": {
+      "standard_name": "When the commanded velocity exceeds the actuator capacity for more than a few sample periods, the integral term grows unboundedly, causing overshoot and torque oscillation after the setpoint is reached.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "when",
+        "commanded",
+        "velocity",
+        "exceeds",
+        "actuator",
+        "capacity",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Systems_Compute",
+          "neighbor_id": "the_present_and_future_of_bots_in_software_engineering",
+          "insight": "Use event-driven anti-windup clamping triggered by actuator saturation to reset the integral term.",
+          "action_suggestion": "Deploy event-driven bots that react to tool-triggered events and user messages to automate tasks such as CI/CD, code review, and issue triage."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "spatiotemporal_context",
+          "insight": "Use a recency-weighted memory of past saturation events to clamp integral accumulation.",
+          "action_suggestion": "Maintain a structured memory of historical visual observations weighted by temporal recency and spatial novelty, so that past frames influence current reasoning and planning."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "memory_guided_decision_making",
+          "insight": "Use a bounded memory of recent errors to clamp the integral term, preventing unbounded growth.",
+          "action_suggestion": "Maintain a bounded internal state (e.g., dynamic bounded memory queue) that stores recent observations and actions, and fuse it with current observation via attention or recurrent layer before action selection."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_pid_antiwindup"
+      ],
+      "priority": 0
+    },
+    "spot-on_a_checkpointing_framework_for_fault-tolerant_long-running_workloads_on_c": {
+      "standard_name": "Long-running jobs on spot instances fail unpredictably due to evictions, causing wasted computation and increased costs.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "long-running",
+        "jobs",
+        "spot",
+        "instances",
+        "fail",
+        "unpredictably",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "advisor",
+          "insight": "Use an LLM-based advisor to monitor job progress and spot instance risk, triggering checkpointing only when eviction is imminent.",
+          "action_suggestion": "Use an LLM-based Advisor module that continuously monitors system state and task progress, evaluating contextual cues (e.g., unexpected sensor readings, partial failures) to issue a replanning request only when necessary."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "rl_locomotion_policy",
+          "insight": "Use lightweight checkpointing at high frequency to enable quick job resumption after eviction.",
+          "action_suggestion": "Use a lightweight MLP or RNN policy trained via RL in simulation, executed at 50-100 Hz for direct joint-level torque/position commands."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "memory_guided_decision_making",
+          "insight": "Maintain a bounded job state checkpoint queue to resume from recent evictions.",
+          "action_suggestion": "Maintain a bounded internal state (e.g., dynamic bounded memory queue) that stores recent observations and actions, and fuse it with current observation via attention or recurrent layer before action selection."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_spot-on_a_checkpointing_framework_for_fault-tolerant_long-running_workloads_on_c"
+      ],
+      "priority": 0
+    },
+    "veloc_very_low_overhead_checkpointing_in_the_age_of_exascale": {
+      "standard_name": "Checkpointing large amounts of related data concurrently to stable storage causes I/O bottlenecks, poor scalability, and performance degradation in HPC applications.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "checkpointing",
+        "large",
+        "amounts",
+        "related",
+        "data",
+        "concurrently",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "kv_cache_reuse",
+          "insight": "Incremental checkpointing reuses prior I/O snapshots to avoid full writes, reducing bottlenecks.",
+          "action_suggestion": "Reuse key-value (KV) caches from previous turns to avoid full recomputation, maintaining bounded context size and controlled inference cost."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "pid_antiwindup",
+          "insight": "Apply anti-windup clamping to throttle concurrent checkpoint I/O when storage bandwidth saturates.",
+          "action_suggestion": "Output-saturated integral clamp: detect when the controller output is at the saturation limit and stop integrating while saturated, using back-calculation to bleed the integrator toward a value consistent with the saturated output."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "spatial_scene_graph",
+          "insight": "Incrementally build a hierarchical graph of checkpoint dependencies to enable parallel, conflict-free I/O.",
+          "action_suggestion": "Use a Spatial Scene Graph (SSG) built incrementally from semantic segmentation and object detection to encode objects, regions, and their spatial relations as nodes and edges, enabling zero-shot global reasoning and planning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_veloc_very_low_overhead_checkpointing_in_the_age_of_exascale"
+      ],
+      "priority": 0
+    },
+    "dmtcp_transparent_checkpointing_for_cluster_computations_and_the_desktop": {
+      "standard_name": "Distributed cluster computations and desktop applications crash or lose state on failure, requiring long restart times and manual recovery.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "distributed",
+        "cluster",
+        "computations",
+        "desktop",
+        "applications",
+        "crash",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "pytorch_frame_a_modular_framework_for_multi-modal_tabular_learning",
+          "insight": "Use a standardized checkpoint abstraction with modular recovery handlers to enable fast, automated state restoration.",
+          "action_suggestion": "PyTorch Frame: a PyTorch-based framework with a dedicated data structure for multi-modal tabular data, a model abstraction for modular implementation, and integration with external foundation models (e.g., LLMs) and PyTorch Geometric for relational database learning."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "janusvln",
+          "insight": "Use dual key-value caches with sliding-window checkpointing to enable incremental state recovery after crashes.",
+          "action_suggestion": "Dual implicit neural memory: maintain separate key-value caches for spatial-geometric encoder (3D priors) and visual-semantic encoder, retaining only initial tokens and sliding window tokens for efficient incremental updates."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "skill_library",
+          "insight": "Pre-train a library of checkpointed, restartable compute primitives to decouple failure recovery from task orchestration.",
+          "action_suggestion": "Pre-train a library of versatile locomotion and interaction behaviors via reinforcement learning, decoupling skill acquisition from task planning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_dmtcp_transparent_checkpointing_for_cluster_computations_and_the_desktop"
+      ],
+      "priority": 0
+    },
+    "scheduling_and_checkpointing_optimization_algorithm_for_byzantine_fault_toleranc": {
+      "standard_name": "Byzantine faults go undetected initially and propagate across VMs, corrupting long-running big data analytics or mission-critical cloud applications.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "byzantine",
+        "faults",
+        "undetected",
+        "initially",
+        "propagate",
+        "across",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "counterfactual_inverse_reinforcement_learning_irl",
+          "insight": "Use counterfactual execution traces to contrast normal and Byzantine behavior, isolating corruption sources.",
+          "action_suggestion": "Use counterfactual trajectory demonstrations: generate and analyze alternative paths that could have been taken, then contrast them with expert trajectories to focus learning on the most critical features for navigation cost inference."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "grpo_reinforcement_learning",
+          "insight": "Use group-relative consensus verification across replicated VM states to detect Byzantine faults.",
+          "action_suggestion": "Use GRPO (Group Relative Policy Optimization) as a second-stage RL fine-tuning after supervised chain-of-thought alignment, optimizing policy relative to a group of sampled trajectories via group-relative advantage estimation."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_scheduling_and_checkpointing_optimization_algorithm_for_byzantine_fault_toleranc"
+      ],
+      "priority": 0
+    },
+    "deeprobust_a_pytorch_library_for_adversarial_attacks_and_defenses": {
+      "standard_name": "Adversarial attacks and defenses in deep learning are fragmented across different codebases, making it hard to reproduce and compare results.",
+      "domain": "Learning_Training",
+      "matched_keywords": [
+        "adversarial",
+        "attacks",
+        "defenses",
+        "deep",
+        "learning",
+        "fragmented",
+        "training",
+        "policy"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Systems_Compute",
+          "neighbor_id": "modbuspal",
+          "insight": "Use external plugin scripts and a record-replay mode to unify attack/defense implementations and enable reproducible comparisons.",
+          "action_suggestion": "Use external Python scripts for custom value generators, bindings, user-defined function codes, and time-based automation; enable 'Learn' mode to auto-create slaves/registers/coils from incoming requests."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_deeprobust_a_pytorch_library_for_adversarial_attacks_and_defenses"
+      ],
+      "priority": 0
+    },
+    "pytorch_frame_a_modular_framework_for_multi-modal_tabular_learning": {
+      "standard_name": "Deep learning over multi-modal tabular data is difficult due to lack of standardized data structures and modular model abstractions.",
+      "domain": "Learning_Training",
+      "matched_keywords": [
+        "deep",
+        "learning",
+        "over",
+        "multi-modal",
+        "tabular",
+        "data",
+        "training",
+        "policy"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "memory_guided_decision_making",
+          "insight": "Use a bounded memory queue to fuse recent tabular features with current input via attention, enabling structured temporal context.",
+          "action_suggestion": "Maintain a bounded internal state (e.g., dynamic bounded memory queue) that stores recent observations and actions, and fuse it with current observation via attention or recurrent layer before action selection."
+        },
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "langnav_language_as_a_perceptual_representation_for_navigation",
+          "insight": "Use language-based abstractions to replace raw multi-modal features for unified model input.",
+          "action_suggestion": "Replace visual features with language-based representations (e.g., captions from a vision-language model) for navigation policy input."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_pytorch_frame_a_modular_framework_for_multi-modal_tabular_learning"
+      ],
+      "priority": 0
+    },
+    "adaptive_importance_sampling_and_quasi-monte_carlo_methods_for_6g_urllc_systems": {
+      "standard_name": "Evaluating bit/word error rate for coded modulation in 6G URLLC requires high-dimensional black-box integration and rare-event sampling, where standard Monte Carlo is too slow.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "evaluating",
+        "word",
+        "error",
+        "rate",
+        "coded",
+        "modulation",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "the_geometric_unscented_kalman_filter",
+          "insight": "Use positive-weight geometric sampling to efficiently cover rare high-dimensional integration regions.",
+          "action_suggestion": "Geometric unscented sampling (GUS) selects uniformly distributed samples with positive weights based on probability and geometric location, combined with CKF's update framework."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "end_to_end_trajectory_learning",
+          "insight": "Learn a direct mapping from channel observations to error estimates via neural rare-event simulation.",
+          "action_suggestion": "End-to-end trajectory learning with Vision-Language-Exploration pre-training over a million diverse RGB-D trajectories, directly mapping raw sensor observations to continuous commands."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "rl_locomotion_policy",
+          "insight": "Use a lightweight surrogate model trained offline to approximate the rare-event integration.",
+          "action_suggestion": "Use a lightweight MLP or RNN policy trained via RL in simulation, executed at 50-100 Hz for direct joint-level torque/position commands."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_adaptive_importance_sampling_and_quasi-monte_carlo_methods_for_6g_urllc_systems"
+      ],
+      "priority": 0
+    },
+    "the_effect_of_uu_diquark_suppression_in_proton_splitting_in_monte_carlo_event_ge": {
+      "standard_name": "Proton splitting in Monte Carlo event generators assumes (uu)-diquark probability 1/3, but fails to describe NA49 p+p→p+X data at 158 GeV/c.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "proton",
+        "splitting",
+        "monte",
+        "carlo",
+        "event",
+        "generators",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "bootstrapping_language_guided_navigation_learning_with_self_refining_data_flywhe",
+          "insight": "Use closed-loop verification to filter generated diquark splits, iteratively retuning splitting probabilities against data.",
+          "action_suggestion": "Self-Refining Data Flywheel: generate synthetic navigation trajectories via a teacher policy, filter with a learned verifier, and iteratively retrain the student policy on the augmented data."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_the_effect_of_uu_diquark_suppression_in_proton_splitting_in_monte_carlo_event_ge"
+      ],
+      "priority": 0
+    },
+    "subset_simulation_method_for_rare_event_estimation_an_introduction": {
+      "standard_name": "Estimating small failure probabilities (e.g., 10^-6) via standard Monte Carlo requires prohibitively many samples.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "estimating",
+        "small",
+        "failure",
+        "probabilities",
+        "standard",
+        "monte",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "chain_of_thought_methods_for_vln",
+          "insight": "Use chain-of-thought decomposition to break rare-event simulation into sequential conditional probabilities.",
+          "action_suggestion": "Use chain-of-thought prompting to decompose long instructions into step-by-step reasoning before action"
+        },
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "slam",
+          "insight": "Use rare-event trajectories from importance sampling as ground-truth references to guide Monte Carlo sampling.",
+          "action_suggestion": "Use SLAM-derived trajectories as ground-truth motion tendency references to supervise or condition video world model predictions."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "deepmind_fusion_tcv",
+          "insight": "Use reinforcement learning to adaptively sample rare failure events via learned importance distributions.",
+          "action_suggestion": "Use reinforcement learning to learn a control policy that directly maps sensor observations to actuator commands for plasma shape and position control."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_subset_simulation_method_for_rare_event_estimation_an_introduction"
+      ],
+      "priority": 0
+    },
+    "monte_carlo_event_generators_for_high_energy_particle_physics_event_simulation": {
+      "standard_name": "Theory uncertainties limit LHC Run II analyses, requiring improved simulation accuracy.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "theory",
+        "uncertainties",
+        "limit",
+        "analyses",
+        "requiring",
+        "improved",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "end_to_end_model_based_learning",
+          "insight": "End-to-end differentiable simulation with backpropagation to fine-tune theory parameters.",
+          "action_suggestion": "Unify perception, planning, and control into a single differentiable computation graph with a learned model that can be fine-tuned via backpropagation."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "sim_to_real_adaptation",
+          "insight": "Apply domain randomization to Monte Carlo event generator parameters to improve robustness to theory uncertainties.",
+          "action_suggestion": "Use domain randomization: vary simulation parameters (friction, mass, lighting, delay) randomly during training to improve policy robustness to real-world conditions."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_monte_carlo_event_generators_for_high_energy_particle_physics_event_simulation"
+      ],
+      "priority": 0
+    },
+    "a_multilevel_monte_carlo_asymptotic-preserving_particle_method_for_kinetic_equat": {
+      "standard_name": "Classical particle-based kinetic simulations suffer from strict time-step restriction to maintain stability in the diffusive limit (zero mean free path).",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "classical",
+        "particle-based",
+        "kinetic",
+        "simulations",
+        "suffer",
+        "strict",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "deepmind_option_keyboard",
+          "insight": "Hierarchical time-stepping with a high-level scheduler composing low-level stable propagators.",
+          "action_suggestion": "Option Keyboard: a hierarchical RL framework where a high-level policy selects and composes pre-trained low-level skills (options) via a learned combination mechanism, enabling zero-shot generalization to new tasks."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_a_multilevel_monte_carlo_asymptotic-preserving_particle_method_for_kinetic_equat"
+      ],
+      "priority": 0
+    },
+    "performance_analysis_of_software_to_hardware_task_migration_in_codesign": {
+      "standard_name": "Multimedia applications on multiprocessor SoCs suffer from performance bottlenecks due to static task allocation, failing to meet throughput constraints under varying workloads.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "multimedia",
+        "applications",
+        "multiprocessor",
+        "socs",
+        "suffer",
+        "performance",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "pre_training_and_fine_tuning_paradigm_for_vln",
+          "insight": "Pre-train task allocation policies on diverse workload traces via self-supervised learning, then fine-tune for dynamic mapping.",
+          "action_suggestion": "Pre-train on large-scale image-text-action triplets via self-supervised learning, then fine-tune on downstream VLN tasks"
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "deepmind_fusion_tcv",
+          "insight": "Use reinforcement learning to dynamically map tasks to processors based on real-time workload.",
+          "action_suggestion": "Use reinforcement learning to learn a control policy that directly maps sensor observations to actuator commands for plasma shape and position control."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "low_level_planner",
+          "insight": "Closed-loop verification: dynamically reallocate tasks by checking throughput and triggering corrective scheduling.",
+          "action_suggestion": "Exploration-Verification strategy: alternate between advancing along the predicted trajectory and checking for successful completion; if error detected, trigger corrective motion."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_performance_analysis_of_software_to_hardware_task_migration_in_codesign"
+      ],
+      "priority": 0
+    },
+    "metropolis_methods_for_quantum_monte_carlo_simulations": {
+      "standard_name": "Quantum Monte Carlo simulations suffer from slow convergence and high variance when sampling high-dimensional configuration spaces, especially for fermionic systems and long path integrals.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "quantum",
+        "monte",
+        "carlo",
+        "simulations",
+        "suffer",
+        "slow",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "local_metric_trajectory_control",
+          "insight": "Closed-loop local resampling guided by coarse global estimates reduces variance in high-dimensional path integrals.",
+          "action_suggestion": "Closed-loop controller that reconciles a local metric map with high-level navigation commands, generating continuous local trajectories from monocular depth and traversability estimates in real-time."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_metropolis_methods_for_quantum_monte_carlo_simulations"
+      ],
+      "priority": 0
+    },
+    "morescient_gai_for_software_engineering_extended_version": {
+      "standard_name": "Existing LLM-based code models are trained exclusively on syntactic facets of software, leading to low trustworthiness in tasks dependent on software semantics.",
+      "domain": "Learning_Training",
+      "matched_keywords": [
+        "existing",
+        "llm-based",
+        "code",
+        "models",
+        "trained",
+        "exclusively",
+        "learning",
+        "training"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "visual_locomotion",
+          "insight": "Train a code model on both syntax and execution traces for semantic grounding.",
+          "action_suggestion": "Train a visual locomotion policy that maps camera images and proprioception to joint actions, enabling real-time foot placement adaptation to obstacles."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "hierarchical_scene_graph_construction",
+          "insight": "Build hierarchical semantic code representations from dynamic program analysis to enable multi-level reasoning.",
+          "action_suggestion": "Build hierarchical scene graph incrementally from semantic object map, with layers for objects, regions, rooms, and functional zones, updated online as new observations arrive."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "multi_turn_qa_data_from_human_demonstrations",
+          "insight": "Convert human demonstrations into semantic QA pairs to fine-tune LLMs for reasoning over software semantics.",
+          "action_suggestion": "Convert human demonstration trajectories into multi-turn QA pairs to fine-tune VLM for chain-of-thought reasoning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_morescient_gai_for_software_engineering_extended_version"
+      ],
+      "priority": 0
+    },
+    "monte_carlo_simulation_of_quantum_computation": {
+      "standard_name": "Simulating many-body quantum dynamics for quantum algorithms scales exponentially with qubit count",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "simulating",
+        "many-body",
+        "quantum",
+        "dynamics",
+        "algorithms",
+        "scales",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "kv_cache_reuse",
+          "insight": "Reuse cached quantum state snapshots across time steps to bound simulation complexity.",
+          "action_suggestion": "Reuse key-value (KV) caches from previous turns to avoid full recomputation, maintaining bounded context size and controlled inference cost."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_monte_carlo_simulation_of_quantum_computation"
+      ],
+      "priority": 0
+    },
+    "towards_effective_assessment_of_steady_state_performance_in_java_software_are_we": {
+      "standard_name": "Java microbenchmarks often fail to reach a steady state of performance, and developer-estimated warmup periods are inaccurate, leading to poor result quality and wasted time.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "java",
+        "microbenchmarks",
+        "often",
+        "fail",
+        "reach",
+        "steady",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "navigator",
+          "insight": "Use the microbenchmark itself to detect and discard early unstable runs, retaining only steady-state data for analysis.",
+          "action_suggestion": "Self-Refining Data Flywheel (SRDF): after initial training, use the Navigator model itself to filter and score candidate trajectories, retaining only high-confidence or high-reward pairs for iterative fine-tuning."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "optimal_quantum_control_of_charging_quantum_batteries",
+          "insight": "Apply iterative closed-loop optimization to dynamically adjust warmup duration until steady-state performance is reached.",
+          "action_suggestion": "Apply a convergent iterative quantum control method to optimize the shape of the charging pulse, turning the external field on and off to maximize power and efficiency."
+        },
+        {
+          "source_domain": "World_Physics",
+          "neighbor_id": "monte_carlo_event_generators_for_high_energy_particle_physics_event_simulation",
+          "insight": "Use higher-order iterative refinement and convergence detection to automatically determine microbenchmark warmup.",
+          "action_suggestion": "Develop next-generation Monte Carlo event generators with higher-order perturbative corrections and improved parton shower matching."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_towards_effective_assessment_of_steady_state_performance_in_java_software_are_we"
+      ],
+      "priority": 0
+    },
+    "performance_of_genetic_algorithms_in_the_context_of_software_model_refactoring": {
+      "standard_name": "Large search space of software model refactoring actions makes it hard to find good alternatives efficiently.",
+      "domain": "Planning_Decision",
+      "matched_keywords": [
+        "large",
+        "search",
+        "space",
+        "software",
+        "model",
+        "refactoring",
+        "planning",
+        "navigation"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "chain_of_thought_methods_for_vln",
+          "insight": "Decompose the refactoring search space into sequential sub-problems with guided reasoning steps.",
+          "action_suggestion": "Use chain-of-thought prompting to decompose long instructions into step-by-step reasoning before action"
+        },
+        {
+          "source_domain": "Systems_Compute",
+          "neighbor_id": "towards_effective_assessment_of_steady_state_performance_in_java_software_are_we",
+          "insight": "Use dynamic search-space pruning by monitoring refactoring impact variance to adaptively focus exploration.",
+          "action_suggestion": "Use dynamic reconfiguration to automatically detect warmup end, e.g., by monitoring performance metric variance and adjusting the warmup period online."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "deepmind_counterfactual_fairness",
+          "insight": "Use causal graph intervention to prune irrelevant refactoring actions, reducing search space.",
+          "action_suggestion": "Use causal counterfactual reasoning to remove the influence of sensitive attributes on predictions by intervening on the causal graph."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_performance_of_genetic_algorithms_in_the_context_of_software_model_refactoring"
+      ],
+      "priority": 0
+    },
+    "the_present_and_future_of_bots_in_software_engineering": {
+      "standard_name": "Software engineering teams struggle to manage repetitive tasks and maintain workflow automation across diverse tools and platforms.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "software",
+        "engineering",
+        "teams",
+        "struggle",
+        "manage",
+        "repetitive",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "image_memory_system",
+          "insight": "Implement a structured queryable memory of past automation scripts and tool outputs to guide future workflow decomposition.",
+          "action_suggestion": "Store visual observations (raw images or extracted features) in a structured memory that can be queried by a reasoning module during task decomposition and replanning."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "multi_turn_qa_data_from_human_demonstrations",
+          "insight": "Convert human workflow logs into multi-turn QA pairs to fine-tune LLMs for chain-of-thought automation.",
+          "action_suggestion": "Convert human demonstration trajectories into multi-turn QA pairs to fine-tune VLM for chain-of-thought reasoning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_the_present_and_future_of_bots_in_software_engineering"
+      ],
+      "priority": 0
+    },
+    "data-enabled_predictive_control_for_fast_charging_of_lithium-ion_batteries_with_": {
+      "standard_name": "Fast charging of lithium-ion batteries requires accurate parametric models that are costly to derive and calibrate, and rule-based charging profiles are suboptimal.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "fast",
+        "charging",
+        "lithium-ion",
+        "batteries",
+        "requires",
+        "accurate",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "performance_of_genetic_algorithms_in_the_context_of_software_model_refactoring",
+          "insight": "Use multi-objective genetic algorithms to optimize charging profiles by balancing speed, lifespan, and safety simultaneously.",
+          "action_suggestion": "Use multi-objective genetic algorithms (e.g., NSGA-II, PESA2) to explore refactoring alternatives by optimizing multiple objectives simultaneously."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_data-enabled_predictive_control_for_fast_charging_of_lithium-ion_batteries_with"
+      ],
+      "priority": 0
+    },
+    "capacity_fade_due_to_side-reactions_in_silicon_anodes_in_lithium-ion_batteries": {
+      "standard_name": "Capacity fade in silicon anodes due to continuous electrolyte-reduction side-reactions on freshly-exposed electrode surfaces during cycling",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "capacity",
+        "fade",
+        "silicon",
+        "anodes",
+        "continuous",
+        "electrolyte-reduction",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "kv_cache_reuse",
+          "insight": "Reuse stable surface layers from prior cycles to limit fresh electrolyte exposure and capacity loss.",
+          "action_suggestion": "Reuse key-value (KV) caches from previous turns to avoid full recomputation, maintaining bounded context size and controlled inference cost."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_capacity_fade_due_to_side-reactions_in_silicon_anodes_in_lithium-ion_batteries"
+      ],
+      "priority": 0
+    },
+    "model-free_fast_charging_of_lithium-ion_batteries_by_online_gradient_descent": {
+      "standard_name": "Fast charging of lithium-ion batteries violates safety and aging constraints when using model-based methods that require detailed battery models or full-charging training episodes.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "fast",
+        "charging",
+        "lithium-ion",
+        "batteries",
+        "violates",
+        "safety",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "navigator",
+          "insight": "Use the charger itself to filter and retain only safe charging trajectories for iterative policy refinement.",
+          "action_suggestion": "Self-Refining Data Flywheel (SRDF): after initial training, use the Navigator model itself to filter and score candidate trajectories, retaining only high-confidence or high-reward pairs for iterative fine-tuning."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "end_to_end_trajectory_learning",
+          "insight": "Learn a direct mapping from sensor inputs to charging actions via offline RL on diverse partial-charge trajectories.",
+          "action_suggestion": "End-to-end trajectory learning with Vision-Language-Exploration pre-training over a million diverse RGB-D trajectories, directly mapping raw sensor observations to continuous commands."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_model-free_fast_charging_of_lithium-ion_batteries_by_online_gradient_descent"
+      ],
+      "priority": 0
+    },
+    "lifelong_reinforcement_learning_for_health-aware_fast_charging_of_lithium-ion_ba": {
+      "standard_name": "Fast charging accelerates battery degradation and shortens lifespan due to improper charging protocols.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "fast",
+        "charging",
+        "accelerates",
+        "battery",
+        "degradation",
+        "shortens",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "world_models_wms",
+          "insight": "Use a predictive battery model to simulate charging protocols, enabling optimal fast charging without physical degradation.",
+          "action_suggestion": "Train a neural world model that predicts future latent states and rewards from current observations and actions, enabling model-based planning and mental simulation without direct environment interaction."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_lifelong_reinforcement_learning_for_health-aware_fast_charging_of_lithium-ion_ba"
+      ],
+      "priority": 0
+    },
+    "comprehensive_analysis_of_thermal_dissipation_in_lithium-ion_battery_packs": {
+      "standard_name": "Lithium-ion battery pack overheating in compact drone designs under varying airflow (0-15 m/s), leading to safety and efficiency risks.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "lithium-ion",
+        "battery",
+        "pack",
+        "overheating",
+        "compact",
+        "drone",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Systems_Compute",
+          "neighbor_id": "towards_effective_assessment_of_steady_state_performance_in_java_software_are_we",
+          "insight": "Use dynamic airflow monitoring to adjust battery cooling power online based on thermal variance.",
+          "action_suggestion": "Use dynamic reconfiguration to automatically detect warmup end, e.g., by monitoring performance metric variance and adjusting the warmup period online."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "spatiotemporal_context",
+          "insight": "Use a recency-weighted thermal history to prioritize cooling for spatially novel hot spots.",
+          "action_suggestion": "Maintain a structured memory of historical visual observations weighted by temporal recency and spatial novelty, so that past frames influence current reasoning and planning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_comprehensive_analysis_of_thermal_dissipation_in_lithium-ion_battery_packs"
+      ],
+      "priority": 0
+    },
+    "a_poisson_multi-bernoulli_mixture_filter_for_coexisting_point_and_extended_targe": {
+      "standard_name": "Multi-target tracking fails when both point and extended targets coexist, as standard filters assume only one type.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "multi-target",
+        "tracking",
+        "fails",
+        "when",
+        "both",
+        "point",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "vln_zero",
+          "insight": "Hierarchical decomposition: rapid classification separates point and extended targets, then specialized filters handle each type.",
+          "action_suggestion": "Two-phase framework: rapid exploration builds symbolic scene graphs, then neurosymbolic planner reuses cached task-location trajectories for efficient deployment."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "end_to_end_control_from_depth_camera",
+          "insight": "Train a unified neural tracker that maps raw sensor data directly to multi-type target states, bypassing hand-crafted filter assumptions.",
+          "action_suggestion": "Train a single neural network policy via deep reinforcement learning that maps raw depth camera images directly to motor commands, bypassing hand-crafted perception and control layers."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "hierarchical_scene_graph_construction",
+          "insight": "Hierarchical decomposition of targets into point and extended layers with online type assignment.",
+          "action_suggestion": "Build hierarchical scene graph incrementally from semantic object map, with layers for objects, regions, rooms, and functional zones, updated online as new observations arrive."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_a_poisson_multi-bernoulli_mixture_filter_for_coexisting_point_and_extended_targe"
+      ],
+      "priority": 0
+    },
+    "poisson_multi-bernoulli_mixture_filter_with_general_target-generated_measurement": {
+      "standard_name": "Standard PMBM filters assume Poisson clutter and specific target measurement models, failing under non-standard clutter distributions (e.g., negative binomial, union of Poisson and independent sources).",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "standard",
+        "pmbm",
+        "filters",
+        "assume",
+        "poisson",
+        "clutter",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "multi_expert_learning",
+          "insight": "Use dynamic expert weighting to fuse multiple clutter-model specialists based on local performance.",
+          "action_suggestion": "Train three specialized RL experts (reaching, squeezing, avoiding) and combine them via dynamic weighting based on individual capability performance."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "hierarchical_reinforcement_learning",
+          "insight": "Hierarchical decomposition of clutter into high-level source classifier and low-level per-source PMBM filters.",
+          "action_suggestion": "Hierarchical RL with a high-level navigation planner issuing subgoals to a low-level locomotion controller, both trained via model-free RL."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_poisson_multi-bernoulli_mixture_filter_with_general_target-generated_measurement"
+      ],
+      "priority": 0
+    },
+    "an_algorithmic_safety_vest_for_li-ion_batteries_during_fast_charging": {
+      "standard_name": "Fast charging of Li-ion batteries causes accelerated aging due to lithium plating, SEI growth, and particle cracking, which depend on unmeasurable variables like overpotential and concentration gradient.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "fast",
+        "charging",
+        "li-ion",
+        "batteries",
+        "causes",
+        "accelerated",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Systems_Compute",
+          "neighbor_id": "tpu_xla_fragmentation_phase5_synthetic",
+          "insight": "Constrain charging to a small set of canonical current profiles to avoid unmeasurable overpotential spikes.",
+          "action_suggestion": "Pad batches to a small set of canonical shapes and force a single trace shape via jit with pre-allocated buffers and XLA flags, optionally tuning XLA_TPU_BUFFER_PADDING_RATIO."
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "grounded_semantic_mapping_network_gsmn",
+          "insight": "Build an explicit differentiable model of internal battery states to guide charging policy.",
+          "action_suggestion": "Build an explicit semantic map in the world reference frame using differentiable pinhole camera projection, then feed it into a control policy to generate continuous velocity commands."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_an_algorithmic_safety_vest_for_li-ion_batteries_during_fast_charging"
+      ],
+      "priority": 0
+    },
+    "cross-space_adaptive_filter_integrating_graph_topology_and_node_attributes_for_a": {
+      "standard_name": "Deep GCNs suffer from over-smoothing, especially on disassortative graphs, due to reliance on low-pass filters from topology alone.",
+      "domain": "Learning_Training",
+      "matched_keywords": [
+        "deep",
+        "gcns",
+        "suffer",
+        "over-smoothing",
+        "especially",
+        "disassortative",
+        "learning",
+        "training"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "deepmind_mmv",
+          "insight": "Use shared high-pass and low-pass filter layers with task-specific graph convolutions to learn joint spectral embeddings.",
+          "action_suggestion": "Use a multimodal versatile network (MMV) with shared transformer layers and modality-specific encoders to learn joint embeddings across modalities."
+        },
+        {
+          "source_domain": "Systems_Compute",
+          "neighbor_id": "digital_bonds_ics_enumeration_tools",
+          "insight": "Use legitimate high-pass or band-pass graph filters to propagate features without over-smoothing.",
+          "action_suggestion": "Use legitimate protocol or application commands (e.g., BACnet, Modbus, S7) to discover and enumerate devices without exploiting or crashing them"
+        },
+        {
+          "source_domain": "World_Physics",
+          "neighbor_id": "habitat_simulator",
+          "insight": "Use configurable multi-resolution graph filters to preserve high-frequency node features and prevent over-smoothing.",
+          "action_suggestion": "Use photorealistic 3D environment simulation with configurable sensors and physics integration from Habitat Simulator"
+        }
+      ],
+      "associated_patterns": [
+        "pattern_cross-space_adaptive_filter_integrating_graph_topology_and_node_attributes_for_a"
+      ],
+      "priority": 0
+    },
+    "graph_neural_net_using_analytical_graph_filters_and_topology_optimization_for_im": {
+      "standard_name": "CNN-based image denoising fails to generalize when training and testing data have different statistics, causing PSNR drop.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "cnn-based",
+        "image",
+        "denoising",
+        "fails",
+        "generalize",
+        "when",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "navcot_boosting_llm_based_vision_and_language_navigation_via_learning_disentangl",
+          "insight": "Hierarchical decomposition: first estimate noise statistics, then apply specialized denoising conditioned on that estimate.",
+          "action_suggestion": "Disentangled reasoning via Chain-of-Thought: first predict a landmark-based plan (high-level), then execute low-level actions conditioned on that plan."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "cross-space_adaptive_filter_integrating_graph_topology_and_node_attributes_for_a",
+          "insight": "Use adaptive multi-kernel filtering to combine data-driven and prior-based denoising paths.",
+          "action_suggestion": "Cross-space adaptive filter (CSF) combining a topology-based low-pass filter (Mercer kernel) and an attribute-based high-pass filter (derived from kernel ridge regression) via multiple-kernel learning."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "synthetic_instructions",
+          "insight": "Use synthetic data generation from structured priors to match target noise statistics.",
+          "action_suggestion": "Use Marky to programmatically generate 4.2 million synthetic instruction–trajectory pairs from structured environment representations and action sequences."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_graph_neural_net_using_analytical_graph_filters_and_topology_optimization_for_im"
+      ],
+      "priority": 0
+    },
+    "neural_global_shutter_learn_to_restore_video_from_a_rolling_shutter_camera_with_": {
+      "standard_name": "Rolling shutter cameras produce geometric distortion under motion, and existing correction methods rely on inaccurate or costly explicit motion estimation.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "rolling",
+        "shutter",
+        "cameras",
+        "produce",
+        "geometric",
+        "distortion",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "simulator_and_dataset",
+          "insight": "Use large-scale synthetic rolling shutter data with diverse motion patterns to train a correction network without explicit motion estimation.",
+          "action_suggestion": "Use large-scale synthetic data generation (e.g., ScaleVLN with 4M+ instructions) to augment training."
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "memory_guided_decision_making",
+          "insight": "Use a bounded temporal buffer of recent rolling shutter rows to fuse with current row for distortion correction without explicit motion estimation.",
+          "action_suggestion": "Maintain a bounded internal state (e.g., dynamic bounded memory queue) that stores recent observations and actions, and fuse it with current observation via attention or recurrent layer before action selection."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "data-enabled_predictive_control_for_fast_charging_of_lithium-ion_batteries_with_",
+          "insight": "Use data-driven behavioral modeling with PCA to correct rolling shutter distortion without explicit motion estimation.",
+          "action_suggestion": "Data-enabled predictive control (DeePC) using behavioral system theory, with principal component analysis to reduce optimization dimension."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_neural_global_shutter_learn_to_restore_video_from_a_rolling_shutter_camera_with"
+      ],
+      "priority": 0
+    },
+    "minimal_solvers_for_monocular_rolling_shutter_compensation_under_ackermann_motio": {
+      "standard_name": "Rolling shutter distortion in monocular automotive cameras causes image misalignment, and existing methods are too slow for real-time operation and limited to rotational motion.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "rolling",
+        "shutter",
+        "distortion",
+        "monocular",
+        "automotive",
+        "cameras",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "vln_zero",
+          "insight": "Two-phase framework: rapid global shutter correction builds a distortion map, then real-time inference reuses cached pixel offsets.",
+          "action_suggestion": "Two-phase framework: rapid exploration builds symbolic scene graphs, then neurosymbolic planner reuses cached task-location trajectories for efficient deployment."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_minimal_solvers_for_monocular_rolling_shutter_compensation_under_ackermann_motio"
+      ],
+      "priority": 0
+    },
+    "motion_blur_decomposition_with_cross-shutter_guidance": {
+      "standard_name": "Motion blur decomposition from a single blurry image is highly ambiguous due to lack of temporal cues.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "motion",
+        "blur",
+        "decomposition",
+        "single",
+        "blurry",
+        "image",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "deepmind_avae",
+          "insight": "Use a discriminator to distinguish real sharp images from deblurred ones, training the deblurring network to fool it.",
+          "action_suggestion": "Adversarial Variational Autoencoder (aVAE) combining VAE with adversarial training: use a discriminator to distinguish real data from VAE-generated samples, and train the VAE encoder/decoder to fool the discriminator."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "dataset_aggregation_dagger",
+          "insight": "Use iterative blur synthesis from sharp images to train a deblurring network on its own output distribution.",
+          "action_suggestion": "Iteratively collect new data under the current policy's distribution, query the expert for corrective actions, and aggregate this data into the training set (DAgger)."
+        },
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "skill_library",
+          "insight": "Pre-train a library of motion priors via self-supervised learning to disambiguate blur decomposition.",
+          "action_suggestion": "Pre-train a library of versatile locomotion and interaction behaviors via reinforcement learning, decoupling skill acquisition from task planning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_motion_blur_decomposition_with_cross-shutter_guidance"
+      ],
+      "priority": 0
+    },
+    "fast_compact_laser_shutter_using_a_direct_current_motor_and_3d_printing": {
+      "standard_name": "Mechanical laser shutters are complex, expensive, or unreliable, with blade oscillations causing timing jitter and performance degradation.",
+      "domain": "Control_Locomotion",
+      "matched_keywords": [
+        "mechanical",
+        "laser",
+        "shutters",
+        "complex",
+        "expensive",
+        "unreliable",
+        "control",
+        "locomotion"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "vln_zero",
+          "insight": "Two-phase framework: rapid calibration builds a static shutter map, then feedforward control reuses cached timing offsets for jitter-free actuation.",
+          "action_suggestion": "Two-phase framework: rapid exploration builds symbolic scene graphs, then neurosymbolic planner reuses cached task-location trajectories for efficient deployment."
+        },
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "noise_aware_modeling",
+          "insight": "Inject synthetic timing jitter into shutter control signals during calibration to desensitize against mechanical oscillations.",
+          "action_suggestion": "Augment synthetic depth images with noise patterns (Gaussian blur, quantization artifacts, dropout) during training."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_fast_compact_laser_shutter_using_a_direct_current_motor_and_3d_printing"
+      ],
+      "priority": 0
+    },
+    "towards_rolling_shutter_correction_and_deblurring_in_dynamic_scenes": {
+      "standard_name": "Joint rolling shutter distortion and motion blur in dynamic scenes cause existing individual RSC or GSD methods to produce undesirable results due to inherent network architecture flaws.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "joint",
+        "rolling",
+        "shutter",
+        "distortion",
+        "motion",
+        "blur",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Systems_Compute",
+          "neighbor_id": "digital_bonds_ics_enumeration_tools",
+          "insight": "Use legitimate motion priors (e.g., IMU, optical flow) to guide deblurring and undistortion without triggering network artifacts.",
+          "action_suggestion": "Use legitimate protocol or application commands (e.g., BACnet, Modbus, S7) to discover and enumerate devices without exploiting or crashing them"
+        },
+        {
+          "source_domain": "World_Physics",
+          "neighbor_id": "habitat_simulator",
+          "insight": "Simulate diverse camera motion and shutter profiles during training to harden network against distortion.",
+          "action_suggestion": "Use photorealistic 3D environment simulation with configurable sensors and physics integration from Habitat Simulator"
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "memory_guided_decision_making",
+          "insight": "Use a bounded temporal memory queue to fuse recent frames, mitigating rolling shutter and motion blur via recurrent attention.",
+          "action_suggestion": "Maintain a bounded internal state (e.g., dynamic bounded memory queue) that stores recent observations and actions, and fuse it with current observation via attention or recurrent layer before action selection."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_towards_rolling_shutter_correction_and_deblurring_in_dynamic_scenes"
+      ],
+      "priority": 0
+    },
+    "gaussian_splatting_on_the_move_blur_and_rolling_shutter_compensation_for_natural": {
+      "standard_name": "3D Gaussian Splatting scene reconstruction fails with handheld video due to motion blur and rolling shutter distortion from natural camera motion.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "gaussian",
+        "splatting",
+        "scene",
+        "reconstruction",
+        "fails",
+        "handheld",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "World_Physics",
+          "neighbor_id": "habitat_simulator",
+          "insight": "Simulate natural camera motion in training with configurable rolling shutter and blur parameters.",
+          "action_suggestion": "Use photorealistic 3D environment simulation with configurable sensors and physics integration from Habitat Simulator"
+        },
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "hierarchical_cross_modal_hcm_agent",
+          "insight": "Hierarchical decomposition: high-level selects stable keyframes, low-level corrects blur and rolling shutter per segment.",
+          "action_suggestion": "Hierarchical high- and low-level policies: high-level selects subgoals from visual and linguistic inputs, low-level executes continuous motor commands to reach subgoals; modularized training decouples reasoning and imitation."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_gaussian_splatting_on_the_move_blur_and_rolling_shutter_compensation_for_natural"
+      ],
+      "priority": 0
+    },
+    "pytorch_metric_learning": {
+      "standard_name": "Implementing deep metric learning algorithms is tedious and time-consuming due to lack of modular, reusable components.",
+      "domain": "Learning_Training",
+      "matched_keywords": [
+        "implementing",
+        "deep",
+        "metric",
+        "learning",
+        "algorithms",
+        "tedious",
+        "training",
+        "policy"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "r2r_dataset",
+          "insight": "Modularize deep metric learning into reusable atomic loss components for flexible assembly.",
+          "action_suggestion": "Decompose navigation instructions into atomic action concepts (AACL) for robust policy learning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_pytorch_metric_learning"
+      ],
+      "priority": 0
+    },
+    "designing_an_adaptive_application-level_checkpoint_management_system_for_malleab": {
+      "standard_name": "Malleable MPI applications suffer from inefficient checkpointing and data redistribution during dynamic resource changes, leading to performance degradation and poor resource utilization.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "malleable",
+        "applications",
+        "suffer",
+        "inefficient",
+        "checkpointing",
+        "data",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "coarse_to_fine_feature_extraction",
+          "insight": "Hierarchical multi-level checkpointing with coarse global snapshots and fine local increments.",
+          "action_suggestion": "Use a coarse-to-fine pyramid (e.g., U-Net or FPN) that downsamples to capture coarse layout and upsamples to recover fine details, then fuse or sequentially feed multi-scale features."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_designing_an_adaptive_application-level_checkpoint_management_system_for_malleab"
+      ],
+      "priority": 0
+    },
+    "developers_perception_of_peer_code_review_in_research_software_development": {
+      "standard_name": "Research software developers lack formal process, proper organization, and adequate people to perform peer code reviews, leading to lower confidence in software correctness.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "research",
+        "software",
+        "developers",
+        "lack",
+        "formal",
+        "process",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Control_Locomotion",
+          "neighbor_id": "rl_policy_for_safety_shielding",
+          "insight": "Implement a separate automated review policy with a static analysis critic that overrides manual review when risk exceeds a threshold.",
+          "action_suggestion": "Train a separate RL safety-shielding policy with a safety critic and intervention logic that overrides the nominal controller when risk exceeds a threshold."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_developers_perception_of_peer_code_review_in_research_software_development"
+      ],
+      "priority": 0
+    },
+    "filter_bank_fusion_frames": {
+      "standard_name": "Fusion frames lack implementable constructions for robust signal encoding against noise and erasures.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "fusion",
+        "frames",
+        "lack",
+        "implementable",
+        "constructions",
+        "robust",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "imitation_learning",
+          "insight": "Generate synthetic noisy/erased frames at scale to train a robust encoder.",
+          "action_suggestion": "Train a transformer agent on 4.2 million synthetic instruction-trajectory pairs generated at scale, reducing reliance on human demonstrations."
+        },
+        {
+          "source_domain": "Perception_Vision",
+          "neighbor_id": "deepmind_galaxy_mergers",
+          "insight": "Train CNNs on synthetic noisy/erased signals to learn robust encoding patterns.",
+          "action_suggestion": "Use deep learning models (e.g., CNNs) trained on simulated galaxy merger images to automatically classify merger stages."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_filter_bank_fusion_frames"
+      ],
+      "priority": 0
+    },
+    "vectorial_velocity_filter_for_ultracold_neutrons_based_on_a_surface-disordered_m": {
+      "standard_name": "Ultracold neutron beams have high angular divergence, making it difficult to control velocity components for precision experiments.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "ultracold",
+        "neutron",
+        "beams",
+        "high",
+        "angular",
+        "divergence",
+        "simulation",
+        "physics"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "closed_loop_reasoning",
+          "insight": "Closed-loop beam steering using real-time divergence feedback to iteratively correct velocity components.",
+          "action_suggestion": "Closed-loop reasoning: iteratively update belief state from real-time sensor feedback, evaluate actions, execute, observe, and update until task goal is achieved."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_vectorial_velocity_filter_for_ultracold_neutrons_based_on_a_surface-disordered_m"
+      ],
+      "priority": 0
+    },
+    "from_two_rolling_shutters_to_one_global_shutter": {
+      "standard_name": "Rolling shutter distortion occurs when camera moves during image capture, causing image warping that standard single-camera methods cannot correct without scene structure assumptions.",
+      "domain": "Perception_Vision",
+      "matched_keywords": [
+        "rolling",
+        "shutter",
+        "distortion",
+        "occurs",
+        "when",
+        "camera",
+        "perception",
+        "vision"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "neighbor_id": "embodied_spatial_reasoning",
+          "insight": "Condition the camera model on per-row motion constraints to correct rolling shutter warp.",
+          "action_suggestion": "Capability-conditioned navigation (CapNav): integrate agent-specific physical constraints (e.g., dimensions, turning radius) into spatial reasoning and path planning."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_from_two_rolling_shutters_to_one_global_shutter"
+      ],
+      "priority": 0
+    },
+    "lithium_plating_induced_degradation_during_fast_charging_of_batteries_subjected_": {
+      "standard_name": "Fast charging at 4C under compressive loading (0-440 kPa) causes significant capacity fade and active lithium loss in lithium-ion pouch cells.",
+      "domain": "Systems_Compute",
+      "matched_keywords": [
+        "fast",
+        "charging",
+        "under",
+        "compressive",
+        "loading",
+        "causes",
+        "systems",
+        "compute"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "neighbor_id": "chain_of_thought_methods_for_vln",
+          "insight": "Decompose the fast-charging protocol into stepwise current steps with closed-loop voltage verification after each step.",
+          "action_suggestion": "Use chain-of-thought prompting to decompose long instructions into step-by-step reasoning before action"
+        }
+      ],
+      "associated_patterns": [
+        "pattern_lithium_plating_induced_degradation_during_fast_charging_of_batteries_subjected"
+      ],
+      "priority": 0
+    },
+    "cross-entropy-based_importance_sampling_with_failure-informed_dimension_reductio": {
+      "standard_name": "Rare event simulation in high dimensions (O(1e2) or more) suffers from poor efficiency when using cross-entropy importance sampling with standard parametric families.",
+      "domain": "World_Physics",
+      "matched_keywords": [
+        "rare",
+        "event",
+        "simulation",
+        "high",
+        "dimensions",
+        "more",
+        "physics",
+        "contact"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "neighbor_id": "multi_expert_learning",
+          "insight": "Decompose rare event sampling into specialized low-dimensional experts combined via adaptive weighting.",
+          "action_suggestion": "Train three specialized RL experts (reaching, squeezing, avoiding) and combine them via dynamic weighting based on individual capability performance."
+        }
+      ],
+      "associated_patterns": [
+        "pattern_cross-entropy-based_importance_sampling_with_failure-informed_dimension_reductio"
+      ],
+      "priority": 0
     }
   },
   "safety_label_index": {

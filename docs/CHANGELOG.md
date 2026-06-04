@@ -3,6 +3,75 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [unreleased] — 2026-06-04 · multi-seed harness, snippet matrix, analogy QC, +43 clusters
+
+### Added (analogy QC + bridge coverage — second commit pair this day)
+
+- **`src/rosclaw_know/prompts.py`** — `MUSE_JUDGE_PROMPT`, a second-pass
+  LLM-as-judge prompt scoring transferable-mechanism vs. vague-metaphor.
+  REJECT criteria: surface-vocabulary overlap ("projection" / "uncertainty"
+  matching by lexicon, not physics), physical-nonsense mechanisms
+  (foot-slip ↔ camera extrinsic — the exact failure that broke
+  TASK_002 in the 4-cell A/B), platitudes ("safety margin"), and obvious-
+  first-try non-information-transfer.
+- **`src/rosclaw_know/muse.py`** — `_judge_analogy()` runs after
+  `_generate_analogy()` per candidate. `compile_muse_assets()` gets
+  `analogy_qc: bool = True` (default on); summary dict includes
+  `qc: {generated, kept, rejected}` counts. Fail-open on judge call
+  failure so network blips don't drop work silently.
+- **`src/rosclaw_know/incremental_pipeline.py`** — same QC plumbing
+  for the incremental research-ingest path. The path that
+  `research_worker.py` and `research_5topics.py` actually use was
+  bypassing the muse.py QC gate; this fixes it.  Public signature
+  change: `compile_muse_incremental` now returns
+  `(clusters, qc_stats)` instead of just `clusters`.
+- **`scripts/research_5topics.py`** — one-off orchestrator that
+  ingests arXiv+GitHub corpus for the 5 bridge-coverage gaps
+  surfaced by the 4-cell A/B: rare-event sim, AES software perf,
+  Li-ion fast charging, topology optimization, motion blur / UAV.
+  Serial by design — bridge_index.json writes can't race.
+
+### Empirical findings (with QC enabled, 5 topics, ~50 nodes/topic)
+
+```
+topic                  generated  kept  rejected  reject%   new_clusters
+rare_event_simulation       1325    77      1248    94.2%             35
+aes_software_perf            423     7       416    98.3%              6
+liion_fast_charging          236     0       236   100.0%              0
+topology_optimization        236     0       236   100.0%              0
+motion_blur_uav              236     2       234    99.2%              2
+─────────────────────────────────────────────────────────────────────
+sum                         2456    86      2370    96.5%             43
+```
+
+96.5% reject rate is high but principled — manual spot-check of kept
+analogies shows mechanism-grounded transfers (e.g.
+`sliding-window truncation ↔ KV-cache bounded growth`); spot-check
+of rejected ones recovers exactly the "pinhole projection explains
+foot-slip" failure mode plus its cousins.  Three topics rejected
+100% because their candidates were uniformly "use feedback / add a
+safety margin" platitudes — physical-impossible-cross-domain in some
+cases (`battery side reaction ↔ vision attention`).  Bridge grew
+349 → 392 (+43 net QC-vetted clusters).
+
+### Smoke test (committed as muse.py docstring evidence)
+
+Three-case test of `_judge_analogy` on hand-curated triples:
+1. Pinhole-projection ↔ foot-slip (the original TASK_002 failure) →
+   REJECT — judge: "Pinhole projection models geometric camera
+   extrinsics, not stochastic foot-slip dynamics; mechanism is
+   physically mismatched."
+2. Anti-windup clamp ↔ KV-cache sliding window → KEEP — judge:
+   "Sliding-window truncation is a concrete bounded-accumulation
+   mechanism directly transferable to cap KV-cache growth."
+3. "Consider robustness and add a safety margin" platitude →
+   REJECT — judge: "Generic platitude 'safety margin' lacks
+   specific mechanism; no transferable operational structure."
+
+All three verdicts and reasons matched expectation.
+
+---
+
 ## [unreleased] — 2026-06-04 · multi-seed A/B harness + 4-cell snippet matrix
 
 ### Added
