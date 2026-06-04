@@ -157,6 +157,136 @@ BENCHMARK_SUITE = [
             "predicted blur kernels"
         ),
     },
+    # ── Home-turf panel (TASK_W_*) — 8 tasks each cleanly mapping to one
+    # of the 7 curated safety patterns in bridge_index.json + 1 flash-
+    # attention pattern.  Symptoms are written as realistic engineering
+    # descriptions WITHOUT deliberately seeding pattern keywords, so the
+    # retrieval has to find the match by its own (vector + keyword) means.
+    # This panel exists to answer the question:
+    #   "When the bridge HAS a relevant curated pattern, does the agent
+    #    pick it up and answer correctly?"
+    # which is orthogonal to the wild-distribution test that TASK_001-010
+    # already covers.
+    {
+        "task_id": "TASK_W_001_KVCacheLongContext",
+        "symptom": (
+            "A code-assistant LLM serving multi-turn programming sessions accumulates "
+            "32K tokens of conversation history after 20 turns, hitting the model's 16K "
+            "context window. Per-turn latency grows from 800ms to 3.5s as the running "
+            "state fills."
+        ),
+        "evaluation_hint": (
+            "should propose sliding-window truncation of the running state, OR an "
+            "explicit recent-turns retention policy with summary-of-older-turns, OR "
+            "running-state compression — the underlying mechanism is bounded "
+            "accumulation of stored history, NOT just 'use a bigger model'"
+        ),
+    },
+    {
+        "task_id": "TASK_W_002_GradExplosionRL",
+        "symptom": (
+            "A PPO policy network training on a robotic manipulation task shows the "
+            "reward curve diverging to NaN around training step 50K.  Loss values "
+            "were stable until step 47K then spiked to 1e8 within 200 updates; "
+            "gradient norms in the actor head are unbounded."
+        ),
+        "evaluation_hint": (
+            "should propose gradient clipping (clip_grad_norm / clip_grad_value) "
+            "with a sensible max_norm (~1.0-5.0), OR layer-norm / smaller LR, "
+            "AND mention monitoring grad norms going forward"
+        ),
+    },
+    {
+        "task_id": "TASK_W_003_NetRetryStorm",
+        "symptom": (
+            "A microservice fetching upstream API data sees 95% of calls succeed but "
+            "5% return 503.  Naive retry-on-failure with 100ms fixed delay causes "
+            "cascading load: when upstream is degraded, retries amplify traffic ~10x, "
+            "prolonging the outage."
+        ),
+        "evaluation_hint": (
+            "should propose exponential backoff with jitter, OR a circuit breaker / "
+            "token-bucket rate limit, OR adaptive concurrency — the underlying "
+            "mechanism is bounded retry pressure that decreases under load, NOT "
+            "constant-interval retries"
+        ),
+    },
+    {
+        "task_id": "TASK_W_004_EntropyCollapsePPO",
+        "symptom": (
+            "A PPO agent training on a stochastic environment converges to a "
+            "deterministic policy by episode 5000.  Action entropy drops to "
+            "near zero, exploration ceases, and the policy gets stuck 30% below "
+            "SOTA reward.  Hyperparameters were copied from a known-good benchmark."
+        ),
+        "evaluation_hint": (
+            "should propose an entropy bonus term in the loss (entropy_coef ~0.01) "
+            "AND/OR target-KL early stopping in the inner PPO epoch, OR an action-"
+            "noise / temperature schedule — the underlying mechanism is preventing "
+            "the policy distribution from collapsing onto one mode"
+        ),
+    },
+    {
+        "task_id": "TASK_W_005_ActuatorOvershoot",
+        "symptom": (
+            "A linear voice-coil actuator commanded with PID + feedforward overshoots "
+            "its rated 25 N peak force by 18% during fast setpoint changes, triggering "
+            "the mechanical end-stops and dropping the position lock.  The command "
+            "signal itself briefly exceeds the rated peak before the safety relay "
+            "trips."
+        ),
+        "evaluation_hint": (
+            "should propose clamping the controller output to the actuator's rated "
+            "range BEFORE it leaves the controller (output_saturation_clamp), OR a "
+            "rate-limited / jerk-limited reference trajectory so the setpoint "
+            "itself never demands above-rated force"
+        ),
+    },
+    {
+        "task_id": "TASK_W_006_PlanningDivergence",
+        "symptom": (
+            "A model-predictive controller running at 50 Hz computes a 2-second-"
+            "horizon trajectory assuming nominal dynamics, but actual ground friction "
+            "varies by 3x across the operating area.  By the planning horizon's end, "
+            "the predicted state differs from the measured state by >20 cm, and "
+            "tracking error accumulates unboundedly between re-plans."
+        ),
+        "evaluation_hint": (
+            "should propose closed-loop replanning (shorter re-plan interval / "
+            "receding-horizon refresh whenever predicted-vs-measured divergence "
+            "exceeds threshold), OR online dynamics-model adaptation, OR robust-MPC "
+            "with disturbance bound — NOT just 'tune the cost weights'"
+        ),
+    },
+    {
+        "task_id": "TASK_W_007_IntegrationWindup",
+        "symptom": (
+            "A flow-rate PID controller saturates its control valve fully open during "
+            "a long demand transient.  After the setpoint returns to normal, the "
+            "controller takes 8 seconds to release accumulated integrator state, "
+            "causing 25% overshoot past target as the valve eventually closes."
+        ),
+        "evaluation_hint": (
+            "should propose anti-windup (back-calculation / conditional integration / "
+            "clamp the integrator when the actuator is saturated) so the integrator "
+            "state doesn't accumulate while the controller is open-loop"
+        ),
+    },
+    {
+        "task_id": "TASK_W_008_AttentionMemoryOOM",
+        "symptom": (
+            "A transformer model serving 4K-context inference on a 24 GB GPU hits "
+            "OOM at batch size 8.  Memory profiling shows the N×N attention "
+            "probability matrix taking 12 GB just for the full sequence, scaling "
+            "quadratically with context length."
+        ),
+        "evaluation_hint": (
+            "should propose tiled / online-softmax attention (FlashAttention-style) "
+            "that keeps the softmax computation in SRAM and never materializes the "
+            "full attention matrix, OR memory-efficient attention via chunked "
+            "computation"
+        ),
+    },
 ]
 
 

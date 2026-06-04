@@ -166,6 +166,54 @@ def main() -> int:
     print(f"Per-seed win rate:    [{', '.join(f'{w:.0%}' for w in per_seed_win_rate)}]")
     print(f"Across-seed mean WR:  {mean_wr:.1%}   95% CI [{ci_lo_wr:.0%}, {ci_hi_wr:.0%}]")
 
+    # ── Per-panel sub-split (if benchmark mixes "wild" TASK_NNN and
+    # "home-turf" TASK_W_NNN — the prefix is enough to bucket) ──
+    home_turf_tids = [t for t in per_task_uplifts if "_W_" in t]
+    if home_turf_tids and len(home_turf_tids) < len(per_task_uplifts):
+        print("\n=== Per-panel split (wild TASK_NNN vs home-turf TASK_W_NNN) ===")
+        for panel_name, predicate in (
+            ("wild", lambda t: "_W_" not in t),
+            ("home-turf", lambda t: "_W_" in t),
+        ):
+            panel_tids = [t for t in per_task_uplifts if predicate(t)]
+            if not panel_tids:
+                continue
+            # Re-run per-seed aggregate over the panel subset.
+            seed_avgs: list[float] = []
+            seed_wrs: list[float] = []
+            for sd in seed_dirs:
+                summary = _load_seed_summary(sd)
+                deltas: list[int] = []
+                trt = 0
+                for entry in summary:
+                    if not predicate(entry["task_id"]):
+                        continue
+                    j = entry.get("judgment", {})
+                    c = j.get("control", {}).get("score")
+                    t = j.get("treatment", {}).get("score")
+                    if c is None or t is None:
+                        continue
+                    deltas.append(t - c)
+                    if j.get("verdict") == "treatment_better":
+                        trt += 1
+                if deltas:
+                    seed_avgs.append(statistics.mean(deltas))
+                    seed_wrs.append(trt / len(deltas))
+            if not seed_avgs:
+                continue
+            n_panel = len(seed_avgs)
+            m = statistics.mean(seed_avgs)
+            sd_v = statistics.stdev(seed_avgs) if n_panel > 1 else 0.0
+            lo, hi = _ci95(seed_avgs)
+            wr_m = statistics.mean(seed_wrs)
+            lo_w, hi_w = _ci95(seed_wrs)
+            print(f"  panel={panel_name:<10}  tasks={len(panel_tids):>2}  "
+                  f"seeds={n_panel}  mean Δ={m:+.3f} std={sd_v:.3f}  "
+                  f"CI [{lo:+.2f}, {hi:+.2f}]  WR={wr_m:.0%} CI [{lo_w:.0%}, {hi_w:.0%}]")
+        print("(home-turf = bridge has a relevant curated/muse pattern by construction;")
+        print(" wild = realistic distribution including cold-coverage domains. "
+              "§5.6 phase-1 acceptance: WR ≥ 55% AND mean Δ > 0.)")
+
     # ── Verdict against the -0.80 single-seed temp-0 baseline ──
     print("\n=== Verdict vs single-seed temp-0 baselines ===")
     print(f"Pre-fix  (baseline, temp 0, 1 seed):   avg uplift = -0.80")

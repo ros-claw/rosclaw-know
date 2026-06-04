@@ -213,6 +213,58 @@ _SYMPTOM_BY_ID = {
         "velocity, 100 mm focal length, 1/120s shutter), so defect detection "
         "recall drops from 0.9 (stationary) to 0.4 (flyby)."
     ),
+    # Home-turf panel (8 tasks each mapping to a curated/muse pattern;
+    # kept in sync with scripts/verify_frontier_eng.py).
+    "TASK_W_001_KVCacheLongContext": (
+        "A code-assistant LLM serving multi-turn programming sessions accumulates "
+        "32K tokens of conversation history after 20 turns, hitting the model's 16K "
+        "context window. Per-turn latency grows from 800ms to 3.5s as the running "
+        "state fills."
+    ),
+    "TASK_W_002_GradExplosionRL": (
+        "A PPO policy network training on a robotic manipulation task shows the "
+        "reward curve diverging to NaN around training step 50K.  Loss values "
+        "were stable until step 47K then spiked to 1e8 within 200 updates; "
+        "gradient norms in the actor head are unbounded."
+    ),
+    "TASK_W_003_NetRetryStorm": (
+        "A microservice fetching upstream API data sees 95% of calls succeed but "
+        "5% return 503.  Naive retry-on-failure with 100ms fixed delay causes "
+        "cascading load: when upstream is degraded, retries amplify traffic ~10x, "
+        "prolonging the outage."
+    ),
+    "TASK_W_004_EntropyCollapsePPO": (
+        "A PPO agent training on a stochastic environment converges to a "
+        "deterministic policy by episode 5000.  Action entropy drops to "
+        "near zero, exploration ceases, and the policy gets stuck 30% below "
+        "SOTA reward.  Hyperparameters were copied from a known-good benchmark."
+    ),
+    "TASK_W_005_ActuatorOvershoot": (
+        "A linear voice-coil actuator commanded with PID + feedforward overshoots "
+        "its rated 25 N peak force by 18% during fast setpoint changes, triggering "
+        "the mechanical end-stops and dropping the position lock.  The command "
+        "signal itself briefly exceeds the rated peak before the safety relay "
+        "trips."
+    ),
+    "TASK_W_006_PlanningDivergence": (
+        "A model-predictive controller running at 50 Hz computes a 2-second-"
+        "horizon trajectory assuming nominal dynamics, but actual ground friction "
+        "varies by 3x across the operating area.  By the planning horizon's end, "
+        "the predicted state differs from the measured state by >20 cm, and "
+        "tracking error accumulates unboundedly between re-plans."
+    ),
+    "TASK_W_007_IntegrationWindup": (
+        "A flow-rate PID controller saturates its control valve fully open during "
+        "a long demand transient.  After the setpoint returns to normal, the "
+        "controller takes 8 seconds to release accumulated integrator state, "
+        "causing 25% overshoot past target as the valve eventually closes."
+    ),
+    "TASK_W_008_AttentionMemoryOOM": (
+        "A transformer model serving 4K-context inference on a 24 GB GPU hits "
+        "OOM at batch size 8.  Memory profiling shows the N×N attention "
+        "probability matrix taking 12 GB just for the full sequence, scaling "
+        "quadratically with context length."
+    ),
 }
 
 
