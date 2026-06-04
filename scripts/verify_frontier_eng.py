@@ -161,6 +161,13 @@ BENCHMARK_SUITE = [
 
 
 def _build_treatment_prompt(bridge_index_path: Path) -> str:
+    """Legacy static digest — top-12 bridge entries concatenated as a prefix.
+
+    Kept as a fallback for offline runs (``--no-via-how``).  The default
+    treatment path goes through rosclaw-how ``/wiki/v1/prompt/build``,
+    which does per-task semantic retrieval over the full bridge instead
+    of a fixed prefix — see :func:`_build_treatment_via_how`.
+    """
     if not bridge_index_path.exists():
         return ""
     data = json.loads(bridge_index_path.read_text(encoding="utf-8"))
@@ -176,6 +183,69 @@ def _build_treatment_prompt(bridge_index_path: Path) -> str:
         for ana in info["cross_domain_analogies"][:2]:
             lines.append(f"    • {ana['source_domain']} → {ana['insight']}")
     return "\n".join(lines)
+
+
+def _build_treatment_via_how(
+    symptom: str,
+    *,
+    how_base: str,
+    api_key: str,
+) -> tuple[str, dict]:
+    """Per-task treatment snippet from rosclaw-how ``/wiki/v1/prompt/build``.
+
+    Sends the task symptom as ``error_log``, with flat previous_scores
+    and iteration=5 to push the state router into CATALYST (FREE
+    exploration would skip injection, SAFETY would short-circuit on
+    keyword match — neither is the path we're stress-testing here).
+
+    Returns (snippet, meta).  ``snippet`` is empty when the router
+    didn't inject (FREE / similarity below floor / SAFETY with no key
+    match) — callers should treat that as "bridge had no relevant
+    knowledge for this task" rather than as a failure.
+    """
+    import urllib.error
+    import urllib.request
+
+    payload = json.dumps(
+        {
+            "error_log": symptom,
+            # Plateau scores + past-warmup iteration force CATALYST.
+            "previous_scores": [0.10] * 5,
+            "current_iteration": 5,
+        }
+    ).encode("utf-8")
+    req = urllib.request.Request(
+        f"{how_base.rstrip('/')}/wiki/v1/prompt/build",
+        data=payload,
+        headers={
+            "X-API-Key": api_key,
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        return "", {"error": f"HTTP {exc.code}: {exc.reason}"}
+    except Exception as exc:  # noqa: BLE001
+        return "", {"error": f"how unreachable: {exc}"}
+
+    try:
+        data = json.loads(body)
+    except ValueError:
+        return "", {"error": f"how returned non-JSON: {body[:200]}"}
+
+    return data.get("prompt_snippet", "") or "", {
+        "strategy": data.get("strategy"),
+        "injected": data.get("injected"),
+        "pattern_id": data.get("pattern_id"),
+        "matched_symptom": data.get("matched_symptom"),
+        "similarity": data.get("similarity"),
+        "is_staging": data.get("is_staging"),
+        "injection_id": data.get("injection_id"),
+        "latency_ms": data.get("latency_ms"),
+    }
 
 
 def _call_agent(symptom: str, treatment_context: str = "") -> str:
@@ -242,17 +312,68 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", type=Path, default=BENCHMARKS_DIR / "frontier_eng_ab")
     ap.add_argument("--bridge-path", type=Path, default=ASSETS_DIR / "bridge_index.json")
+    ap.add_argument(
+        "--via-how",
+        dest="via_how",
+        action="store_true",
+        default=True,
+        help=(
+            "Fetch treatment snippet per task from rosclaw-how "
+            "/wiki/v1/prompt/build (default). Requires the how server "
+            "to be running and reachable."
+        ),
+    )
+    ap.add_argument(
+        "--no-via-how",
+        dest="via_how",
+        action="store_false",
+        help=(
+            "Fall back to the static top-12 bridge_index digest as the "
+            "treatment context (offline mode, no how server)."
+        ),
+    )
+    ap.add_argument(
+        "--how-base",
+        default=os.environ.get("ROSCLAW_HOW_BASE", "http://127.0.0.1:47820"),
+    )
+    ap.add_argument(
+        "--how-api-key",
+        default=os.environ.get("ROSCLAW_HOW_API_KEY", "rw_sk_dev_local"),
+    )
     args = ap.parse_args()
 
     ensure_dirs()
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    treatment_context = _build_treatment_prompt(args.bridge_path)
-    print(f"Bridge context loaded: {len(treatment_context.splitlines())} lines\n")
+    if not args.via_how:
+        static_context = _build_treatment_prompt(args.bridge_path)
+        print(f"[static digest] Bridge context loaded: {len(static_context.splitlines())} lines\n")
+    else:
+        static_context = None
+        print(f"[via /prompt/build @ {args.how_base}] per-task semantic retrieval\n")
 
     report = []
     for task in BENCHMARK_SUITE:
         print(f"▶ {task['task_id']}")
+
+        if args.via_how:
+            treatment_context, meta = _build_treatment_via_how(
+                task["symptom"],
+                how_base=args.how_base,
+                api_key=args.how_api_key,
+            )
+            strategy = meta.get("strategy", "?")
+            pid = meta.get("pattern_id") or "-"
+            sim = meta.get("similarity")
+            sim_str = f"{sim:.3f}" if isinstance(sim, (int, float)) else "-"
+            print(
+                f"  /prompt/build  strategy={strategy} pattern_id={pid} sim={sim_str} "
+                f"injected={meta.get('injected')}"
+            )
+        else:
+            treatment_context = static_context or ""
+            meta = {"strategy": "static_digest", "injected": bool(treatment_context)}
+
         control = _call_agent(task["symptom"])
         treatment = _call_agent(task["symptom"], treatment_context=treatment_context)
 
@@ -265,6 +386,7 @@ def main() -> int:
                 "evaluation_hint": task["evaluation_hint"],
                 "control_first_200": control[:200],
                 "treatment_first_200": treatment[:200],
+                "how_meta": meta,
             }
         )
         print(f"  control:    {control[:80]!r}…")
