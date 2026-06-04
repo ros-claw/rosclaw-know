@@ -124,8 +124,9 @@ def publish_curated_assets() -> dict[str, int]:
         with open(bridge_path, encoding="utf-8") as fh:
             data = json.load(fh)
     else:
-        data = {"symptom_clusters": {}}
+        data = {"schema_version": "v2", "symptom_clusters": {}}
     data.setdefault("symptom_clusters", {})
+    data.setdefault("schema_version", "v2")
 
     # Optional top-level reverse-lookup table — populated regardless of which
     # Muse run produced the bridge; rosclaw-how can consult it for an O(1)

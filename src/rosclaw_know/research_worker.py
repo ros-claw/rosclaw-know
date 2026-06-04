@@ -25,6 +25,7 @@ import os
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from . import config
 from .incremental_pipeline import run_incremental_ingest
@@ -33,8 +34,21 @@ from .research_store import ResearchJob, ResearchStore
 
 logger = logging.getLogger("rosclaw_know.research_worker")
 
-# Where the worker drops fetched markdown for the harvester to pick up
-_RESEARCH_CORPUS_ROOT = config.WIKI_DIR / "research_corpus"
+# Where the worker drops fetched markdown for the harvester to pick up.
+# Historically this lived under wiki/research_corpus/<job_id>/, but
+# WIKI_DIR is symlinked to a sibling repo that may be missing or broken
+# in fresh clones — and mkdir(parents=True) crashes with EEXIST when it
+# walks into a broken symlink.  research_corpus is *derived* state
+# (LLM-fetched documents we'll ingest), so it belongs under data/ where
+# the rest of the pipeline output lives, not under the input-only
+# wiki tree.  Override with ROSCLAW_KNOW_RESEARCH_CORPUS_DIR if you
+# need to keep the legacy layout.
+_RESEARCH_CORPUS_ROOT = Path(
+    os.environ.get(
+        "ROSCLAW_KNOW_RESEARCH_CORPUS_DIR",
+        str(config.DATA_DIR / "research_corpus"),
+    )
+)
 
 # Hard wall-clock cap on collect_sources (sum of three channel timeouts is
 # ~30s under normal conditions; this is the defensive ceiling).

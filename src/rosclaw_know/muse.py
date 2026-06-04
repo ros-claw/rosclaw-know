@@ -278,7 +278,7 @@ async def compile_muse_assets(
     if max_nodes:
         nodes = nodes[:max_nodes]
 
-    bridge_index: dict[str, dict] = {"symptom_clusters": {}}
+    bridge_index: dict[str, object] = {"schema_version": "v2", "symptom_clusters": {}}
     written_patterns: list[str] = []
     semaphore = asyncio.Semaphore(concurrency)
     bridge_lock = asyncio.Lock()
