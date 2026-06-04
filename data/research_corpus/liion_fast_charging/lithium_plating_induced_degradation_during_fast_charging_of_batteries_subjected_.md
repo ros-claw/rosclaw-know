@@ -1,0 +1,7 @@
+# Lithium plating induced degradation during fast charging of batteries subjected to compressive loading
+
+**Source**: arXiv paper · http://arxiv.org/abs/2309.15291v1
+
+## Abstract
+
+We report the lithium plating associated capacity loss during fast charging of compressively loaded lithium-ion batteries (LIBs). The charging and discharging of LIB under compressive loading during service may affect the cell performance or initiate localized defects in the electrodes. Pouch cells of capacity 20mAh were compressively loaded to nominal pressures of 0-440 kPa and subjected to 10 cycles of fast charging at 1C and 4C. Experimental results show that cells charged at 4C-rate experienced significant capacity fade, and applying compressive loads exacerbated the capacity loss. The coulombic efficiency study shows that active lithium loss was higher for the initial cycles before gradually reducing to a minimal capacity loss for the tenth charging cycle. The cell voltage relaxation immediately after charging was monitored to identify the stripping of plated lithium after fast charging cycles and showed that the duration of lithium stripping was higher for cells under mechanical compressive loading. Scanning electron microscopy (SEM) and Electron paramagnetic resonance spectroscopy (EPR) characterization of the anode showed significantly higher lithium deposits on the anodes charged at a 4C rate under compressive loads. These results indicate that applied mechanical compression causes increased lithium plating during fast charging of batteries.

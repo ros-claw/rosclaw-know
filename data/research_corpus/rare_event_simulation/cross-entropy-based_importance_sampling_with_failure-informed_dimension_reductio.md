@@ -1,0 +1,7 @@
+# Cross-entropy-based importance sampling with failure-informed dimension reduction for rare event simulation
+
+**Source**: arXiv paper · http://arxiv.org/abs/2006.05496v1
+
+## Abstract
+
+The estimation of rare event or failure probabilities in high dimensions is of interest in many areas of science and technology. We consider problems where the rare event is expressed in terms of a computationally costly numerical model. Importance sampling with the cross-entropy method offers an efficient way to address such problems provided that a suitable parametric family of biasing densities is employed. Although some existing parametric distribution families are designed to perform efficiently in high dimensions, their applicability within the cross-entropy method is limited to problems with dimension of O(1e2). In this work, rather than directly building sampling densities in high dimensions, we focus on identifying the intrinsic low-dimensional structure of the rare event simulation problem. To this end, we exploit a connection between rare event simulation and Bayesian inverse problems. This allows us to adapt dimension reduction techniques from Bayesian inference to construct new, effectively low-dimensional, biasing distributions within the cross-entropy method. In particular, we employ the approach in [47], as it enables control of the error in the approximation of the optimal biasing distribution. We illustrate our method using two standard high-dimensional reliability benchmark problems and one structural mechanics application involving random fields.

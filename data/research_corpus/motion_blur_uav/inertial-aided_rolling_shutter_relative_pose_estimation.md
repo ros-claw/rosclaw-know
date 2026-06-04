@@ -1,0 +1,7 @@
+# Inertial-aided Rolling Shutter Relative Pose Estimation
+
+**Source**: arXiv paper · http://arxiv.org/abs/1712.00184v1
+
+## Abstract
+
+Relative pose estimation is a fundamental problem in computer vision and it has been studied for conventional global shutter cameras for decades. However, recently, a rolling shutter camera has been widely used due to its low cost imaging capability and, since the rolling shutter camera captures the image line-by-line, the relative pose estimation of a rolling shutter camera is more difficult than that of a global shutter camera. In this paper, we propose to exploit inertial measurements (gravity and angular velocity) for the rolling shutter relative pose estimation problem. The inertial measurements provide information about the partial relative rotation between two views (cameras) and the instantaneous motion that causes the rolling shutter distortion. Based on this information, we simplify the rolling shutter relative pose estimation problem and propose effective methods to solve it. Unlike the previous methods, which require 44 (linear) or 17 (nonlinear) points with the uniform rolling shutter camera model, the proposed methods require at most 9 or 11 points to estimate the relative pose between the rolling shutter cameras. Experimental results on synthetic data and the public PennCOSYVIO dataset show that the proposed methods outperform the existing methods.

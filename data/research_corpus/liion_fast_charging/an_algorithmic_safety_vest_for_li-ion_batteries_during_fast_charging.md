@@ -1,0 +1,7 @@
+# An Algorithmic Safety VEST For Li-ion Batteries During Fast Charging
+
+**Source**: arXiv paper · http://arxiv.org/abs/2108.07833v1
+
+## Abstract
+
+Fast charging of lithium-ion batteries is crucial to increase desirability for consumers and hence accelerate the adoption of electric vehicles. A major barrier to shorter charge times is the accelerated aging of the battery at higher charging rates, which can be driven by lithium plating, increased solid electrolyte interphase growth due to elevated temperatures, and particle cracking due to mechanical stress. Lithium plating depends on the overpotential of the negative electrode, and mechanical stress depends on the concentration gradient, both of which cannot be measured directly. Techniques based on physics-based models of the battery and optimal control algorithms have been developed to this end. While these methods show promise in reducing degradation, their optimization algorithms' complexity can limit their implementation. In this paper, we present a method based on the constant current constant voltage (CC-CV) charging scheme, called CC-CV$ησ$T (VEST). The new approach is simpler to implement and can be used with any model to impose varying levels of constraints on variables pertinent to degradation, such as plating potential and mechanical stress. We demonstrate the new CC-CV$ησ$T charging using an electrochemical model with mechanical and thermal effects included. Furthermore, we discuss how uncertainties can be accounted for by considering safety margins for the plating and stress constraints.

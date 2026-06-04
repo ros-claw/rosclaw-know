@@ -1,0 +1,7 @@
+# Capacity Fade due to Side-reactions in Silicon Anodes in Lithium-ion Batteries
+
+**Source**: arXiv paper · http://arxiv.org/abs/1201.1429v3
+
+## Abstract
+
+It is shown that continuously occurring electrolyte-reduction reaction on freshly-exposed electrode surfaces during lithiation/delithiation cycles causes the lowering of cycling efficiency, and hence, capacity fade in well-cycled silicon anodes in lithium-ion batteries. Using galvanostatic lithiation/delithiation data from multiple cycles on a Li/Si half-cell, a methodology to separate the charge due to the main reaction (lithiation/delithiation of Si) from the side-reaction (electrolyte-reduction) is presented. The rate of this parasitic side reaction is estimated on well-cycled amorphous silicon thin-film electrodes at ambient temperature for the following three commonly-used lithium-ion electrolyte formulations: mixtures of ethylene carbonate and diethylene carbonate (EC:DEC) with and without a fluoroethylene carbonate (FEC) additive, and propylene carbonate (PC), all containing 1.2 M lithium hexafluorophosphate. Among the three formulations, the electrolyte containing EC:DEC with the FEC additive exhibits the lowest coulombic losses due to side-reactions, followed by PC, and EC:DEC without the FEC additive (i.e., EC:DEC + FEC > PC > EC:DEC). The importance of estimating side-reaction rates on a well-cycled electrode is discussed in the context of self-discharge, capacity fade, development of battery management system algorithms and precise mathematical modeling of lithium-ion batteries.

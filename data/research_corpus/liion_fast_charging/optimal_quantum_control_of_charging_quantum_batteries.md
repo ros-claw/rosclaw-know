@@ -1,0 +1,7 @@
+# Optimal Quantum Control of Charging Quantum Batteries
+
+**Source**: arXiv paper · http://arxiv.org/abs/2207.00094v3
+
+## Abstract
+
+Quantum control allows us to address the problem of engineering quantum dynamics for special purposes. While recently the field of quantum batteries has attracted much attention, optimization of their charging has not benefited from the quantum control methods. Here we fill this gap by using an optimization method. We apply for the first time this convergent iterative method for the control of the population of a bipartite quantum system in two cases, starting with a qubit-qubit case. The quantum charger-battery system is considered here, where the energy is pumped into the charger by an external classical electromagnetic field. Secondly, we systematically develop the original formulation of the method for two harmonic oscillators in the Gaussian regime. In both cases, the charger is considered to be an open dissipative system. Our optimization takes into account experimentally viable problem of turning-on and off of the charging external field. Optimising the shape of the pulse significantly boosts both the power and efficiency of the charging process in comparison to the sinusoidal drive. The harmonic oscillator setting of quantum batteries is of a particular interest, as the optimal driving pulse remains so independently of the temperature of environment.

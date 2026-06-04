@@ -1,0 +1,7 @@
+# Data-Enabled Predictive Control for Fast Charging of Lithium-Ion Batteries with Constraint Handling
+
+**Source**: arXiv paper · http://arxiv.org/abs/2209.12862v2
+
+## Abstract
+
+Fast charging of lithium-ion batteries has gained extensive research interests, but most of existing methods are either based on simple rule-based charging profiles or require explicit battery models that are non-trivial to identify accurately. In this paper, instead of relying on parametric battery models that are costly to derive and calibrate, we employ a novel data-enabled predictive control (DeePC) paradigm to perform safe and optimal fast charging for lithium-ion batteries. The developed DeePC methodology is based on behavioral system theory and directly utilizes the input-output measurements from the battery system to predict the future trajectory and compute the optimal control policy. Constraints on input current and battery states are incorporated in the DeePC formulation to ensure battery fast charging with safe operations. Furthermore, we propose a principal component analysis based scheme to reduce the dimension of the optimization variables in the DeePC algorithm, which significantly enhances the computation efficiency without compromising the charging performance. Numerical simulations are performed on a high-fidelity battery simulator to validate the efficacy of the proposed fast charging strategy.
