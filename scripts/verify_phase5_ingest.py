@@ -185,7 +185,9 @@ def main() -> int:
     ap.add_argument(
         "--md-target-dir",
         type=Path,
-        default=WIKI_DIR / "phase5_ingest" if WIKI_DIR else PROJECT_ROOT / "data" / "incoming",
+        # Fall back if WIKI_DIR is unset, missing, or a broken symlink.
+        default=(WIKI_DIR / "phase5_ingest" if WIKI_DIR and WIKI_DIR.is_dir()
+                 else PROJECT_ROOT / "data" / "incoming"),
     )
     ap.add_argument("--skip-ingest", action="store_true", help="Skip the ingest step (assumes already done).")
     ap.add_argument("--cleanup", action="store_true", help="Delete the synthetic markdown after.")

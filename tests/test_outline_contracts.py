@@ -157,6 +157,45 @@ class TestKCurated:
             f"{misroute[:3]}"
         )
 
+    def test_k_curated_003_filenames_lack_pattern_prefix(self, curated) -> None:
+        """Curated pattern files MUST NOT start with ``pattern_``.
+
+        Muse re-runs wipe ``code_patterns/pattern_*.md`` before re-emitting
+        (see muse.py:271).  Curated safety patterns (anti_windup_pid.md,
+        gradient_clipping.md, …) deliberately skip that prefix so Phase 1
+        re-runs leave them intact.  K-CURATED-003 = "不被 Muse 覆盖".
+        """
+        violators = [p.pattern_id for p in curated if p.pattern_id.startswith("pattern_")]
+        assert not violators, (
+            f"curated pattern_id must not collide with muse pattern_* prefix: {violators}"
+        )
+
+    def test_k_curated_003_muse_wipe_pattern_is_prefixed(self) -> None:
+        """Lock the muse wipe glob to ``pattern_*.md``.
+
+        If somebody changes muse.py to wipe ``*.md`` (e.g. during a refactor),
+        curated patterns would be silently deleted on the next Phase 1 run.
+        This test grep-locks the protection invariant so the refactor breaks
+        the test before it breaks production.
+        """
+        import re
+        from rosclaw_know import muse
+
+        src = Path(muse.__file__).read_text()
+        # Must contain the prefixed glob and must NOT contain a bare *.md
+        # glob anywhere near the deletion site.
+        assert re.search(r'glob\(\s*["\']pattern_\*\.md["\']\s*\)', src), (
+            "muse.py must wipe via 'pattern_*.md' glob — losing the prefix "
+            "would silently delete curated patterns"
+        )
+        # Defence-in-depth: no `glob("*.md")` followed by `.unlink` within
+        # the surrounding 200 chars in the file (this would also wipe curated).
+        bad_glob = re.search(r'glob\(\s*["\']\*\.md["\']\s*\)[\s\S]{0,200}unlink', src)
+        assert not bad_glob, (
+            "muse.py contains a `glob('*.md')` followed by `.unlink()` — "
+            "this would wipe curated patterns alongside muse output"
+        )
+
 
 # ── K-MUSE: pattern markdown structural requirements ─────────────────────
 
