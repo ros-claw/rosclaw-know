@@ -3,6 +3,74 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [unreleased] — 2026-06-04 · multi-seed A/B harness + 4-cell snippet matrix
+
+### Added
+
+- **`scripts/multiseed_aggregate.py`** — runs `judge_frontier_eng` over
+  N seed sub-directories (`seed_1/`, `seed_2/`, …) populated by
+  `verify_frontier_eng.py --out-dir …` and computes (a) per-seed avg
+  uplift / win rate, (b) across-seed mean Δ ± 95% CI (t-distribution,
+  df=n-1), (c) per-task uplift mean ± std across seeds so per-task
+  robustness is visible without re-grepping summaries.  The verdict
+  message names the CI threshold (entirely above / entirely below /
+  straddling 0) so a single command run yields a directly-actionable
+  conclusion instead of raw tables.
+- **`scripts/verify_frontier_eng.py`** new flags:
+  - `--temperature <float>` (default `0.0` to preserve byte-identical
+    single-seed runs) — required to be `>0` for multi-seed evaluation,
+    otherwise the 5 seeds collapse to one near-deterministic sample.
+  - `--snippet-mode {full,lightweight}` (default `None` so the server's
+    own default applies) — forwarded as the top-level `snippet_mode`
+    field of `/wiki/v1/prompt/build`.  Lets the A/B harness isolate
+    the heavy-payload effect (Diff block + Cross-Domain hint) from the
+    pure retrieval+ordering signal.
+  - `summary.json[*].how_meta` now records `snippet_mode` (echoed back
+    by the server) so multi-cell aggregates can group rows without
+    remembering what was sent.
+
+### Empirical findings (5-seed × 10-task @ DeepSeek temp 0.3 panel)
+
+A 4-cell snippet-shape matrix against the Frontier-Engineering benchmark
+(`BENCHMARK_SUITE` in `scripts/verify_frontier_eng.py`):
+
+| Cell                                              | mean Δ | 95% CI       | mean WR |
+|---------------------------------------------------|--------|--------------|---------|
+| 1. static top-12 bridge digest (no retrieval)     | -0.76  | [-1.13, -0.39]| 24%     |
+| 2. /prompt/build full + hard `**Fix:**` (e2bd61d) | -0.42  | [-0.90, +0.06]| 16%     |
+| 3. /prompt/build full + softened lead (1afe8af)   | -0.08  | [-0.83, +0.67]| 32%     |
+| 4. /prompt/build **lightweight** + softened (adf7148) | -0.06  | **[-0.61, +0.49]** | **36%** |
+
+Progression -0.76 → -0.42 → -0.08 → -0.06 isolates three independent
+contributions: retrieval (+0.34), Fix-wording softening (+0.34), and
+lightweight payload (+0.02 on mean but CI tightening from ±0.75 to
+±0.55).  Static-digest mode shows statistically-significant regression
+(CI all-negative); every retrieval-based mode is statistically
+indistinguishable from no-injection.
+
+Per-task signal: **TASK_001_PIDTuning** revealed a non-obvious failure
+mode of the full snippet payload — *softening the lead phrase alone did
+NOT help* (-1.40 → -1.80 across seeds), but **switching to lightweight
+mode did** (-1.40 → +0.20).  The narrowing isn't about the Fix being
+framed as prescription; it's about the agent latching onto any
+structured payload (Diff comments + Cross-Domain hint) and bypassing
+the broader brainstorm.  Lightweight is the lock.
+
+`§5.6` phase-1 acceptance bar (`win rate ≥ 55% AND avg uplift > 0`) is
+still not cleared — structural ceiling: 5 of 10 tasks fall in bridge
+coverage holes (`sim<floor`, no injection) so control ≡ treatment
+prompt, capping pairwise win rate at ~50%.  The remaining gap is
+upstream of how (muse coverage of robotics/control/systems-perf), not
+of snippet composition.
+
+### Data on disk (gitignored)
+
+- `data/benchmarks/multiseed/` — 5-seed run, cell #2 (e2bd61d full hard).
+- `data/benchmarks/multiseed_nohow/` — 5-seed run, cell #1 (static digest).
+- `data/benchmarks/multiseed_full/` — 5-seed run, cell #3 (1afe8af softened).
+- `data/benchmarks/multiseed_lightweight/` — 5-seed run, cell #4 (adf7148 lightweight).
+- `data/benchmarks/frontier_eng_ab/` — single-seed reference at temp 0.
+
 ## [1.5.0a1] — 2026-06-03 · alpha cut for rosclaw integration
 
 ### Changed

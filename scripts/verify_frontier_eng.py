@@ -190,6 +190,7 @@ def _build_treatment_via_how(
     *,
     how_base: str,
     api_key: str,
+    snippet_mode: str | None = None,
 ) -> tuple[str, dict]:
     """Per-task treatment snippet from rosclaw-how ``/wiki/v1/prompt/build``.
 
@@ -197,6 +198,12 @@ def _build_treatment_via_how(
     and iteration=5 to push the state router into CATALYST (FREE
     exploration would skip injection, SAFETY would short-circuit on
     keyword match — neither is the path we're stress-testing here).
+
+    ``snippet_mode`` (when set) is forwarded as a top-level request
+    field — used by how to pick the ``full`` vs ``lightweight`` snippet
+    composition variant.  Defaults to ``None`` (don't send the field;
+    how's default applies — currently ``full``) so existing benchmarks
+    stay byte-identical.
 
     Returns (snippet, meta).  ``snippet`` is empty when the router
     didn't inject (FREE / similarity below floor / SAFETY with no key
@@ -206,14 +213,15 @@ def _build_treatment_via_how(
     import urllib.error
     import urllib.request
 
-    payload = json.dumps(
-        {
-            "error_log": symptom,
-            # Plateau scores + past-warmup iteration force CATALYST.
-            "previous_scores": [0.10] * 5,
-            "current_iteration": 5,
-        }
-    ).encode("utf-8")
+    body: dict[str, object] = {
+        "error_log": symptom,
+        # Plateau scores + past-warmup iteration force CATALYST.
+        "previous_scores": [0.10] * 5,
+        "current_iteration": 5,
+    }
+    if snippet_mode is not None:
+        body["snippet_mode"] = snippet_mode
+    payload = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
         f"{how_base.rstrip('/')}/wiki/v1/prompt/build",
         data=payload,
@@ -245,15 +253,22 @@ def _build_treatment_via_how(
         "is_staging": data.get("is_staging"),
         "injection_id": data.get("injection_id"),
         "latency_ms": data.get("latency_ms"),
+        "snippet_mode": data.get("snippet_mode"),
     }
 
 
-def _call_agent(symptom: str, treatment_context: str = "") -> str:
+def _call_agent(symptom: str, treatment_context: str = "", *, temperature: float = 0.0) -> str:
     """Call DeepSeek chat as a stand-in agent. Returns the raw assistant reply.
 
     The "agent" is intentionally simple — a single chat completion — because
     Phase 1 just needs to show that *prompting* the agent with the procedural
     index improves the answer quality, not that we have an autonomous loop yet.
+
+    ``temperature`` defaults to 0.0 for the original single-seed flow.  Multi-
+    seed evaluation should pass ``temperature>0`` (e.g. 0.3) so the model
+    actually produces a distribution of outputs across runs — at temp 0 the
+    DeepSeek output is near-deterministic and "5 seeds" collapse to a single
+    sample with model-jitter as the only noise source.
     """
     api_key = os.environ.get("DEEPSEEK_API_KEY")
     base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
@@ -283,7 +298,7 @@ def _call_agent(symptom: str, treatment_context: str = "") -> str:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
             ],
-            "temperature": 0.0,
+            "temperature": temperature,
             "max_tokens": 600,
         }
     ).encode("utf-8")
@@ -340,6 +355,27 @@ def main() -> int:
         "--how-api-key",
         default=os.environ.get("ROSCLAW_HOW_API_KEY", "rw_sk_dev_local"),
     )
+    ap.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help=(
+            "Sampling temperature for the agent call (default 0.0 preserves "
+            "the original single-seed deterministic flow). Multi-seed runs "
+            "should bump this to ~0.3 so different invocations actually "
+            "sample different outputs."
+        ),
+    )
+    ap.add_argument(
+        "--snippet-mode",
+        choices=["full", "lightweight"],
+        default=None,
+        help=(
+            "Forwarded to rosclaw-how /wiki/v1/prompt/build as the "
+            "snippet_mode field. None (default) lets the server's own "
+            "default apply (currently 'full'). Only honored under --via-how."
+        ),
+    )
     args = ap.parse_args()
 
     ensure_dirs()
@@ -361,6 +397,7 @@ def main() -> int:
                 task["symptom"],
                 how_base=args.how_base,
                 api_key=args.how_api_key,
+                snippet_mode=args.snippet_mode,
             )
             strategy = meta.get("strategy", "?")
             pid = meta.get("pattern_id") or "-"
@@ -374,8 +411,8 @@ def main() -> int:
             treatment_context = static_context or ""
             meta = {"strategy": "static_digest", "injected": bool(treatment_context)}
 
-        control = _call_agent(task["symptom"])
-        treatment = _call_agent(task["symptom"], treatment_context=treatment_context)
+        control = _call_agent(task["symptom"], temperature=args.temperature)
+        treatment = _call_agent(task["symptom"], treatment_context=treatment_context, temperature=args.temperature)
 
         (args.out_dir / f"{task['task_id']}.control.txt").write_text(control, encoding="utf-8")
         (args.out_dir / f"{task['task_id']}.treatment.txt").write_text(treatment, encoding="utf-8")
