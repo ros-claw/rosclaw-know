@@ -429,7 +429,7 @@ def _call_agent(symptom: str, treatment_context: str = "", *, temperature: float
                 {"role": "user", "content": user_content},
             ],
             "temperature": temperature,
-            "max_tokens": 600,
+            "max_tokens": 4000,
         }
     ).encode("utf-8")
 
