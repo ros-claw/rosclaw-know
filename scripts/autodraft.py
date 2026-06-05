@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -33,6 +34,56 @@ from rosclaw_know.active_learning import (  # noqa: E402
     autodraft_for_blind_spots,
 )
 
+log = logging.getLogger("rosclaw_know.autodraft")
+
+
+def _find_rosclaw_how_root() -> Path | None:
+    """Locate the sibling rosclaw-how repo for the topic_group inference step.
+
+    Resolution order:
+      1. ``ROSCLAW_HOW_PATH`` env var, if set and pointing at a directory
+         that has ``scripts/infer_autodraft_topic_group.py``.
+      2. ``../rosclaw-how`` relative to this project (the standard sibling
+         checkout that the rosclaw-wiki workspace uses).
+
+    Returns None if neither resolves — caller logs and skips the step.
+    """
+    candidates: list[Path] = []
+    env = os.environ.get("ROSCLAW_HOW_PATH")
+    if env:
+        candidates.append(Path(env).expanduser().resolve())
+    candidates.append((PROJECT_ROOT.parent / "rosclaw-how").resolve())
+
+    for c in candidates:
+        if (c / "scripts" / "infer_autodraft_topic_group.py").exists():
+            return c
+    return None
+
+
+def _label_new_clusters_via_how(how_root: Path) -> int:
+    """Subprocess into rosclaw-how's venv to infer topic_group/topic_tag
+    on clusters that the ingest step just minted (anything without a
+    ``topic_group`` field). Returns the script's exit code.
+
+    The work happens in rosclaw-how because that's where the sentence-
+    transformer model and the fingerprint code already live; adding a
+    second copy in rosclaw-know would duplicate ~120 MB of model weights
+    and the inference code. The two repos already share bridge_index.json
+    via the data/assets hardlink, so the inference writes through to the
+    same file rosclaw-know just updated.
+
+    No-op-safe: if every cluster already has topic_group, the script
+    prints ``updated=0 ...`` and returns 0.
+    """
+    venv_py = how_root / ".venv" / "bin" / "python"
+    if not venv_py.exists():
+        log.warning("rosclaw-how venv not found at %s; skipping topic_group inference.", venv_py)
+        return 1
+    script = how_root / "scripts" / "infer_autodraft_topic_group.py"
+    print(f"\nRunning: {venv_py} {script}  (auto-label new clusters)")
+    proc = subprocess.run([str(venv_py), str(script)], timeout=300)
+    return proc.returncode
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -42,6 +93,16 @@ def main() -> int:
     ap.add_argument(
         "--then-ingest", action="store_true",
         help="After drafting, run scripts/ingest.py on the new markdowns.",
+    )
+    ap.add_argument(
+        "--skip-topic-group",
+        action="store_true",
+        help=(
+            "Skip the post-ingest topic_group/topic_tag inference step. "
+            "Without inference, freshly ingested clusters land without "
+            "topic_group and are invisible to rosclaw-how's CATALYST "
+            "filter — only use this flag for offline runs."
+        ),
     )
     args = ap.parse_args()
 
@@ -66,7 +127,26 @@ def main() -> int:
     cmd = [str(venv_py), str(ingest), *[str(p) for p in written]]
     print(f"\nRunning: {' '.join(cmd)}")
     proc = subprocess.run(cmd, timeout=900)
-    return proc.returncode
+    if proc.returncode != 0:
+        return proc.returncode
+
+    if args.skip_topic_group:
+        log.info("--skip-topic-group set; not auto-labeling new clusters.")
+        return 0
+
+    how_root = _find_rosclaw_how_root()
+    if how_root is None:
+        log.warning(
+            "rosclaw-how not located (set ROSCLAW_HOW_PATH or place at "
+            "../rosclaw-how); skipping topic_group inference. New clusters "
+            "will land without topic_group and stay invisible to CATALYST.",
+        )
+        return 0
+
+    rc = _label_new_clusters_via_how(how_root)
+    if rc != 0:
+        log.warning("topic_group inference exited with code %d; continuing.", rc)
+    return 0
 
 
 if __name__ == "__main__":
