@@ -5032,20 +5032,40 @@
       "topic_group": "control-loop-stability"
     },
     "closed_loop_replanning": {
-      "standard_name": "Open-loop plan tracks ground truth poorly when latency exceeds 50 ms",
+      "standard_name": "Open-loop or fixed-horizon MPC plan diverges from the measured state when the planning model differs from actual dynamics — execution latency exceeds the control period, the model-predictive controller assumes nominal dynamics while ground friction or load varies, or the prediction horizon outruns the model's accuracy. Predicted state and measured state diverge by the planning horizon's end, and tracking error accumulates unboundedly between re-plans until the controller re-anchors to fresh measurements via shorter receding-horizon refresh or online dynamics-model adaptation.",
       "domain": "Planning_Decision",
       "safety_label": "Oscillation_Divergence",
       "source": "curated",
       "matched_keywords": [
         "diverg",
         "drift",
+        "dynamics mismatch",
+        "friction varies",
+        "ground friction",
+        "horizon trajectory",
         "latency",
+        "measured state",
+        "model adaptation",
+        "model mismatch",
+        "model predictive controller",
+        "model-predictive",
+        "mpc",
+        "nominal dynamics",
         "open loop",
         "open-loop",
         "oscillat",
         "oscillation divergence",
         "oscillation_divergence",
-        "tracking"
+        "planning horizon",
+        "predicted state",
+        "predicted vs measured",
+        "prediction horizon",
+        "re-plan",
+        "receding horizon",
+        "receding-horizon",
+        "replan",
+        "tracking",
+        "tracking error"
       ],
       "cross_domain_analogies": [
         {
