@@ -1201,7 +1201,7 @@
         }
       },
       "topic_tag": "imprecise-actuation-parkour",
-      "topic_group": "control-loop-stability"
+      "topic_group": "locomotion-and-manipulation"
     },
     "multitask_learning_for_vln_rxr_r2r": {
       "standard_name": "VLN models trained on a single dataset (e.g., R2R or RxR) fail to generalize across different instruction styles and environments, leading to poor navigation performance on unseen data.",
@@ -15873,7 +15873,7 @@
         }
       },
       "topic_tag": "real-time-control-latency",
-      "topic_group": "control-loop-stability"
+      "topic_group": "locomotion-and-manipulation"
     },
     "memory_guided_decision_making": {
       "standard_name": "Reactive policies that map only immediate sensory input to actions fail under partial observability or ambiguous sensor readings, leading to greedy or repetitive errors in long-term navigation.",
@@ -19353,7 +19353,7 @@
         }
       },
       "topic_tag": "imprecise-actuation-calibration",
-      "topic_group": "control-loop-stability"
+      "topic_group": "locomotion-and-manipulation"
     },
     "tpu_xla_fragmentation_phase5_synthetic": {
       "standard_name": "Repeated re-traces of dynamic-shape inputs fragment the HBM pool on TPU, causing allocation failures despite low actual usage.",
@@ -21539,7 +21539,7 @@
       ],
       "priority": 0,
       "topic_tag": "steady-state-detection",
-      "topic_group": "control-loop-stability"
+      "topic_group": "software-engineering-and-tooling"
     },
     "performance_of_genetic_algorithms_in_the_context_of_software_model_refactoring": {
       "standard_name": "Large search space of software model refactoring actions makes it hard to find good alternatives efficiently.",
