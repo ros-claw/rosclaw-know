@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import statistics
 import subprocess
 import sys
@@ -35,11 +36,39 @@ from rosclaw_know.config import BENCHMARKS_DIR  # noqa: E402
 JUDGE_SCRIPT = PROJECT_ROOT / "scripts" / "judge_frontier_eng.py"
 
 
+_SEED_TAIL_RX = re.compile(r"(\d+)\s*$")
+
+
+def _seed_for_dir(seed_dir: Path) -> int | None:
+    """Derive an integer judge seed from a ``seed_*`` dir name.
+
+    Takes the trailing integer of the dir name (so ``seed_3`` → 3,
+    ``seed_1007`` → 1007).  Returns None if no integer suffix is
+    found, in which case the judge is invoked unseeded.
+    """
+    m = _SEED_TAIL_RX.search(seed_dir.name)
+    if not m:
+        return None
+    return int(m.group(1))
+
+
 def _judge_seed(seed_dir: Path) -> int:
-    """Run judge_frontier_eng on a single seed dir.  Returns judge's exit code."""
-    print(f"  ↳ judging {seed_dir.name}…", flush=True)
+    """Run judge_frontier_eng on a single seed dir.  Returns judge's exit code.
+
+    Passes ``--seed N`` to the judge using the integer suffix of the
+    seed dir name so the judge's own DeepSeek call uses the same
+    paired seed as the verify-side calls did, removing judge sampling
+    noise on the paired Δ.
+    """
+    seed_int = _seed_for_dir(seed_dir)
+    cmd = [sys.executable, str(JUDGE_SCRIPT), "--report-dir", str(seed_dir)]
+    if seed_int is not None:
+        cmd.extend(["--seed", str(seed_int)])
+        print(f"  ↳ judging {seed_dir.name} (seed={seed_int})…", flush=True)
+    else:
+        print(f"  ↳ judging {seed_dir.name}…", flush=True)
     res = subprocess.run(
-        [sys.executable, str(JUDGE_SCRIPT), "--report-dir", str(seed_dir)],
+        cmd,
         capture_output=True,
         text=True,
         check=False,

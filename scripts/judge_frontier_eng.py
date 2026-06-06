@@ -33,6 +33,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import re
 import statistics
 import sys
@@ -77,7 +78,71 @@ SCORE=<int 0-10>  REASON=<one short sentence, <120 chars>
 """
 
 
-_SCORE_RX = re.compile(r"SCORE\s*[=:]\s*(\d+)\s*REASON\s*[=:]\s*(.+)", re.IGNORECASE)
+_SCORE_RX = re.compile(
+    r"SCORE\s*[=:]\s*(\d+)(?:\s+REASON\s*[=:]\s*(.+))?",
+    re.IGNORECASE,
+)
+
+
+async def _chat_seeded(
+    session: aiohttp.ClientSession,
+    *,
+    system: str,
+    user: str,
+    seed: int,
+    max_tokens: int = 4000,
+    temperature: float = 0.0,
+) -> str | None:
+    """Seeded variant of rosclaw_know.llm.chat — required because the
+    library helper doesn't accept a ``seed`` field yet and we don't
+    want to modify code outside scripts/.
+
+    Posts directly to the DeepSeek OpenAI-compatible
+    ``/v1/chat/completions`` endpoint, including ``seed=<int>`` in
+    the payload so paired judging runs across A/B arms share the
+    judge's own sampling randomness.
+    """
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    model = os.environ.get(
+        "DEEPSEEK_MUSE_MODEL",
+        os.environ.get("DEEPSEEK_EXTRACTOR_MODEL", "deepseek-chat"),
+    )
+    if not api_key:
+        return None
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "seed": int(seed),
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    try:
+        async with session.post(
+            f"{base_url.rstrip('/')}/v1/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=90),
+        ) as resp:
+            if resp.status >= 400:
+                body = await resp.text()
+                logger.error("seeded judge LLM %s: %s", resp.status, body[:200])
+                return None
+            data = await resp.json()
+            choices = data.get("choices") or []
+            if not choices:
+                return None
+            return choices[0].get("message", {}).get("content")
+    except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+        logger.warning("seeded judge network error: %s", exc)
+        return None
 
 
 async def _judge_one(
@@ -86,15 +151,26 @@ async def _judge_one(
     symptom: str,
     hint: str,
     response_text: str,
+    seed: int | None = None,
 ) -> dict:
     user = JUDGE_TEMPLATE.format(symptom=symptom, hint=hint, response=response_text)
-    raw = await chat(
-        session,
-        system=JUDGE_SYSTEM,
-        user=user,
-        temperature=0.0,
-        max_tokens=200,
-    )
+    if seed is not None:
+        raw = await _chat_seeded(
+            session,
+            system=JUDGE_SYSTEM,
+            user=user,
+            seed=seed,
+            temperature=0.0,
+            max_tokens=4000,
+        )
+    else:
+        raw = await chat(
+            session,
+            system=JUDGE_SYSTEM,
+            user=user,
+            temperature=0.0,
+            max_tokens=4000,
+        )
     if not raw:
         return {"score": None, "reason": "judge returned empty", "raw": raw}
     m = _SCORE_RX.search(raw.strip())
@@ -104,7 +180,8 @@ async def _judge_one(
         score = max(0, min(10, int(m.group(1))))
     except ValueError:
         return {"score": None, "reason": f"non-int score: {m.group(1)}", "raw": raw}
-    return {"score": score, "reason": m.group(2).strip()[:200], "raw": raw}
+    reason = (m.group(2) or "").strip()[:200]
+    return {"score": score, "reason": reason, "raw": raw}
 
 
 def _verdict(c: int | None, t: int | None) -> str:
@@ -117,7 +194,7 @@ def _verdict(c: int | None, t: int | None) -> str:
     return "tie"
 
 
-async def _judge_all(report_dir: Path) -> dict:
+async def _judge_all(report_dir: Path, *, seed: int | None = None) -> dict:
     summary_path = report_dir / "summary.json"
     if not summary_path.exists():
         raise FileNotFoundError(f"missing {summary_path} — run verify_frontier_eng.py first")
@@ -139,10 +216,10 @@ async def _judge_all(report_dir: Path) -> dict:
 
             entry["judgment"] = {
                 "control": await _judge_one(
-                    session, symptom=symptom, hint=hint, response_text=ctrl
+                    session, symptom=symptom, hint=hint, response_text=ctrl, seed=seed
                 ),
                 "treatment": await _judge_one(
-                    session, symptom=symptom, hint=hint, response_text=treat
+                    session, symptom=symptom, hint=hint, response_text=treat, seed=seed
                 ),
             }
             entry["judgment"]["verdict"] = _verdict(
@@ -337,6 +414,17 @@ def main() -> int:
         default=BENCHMARKS_DIR / "frontier_eng_ab",
         help="Output dir of verify_frontier_eng.py.",
     )
+    ap.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help=(
+            "Integer seed forwarded as the OpenAI-compatible ``seed`` "
+            "field in the DeepSeek judge payload. When set, paired "
+            "judging runs across A/B arms share the judge's own "
+            "sampling randomness so judge-noise cancels in the paired Δ."
+        ),
+    )
     args = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
@@ -344,7 +432,7 @@ def main() -> int:
         logger.error("report dir %s missing — run verify_frontier_eng.py first", args.report_dir)
         return 1
 
-    summary = asyncio.run(_judge_all(args.report_dir))
+    summary = asyncio.run(_judge_all(args.report_dir, seed=args.seed))
     return _print_report(summary)
 
 

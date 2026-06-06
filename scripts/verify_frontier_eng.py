@@ -387,7 +387,13 @@ def _build_treatment_via_how(
     }
 
 
-def _call_agent(symptom: str, treatment_context: str = "", *, temperature: float = 0.0) -> str:
+def _call_agent(
+    symptom: str,
+    treatment_context: str = "",
+    *,
+    temperature: float = 0.0,
+    seed: int | None = None,
+) -> str:
     """Call DeepSeek chat as a stand-in agent. Returns the raw assistant reply.
 
     The "agent" is intentionally simple — a single chat completion — because
@@ -399,6 +405,11 @@ def _call_agent(symptom: str, treatment_context: str = "", *, temperature: float
     actually produces a distribution of outputs across runs — at temp 0 the
     DeepSeek output is near-deterministic and "5 seeds" collapse to a single
     sample with model-jitter as the only noise source.
+
+    ``seed`` (when set) is forwarded as the ``seed`` field in the
+    OpenAI-compatible payload so paired A/B runs across different
+    arms can share LLM randomness — making the snippet variable the
+    only signal that moves the answer.
     """
     api_key = os.environ.get("DEEPSEEK_API_KEY")
     base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
@@ -421,17 +432,18 @@ def _call_agent(symptom: str, treatment_context: str = "", *, temperature: float
               "constraints to enforce, (3) verification step."
         )
 
-    payload = json.dumps(
-        {
-            "model": os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-chat"),
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-            "temperature": temperature,
-            "max_tokens": 8000,
-        }
-    ).encode("utf-8")
+    payload_dict: dict[str, object] = {
+        "model": os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-chat"),
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ],
+        "temperature": temperature,
+        "max_tokens": 8000,
+    }
+    if seed is not None:
+        payload_dict["seed"] = int(seed)
+    payload = json.dumps(payload_dict).encode("utf-8")
 
     req = urllib.request.Request(
         f"{base_url.rstrip('/')}/v1/chat/completions",
@@ -506,6 +518,18 @@ def main() -> int:
             "default apply (currently 'full'). Only honored under --via-how."
         ),
     )
+    ap.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help=(
+            "Integer seed forwarded as the OpenAI-compatible ``seed`` field "
+            "in the DeepSeek payload, so paired A/B runs across snippet-mode "
+            "arms can share LLM randomness (cancelling sampling noise so the "
+            "snippet variable is what's left). Default None preserves the "
+            "original unseeded flow."
+        ),
+    )
     args = ap.parse_args()
 
     ensure_dirs()
@@ -520,7 +544,10 @@ def main() -> int:
 
     report = []
     for task in BENCHMARK_SUITE:
-        print(f"▶ {task['task_id']}")
+        if args.seed is not None:
+            print(f"▶ {task['task_id']}  (seed={args.seed})")
+        else:
+            print(f"▶ {task['task_id']}")
 
         if args.via_how:
             treatment_context, meta = _build_treatment_via_how(
@@ -541,8 +568,15 @@ def main() -> int:
             treatment_context = static_context or ""
             meta = {"strategy": "static_digest", "injected": bool(treatment_context)}
 
-        control = _call_agent(task["symptom"], temperature=args.temperature)
-        treatment = _call_agent(task["symptom"], treatment_context=treatment_context, temperature=args.temperature)
+        control = _call_agent(
+            task["symptom"], temperature=args.temperature, seed=args.seed
+        )
+        treatment = _call_agent(
+            task["symptom"],
+            treatment_context=treatment_context,
+            temperature=args.temperature,
+            seed=args.seed,
+        )
 
         (args.out_dir / f"{task['task_id']}.control.txt").write_text(control, encoding="utf-8")
         (args.out_dir / f"{task['task_id']}.treatment.txt").write_text(treatment, encoding="utf-8")
