@@ -82,7 +82,10 @@ def main() -> int:
                     help="Don't re-run judge; assume each seed's summary.json already has judgments.")
     args = ap.parse_args()
 
-    seed_dirs = sorted(args.base_dir.glob("seed_*"))
+    seed_dirs = sorted(
+        (p for p in args.base_dir.glob("seed_*") if p.is_dir()),
+        key=lambda p: (len(p.name), p.name),
+    )
     if not seed_dirs:
         print(f"No seed_*/ subdirs in {args.base_dir}", file=sys.stderr)
         return 1
