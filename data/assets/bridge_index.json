@@ -4841,34 +4841,7 @@
       ],
       "associated_patterns": [
         "anti_windup_pid"
-      ],
-      "uplift_mean": -0.1205,
-      "uplift_n": 7,
-      "win_rate": 0.0,
-      "priority": -1,
-      "metadata": {
-        "schema_version": "2.0",
-        "lifecycle_status": "demoted",
-        "task_families": [],
-        "embodiment_types": [],
-        "artifact_languages": [],
-        "objective_directions": [],
-        "verifier_signals": [],
-        "preconditions": [],
-        "contraindications": [],
-        "source_quality": "S",
-        "source_ids": [],
-        "evidence": {
-          "n": 7,
-          "avg_uplift": -0.1205,
-          "win_rate": 0.0,
-          "hint_use_rate": 0.0,
-          "last_seen": "",
-          "placebo_adjusted_uplift": null
-        }
-      },
-      "topic_tag": "actuator-output-saturation",
-      "topic_group": "control-loop-stability"
+      ]
     },
     "sliding_window_kv_cache": {
       "standard_name": "Unbounded KV-cache growth during long-horizon LLM rollouts causes CUDA OOM",
@@ -4898,34 +4871,7 @@
       ],
       "associated_patterns": [
         "sliding_window_kv_cache"
-      ],
-      "uplift_mean": -0.1035,
-      "uplift_n": 11,
-      "win_rate": 0.0,
-      "priority": -1,
-      "metadata": {
-        "schema_version": "2.0",
-        "lifecycle_status": "demoted",
-        "task_families": [],
-        "embodiment_types": [],
-        "artifact_languages": [],
-        "objective_directions": [],
-        "verifier_signals": [],
-        "preconditions": [],
-        "contraindications": [],
-        "source_quality": "S",
-        "source_ids": [],
-        "evidence": {
-          "n": 11,
-          "avg_uplift": -0.1035,
-          "win_rate": 0.0,
-          "hint_use_rate": 0.0,
-          "last_seen": "",
-          "placebo_adjusted_uplift": null
-        }
-      },
-      "topic_tag": "kv-cache-exhaustion",
-      "topic_group": "llm-inference-efficiency"
+      ]
     },
     "gradient_clipping": {
       "standard_name": "NaN/Inf in loss or weights after a step explodes the gradient",
@@ -4952,85 +4898,23 @@
       ],
       "associated_patterns": [
         "gradient_clipping"
-      ],
-      "metadata": {
-        "schema_version": "2.0",
-        "lifecycle_status": "needs_validation",
-        "task_families": [],
-        "embodiment_types": [],
-        "artifact_languages": [],
-        "objective_directions": [],
-        "verifier_signals": [],
-        "preconditions": [],
-        "contraindications": [],
-        "source_quality": "S",
-        "source_ids": [],
-        "evidence": {
-          "n": 0,
-          "avg_uplift": 0.0,
-          "win_rate": 0.0,
-          "hint_use_rate": 0.0,
-          "last_seen": "",
-          "placebo_adjusted_uplift": null
-        }
-      },
-      "topic_tag": "gradient-explosion",
-      "topic_group": "rl-training-stability"
+      ]
     },
     "output_saturation_clamp": {
-      "standard_name": "A force-, torque-, or position-controlled actuator (such as a linear voice-coil drive) commanded with PID + feedforward overshoots its rated peak capacity during a fast setpoint change, briefly demanding above-rated force that triggers mechanical end-stops, safety-relay trips, or loss of position lock. Without an output_saturation_clamp the commanded velocity or force can diverge toward the actuator's physical limit. Two named fixes: (1) clamp the controller output to the actuator's rated range BEFORE it leaves the controller — i.e. an output_saturation_clamp on the command itself, not just on the integrator; (2) shape the setpoint with a rate-limited or jerk-limited reference trajectory so the commanded force never demands above-rated capacity in the first place. Both fixes prevent the command signal from exceeding the actuator's rated peak, regardless of integrator state.",
+      "standard_name": "Commanded velocity diverges to ±∞ when the integrator has no clamp",
       "domain": "Control_Locomotion",
       "safety_label": "Velocity_Divergence",
       "source": "curated",
       "matched_keywords": [
-        "PID + feedforward",
-        "above rated",
-        "above-rated",
         "clamp",
-        "command signal",
-        "commanded force",
         "diverg",
-        "end-stops",
         "explode",
-        "fast setpoint",
-        "fast setpoint change",
-        "feedforward",
-        "force-controlled",
         "infinite",
-        "jerk limit",
-        "jerk-limited",
-        "jerk-limited trajectory",
         "limit",
-        "linear voice-coil",
-        "mechanical end-stop",
-        "mechanical end-stops",
-        "output clamp",
-        "output limit",
-        "output saturation clamp",
-        "output_saturation_clamp",
-        "peak force",
-        "position lock",
-        "rate limited",
-        "rate-limited",
-        "rate-limited reference",
-        "rate-limited reference trajectory",
-        "rate-limited trajectory",
-        "rated capacity",
-        "rated force",
-        "rated peak",
-        "reference shaping",
-        "reference trajectory",
-        "safety relay",
         "saturation",
-        "setpoint change",
-        "setpoint shaping",
-        "torque-controlled",
         "velocity",
         "velocity divergence",
-        "velocity_divergence",
-        "voice coil",
-        "voice-coil",
-        "voice-coil actuator"
+        "velocity_divergence"
       ],
       "cross_domain_analogies": [
         {
@@ -5042,69 +4926,23 @@
       ],
       "associated_patterns": [
         "output_saturation_clamp"
-      ],
-      "uplift_mean": 0.1569,
-      "uplift_n": 8,
-      "win_rate": 1.0,
-      "metadata": {
-        "schema_version": "2.0",
-        "lifecycle_status": "needs_validation",
-        "task_families": [],
-        "embodiment_types": [],
-        "artifact_languages": [],
-        "objective_directions": [],
-        "verifier_signals": [],
-        "preconditions": [],
-        "contraindications": [],
-        "source_quality": "S",
-        "source_ids": [],
-        "evidence": {
-          "n": 8,
-          "avg_uplift": 0.1569,
-          "win_rate": 1.0,
-          "hint_use_rate": 0.0,
-          "last_seen": "",
-          "placebo_adjusted_uplift": null
-        }
-      },
-      "topic_tag": "velocity-divergence",
-      "topic_group": "control-loop-stability"
+      ]
     },
     "closed_loop_replanning": {
-      "standard_name": "Open-loop or fixed-horizon MPC plan diverges from the measured state when the planning model differs from actual dynamics — execution latency exceeds the control period, the model-predictive controller assumes nominal dynamics while ground friction or load varies, or the prediction horizon outruns the model's accuracy. Predicted state and measured state diverge by the planning horizon's end, and tracking error accumulates unboundedly between re-plans until the controller re-anchors to fresh measurements via shorter receding-horizon refresh or online dynamics-model adaptation.",
+      "standard_name": "Open-loop plan tracks ground truth poorly when latency exceeds 50 ms",
       "domain": "Planning_Decision",
       "safety_label": "Oscillation_Divergence",
       "source": "curated",
       "matched_keywords": [
         "diverg",
         "drift",
-        "dynamics mismatch",
-        "friction varies",
-        "ground friction",
-        "horizon trajectory",
         "latency",
-        "measured state",
-        "model adaptation",
-        "model mismatch",
-        "model predictive controller",
-        "model-predictive",
-        "mpc",
-        "nominal dynamics",
         "open loop",
         "open-loop",
         "oscillat",
         "oscillation divergence",
         "oscillation_divergence",
-        "planning horizon",
-        "predicted state",
-        "predicted vs measured",
-        "prediction horizon",
-        "re-plan",
-        "receding horizon",
-        "receding-horizon",
-        "replan",
-        "tracking",
-        "tracking error"
+        "tracking"
       ],
       "cross_domain_analogies": [
         {
@@ -5116,34 +4954,7 @@
       ],
       "associated_patterns": [
         "closed_loop_replanning"
-      ],
-      "uplift_mean": 0.1613,
-      "uplift_n": 6,
-      "win_rate": 1.0,
-      "priority": 1,
-      "metadata": {
-        "schema_version": "2.0",
-        "lifecycle_status": "production",
-        "task_families": [],
-        "embodiment_types": [],
-        "artifact_languages": [],
-        "objective_directions": [],
-        "verifier_signals": [],
-        "preconditions": [],
-        "contraindications": [],
-        "source_quality": "S",
-        "source_ids": [],
-        "evidence": {
-          "n": 6,
-          "avg_uplift": 0.1613,
-          "win_rate": 1.0,
-          "hint_use_rate": 0.0,
-          "last_seen": "",
-          "placebo_adjusted_uplift": null
-        }
-      },
-      "topic_tag": "open-loop-latency-divergence",
-      "topic_group": "control-loop-stability"
+      ]
     },
     "exponential_backoff_retry": {
       "standard_name": "Network/RPC timeout cascades cause request storms after a partial outage",
@@ -5170,30 +4981,7 @@
       ],
       "associated_patterns": [
         "exponential_backoff_retry"
-      ],
-      "metadata": {
-        "schema_version": "2.0",
-        "lifecycle_status": "needs_validation",
-        "task_families": [],
-        "embodiment_types": [],
-        "artifact_languages": [],
-        "objective_directions": [],
-        "verifier_signals": [],
-        "preconditions": [],
-        "contraindications": [],
-        "source_quality": "S",
-        "source_ids": [],
-        "evidence": {
-          "n": 0,
-          "avg_uplift": 0.0,
-          "win_rate": 0.0,
-          "hint_use_rate": 0.0,
-          "last_seen": "",
-          "placebo_adjusted_uplift": null
-        }
-      },
-      "topic_tag": "rpc-timeout-cascade",
-      "topic_group": "rpc-resilience"
+      ]
     },
     "ppo_entropy_collapse_guard": {
       "standard_name": "PPO entropy crashes to zero and the policy fixates on a degenerate action",
@@ -5229,30 +5017,7 @@
       ],
       "associated_patterns": [
         "ppo_entropy_collapse_guard"
-      ],
-      "metadata": {
-        "schema_version": "2.0",
-        "lifecycle_status": "needs_validation",
-        "task_families": [],
-        "embodiment_types": [],
-        "artifact_languages": [],
-        "objective_directions": [],
-        "verifier_signals": [],
-        "preconditions": [],
-        "contraindications": [],
-        "source_quality": "S",
-        "source_ids": [],
-        "evidence": {
-          "n": 0,
-          "avg_uplift": 0.0,
-          "win_rate": 0.0,
-          "hint_use_rate": 0.0,
-          "last_seen": "",
-          "placebo_adjusted_uplift": null
-        }
-      },
-      "topic_tag": "entropy-collapse",
-      "topic_group": "rl-training-stability"
+      ]
     },
     "ground_slow_move_fast_a_dual_system_foundation_model_for_generalizable_vision_an": {
       "standard_name": "VLN agents struggle with real-time obstacle avoidance and smooth trajectory generation under high-frequency control loops when using large VLMs end-to-end.",
@@ -22501,30 +22266,256 @@
       "priority": 0,
       "topic_tag": "rare-event-sampling",
       "topic_group": "simulation-and-numerics"
+    },
+    "multi_stage_cc_cv_fast_charging": {
+      "standard_name": "Aggressive constant-current fast-charging accelerates capacity fade via lithium plating at high SOC on graphite or silicon anodes",
+      "domain": "Systems_Compute",
+      "safety_label": "Battery_Capacity_Fade",
+      "source": "curated",
+      "matched_keywords": [
+        "4c",
+        "anode",
+        "battery",
+        "battery capacity fade",
+        "battery_capacity_fade",
+        "c rate",
+        "calendar aging",
+        "capacity fade",
+        "cc",
+        "cc-cv",
+        "charging protocol",
+        "constant current",
+        "current taper",
+        "cycle aging",
+        "fast charge",
+        "fast charging",
+        "graphite",
+        "li-ion",
+        "lithium plating",
+        "pulse charging",
+        "soc",
+        "state of charge",
+        "thermal"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Control_Locomotion",
+          "insight": "Same shape as gain-scheduled PID: full gain near the operating point, taper as you approach the saturation boundary.",
+          "action_suggestion": "Derate the control effort (charging current) as the state (SOC) approaches the unsafe regime where plating dominates.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "multi_stage_cc_cv_fast_charging"
+      ]
+    },
+    "simd_aes_ni_hardware_crypto": {
+      "standard_name": "Pure-software block-cipher round functions saturate CPU on SubBytes/MixColumns; throughput plateaus at <100 MB/s on x86_64",
+      "domain": "Systems_Compute",
+      "safety_label": "Crypto_Throughput_Bottleneck",
+      "source": "curated",
+      "matched_keywords": [
+        "_mm_aesenc_si128",
+        "aes",
+        "aes-ni",
+        "aes128",
+        "aes256",
+        "avx",
+        "bitslice",
+        "bitslicing",
+        "cipher",
+        "crypto",
+        "crypto throughput bottleneck",
+        "crypto_throughput_bottleneck",
+        "ctr mode",
+        "decryption",
+        "encryption",
+        "gb/s",
+        "gcm",
+        "hardware acceleration",
+        "intrinsics",
+        "mb/s",
+        "mixcolumns",
+        "pclmulqdq",
+        "round function",
+        "sbox",
+        "simd",
+        "sse",
+        "subbytes",
+        "throughput",
+        "vectorize"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "insight": "Same insight as moving a softmax from Python to fused CUDA kernels: when the hot path is a tight 16-byte loop, the fix is hardware-specific intrinsics, not a smarter algorithm.",
+          "action_suggestion": "Profile to confirm the bottleneck is the round function, then drop to platform intrinsics. Keep a portable fallback (bitsliced) for non-x86 / unprivileged targets.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "simd_aes_ni_hardware_crypto"
+      ]
+    },
+    "time_optimal_path_blending": {
+      "standard_name": "Joint-space trajectories that decelerate to zero at every via-point inflate cycle time by 40-60 % even when via-points are colinear",
+      "domain": "Control_Locomotion",
+      "safety_label": "Robot_Cycle_Time_Inflation",
+      "source": "curated",
+      "matched_keywords": [
+        "blend radius",
+        "cycle time",
+        "deceleration",
+        "dof",
+        "jerk limited",
+        "jerk-limited",
+        "joint space",
+        "joint-space",
+        "manipulator",
+        "motion planning",
+        "path parameterization",
+        "pick and place",
+        "pick-and-place",
+        "robot arm",
+        "robot cycle time inflation",
+        "robot_cycle_time_inflation",
+        "s-curve",
+        "throughput",
+        "time optimal",
+        "time-optimal",
+        "topp",
+        "trajectory",
+        "trajectory blending",
+        "trapezoidal",
+        "via point",
+        "via-point",
+        "via-point blending",
+        "waypoint"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Planning_Decision",
+          "insight": "Solving each via-point in isolation is the same anti-pattern as greedy local search on a global schedule — the local optimum (full deceleration at each goal) is far from the global one (constant speed through colinear segments).",
+          "action_suggestion": "Plan the velocity profile over the FULL multi-via-point path, not segment-by-segment. Hand the planner the joint-level kinematic limits, not just the geometric waypoints.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "time_optimal_path_blending"
+      ]
+    },
+    "motion_blur_imu_aided_deblur": {
+      "standard_name": "Onboard camera produces motion-blurred frames during fast platform motion; downstream detection / classification recall drops 40-60 % vs. stationary baseline",
+      "domain": "Perception_Vision",
+      "safety_label": "Image_Motion_Blur",
+      "source": "curated",
+      "matched_keywords": [
+        "blur compensation",
+        "blur extent",
+        "blur kernel",
+        "deblur",
+        "deblurring",
+        "detection recall",
+        "drone",
+        "exposure",
+        "exposure time",
+        "flyby",
+        "frame quality",
+        "global shutter",
+        "hover",
+        "hover-and-stare",
+        "image motion blur",
+        "image stabilization",
+        "image_motion_blur",
+        "imu",
+        "imu aided",
+        "imu-aided",
+        "inspection",
+        "iso",
+        "motion blur",
+        "quadrotor",
+        "richardson lucy",
+        "rolling shutter",
+        "shutter",
+        "shutter speed",
+        "uav",
+        "wiener"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Systems_Compute",
+          "insight": "Same shape as adaptive batch sizing under variable load: set the exposure (batch) based on the live state of the system (platform velocity), not a fixed default.",
+          "action_suggestion": "Bind capture parameters to the IMU-estimated motion rather than mission-time constants — the right exposure for the hover phase is wrong for the flyby phase.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "motion_blur_imu_aided_deblur"
+      ]
+    },
+    "metaheuristic_combinatorial_escape": {
+      "standard_name": "Greedy / local-search on combinatorial scheduling (job-shop, TSP, VRP) stagnates after the descent phase; objective plateaus well above the known optimum",
+      "domain": "Planning_Decision",
+      "safety_label": "Combinatorial_Local_Optimum",
+      "source": "curated",
+      "matched_keywords": [
+        "abz5",
+        "combinatorial",
+        "combinatorial local optimum",
+        "combinatorial_local_optimum",
+        "critical path",
+        "disjunctive graph",
+        "dispatch rule",
+        "ft10",
+        "ga",
+        "genetic algorithm",
+        "job shop",
+        "job-shop",
+        "jsp",
+        "la01",
+        "local minimum",
+        "local optimum",
+        "makespan",
+        "metaheuristic",
+        "neighborhood",
+        "permutation",
+        "plateau",
+        "scheduling",
+        "shift move",
+        "simulated annealing",
+        "stagnation",
+        "swap move",
+        "tabu search",
+        "tsp",
+        "vehicle routing",
+        "vrp"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "insight": "Tabu / SA / GA are to combinatorial search what exploration noise + replay are to reinforcement learning: structured escape from local optima.",
+          "action_suggestion": "Don't tune the greedy heuristic further; switch the outer-loop algorithm to one with a non-trivial neighborhood and a memory of where it's been.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "metaheuristic_combinatorial_escape"
+      ]
     }
   },
   "safety_label_index": {
-    "Torque_Overflow": [
-      "anti_windup_pid"
-    ],
-    "Memory_Exhaustion": [
-      "sliding_window_kv_cache"
-    ],
-    "Numerical_Instability": [
-      "gradient_clipping"
-    ],
-    "Velocity_Divergence": [
-      "output_saturation_clamp"
-    ],
-    "Oscillation_Divergence": [
-      "closed_loop_replanning"
-    ],
-    "Entropy_Collapse": [
-      "ppo_entropy_collapse_guard"
-    ],
-    "Communication_Timeout": [
-      "exponential_backoff_retry"
-    ]
+    "Torque_Overflow": "anti_windup_pid",
+    "Memory_Exhaustion": "sliding_window_kv_cache",
+    "Numerical_Instability": "gradient_clipping",
+    "Velocity_Divergence": "output_saturation_clamp",
+    "Oscillation_Divergence": "closed_loop_replanning",
+    "Entropy_Collapse": "ppo_entropy_collapse_guard",
+    "Battery_Capacity_Fade": "multi_stage_cc_cv_fast_charging",
+    "Crypto_Throughput_Bottleneck": "simd_aes_ni_hardware_crypto",
+    "Robot_Cycle_Time_Inflation": "time_optimal_path_blending",
+    "Image_Motion_Blur": "motion_blur_imu_aided_deblur",
+    "Combinatorial_Local_Optimum": "metaheuristic_combinatorial_escape",
+    "Communication_Timeout": "exponential_backoff_retry"
   },
   "schema_version": "2.0"
 }

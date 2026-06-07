@@ -280,6 +280,346 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
         ],
     ),
     CuratedPattern(
+        pattern_id="multi_stage_cc_cv_fast_charging",
+        safety_label="Battery_Capacity_Fade",
+        standard_name=(
+            "Aggressive constant-current fast-charging accelerates capacity fade "
+            "via lithium plating at high SOC on graphite or silicon anodes"
+        ),
+        domain="Systems_Compute",
+        matched_keywords=[
+            "lithium plating", "li-ion", "battery", "capacity fade",
+            "fast charging", "fast charge", "soc", "state of charge",
+            "anode", "graphite", "cc", "constant current", "cc-cv",
+            "current taper", "pulse charging", "charging protocol",
+            "c rate", "4c", "thermal", "calendar aging", "cycle aging",
+        ],
+        fix_pattern=(
+            "Replace single-stage CC charging with a multi-stage protocol: keep "
+            "constant current only below ~70 % SOC, then taper current as a "
+            "function of SOC (e.g. I(SOC) = I_max * (1 - SOC)^0.5) before "
+            "switching to constant-voltage hold. Add a temperature-aware "
+            "current limiter that derates above 35 °C anode-surface temperature. "
+            "Pulse-charging with short rest intervals also relieves lithium "
+            "concentration gradients near the anode."
+        ),
+        failed_attempt=(
+            "Holding the same 4C constant-current target through the whole "
+            "10→80 % SOC window — once SOC > 70 % the anode-side overpotential "
+            "drops below 0 V vs. Li/Li+ and metallic lithium plates onto the "
+            "graphite surface, irreversibly consuming cyclable lithium."
+        ),
+        before_code=(
+            "def fast_charge(cell, target_soc=0.80):\n"
+            "    while cell.soc < target_soc:\n"
+            "        cell.apply_current(4 * cell.capacity_Ah)  # 4C flat\n"
+            "        cell.step(dt=1.0)\n"
+        ),
+        after_code=(
+            "def fast_charge(cell, target_soc=0.80, taper_above_soc=0.70):\n"
+            "    while cell.soc < target_soc:\n"
+            "        if cell.surface_temp_C > 35.0:\n"
+            "            i_lim = 1.0 * cell.capacity_Ah                  # thermal derate\n"
+            "        elif cell.soc < taper_above_soc:\n"
+            "            i_lim = 4.0 * cell.capacity_Ah                  # CC stage\n"
+            "        else:\n"
+            "            # SOC-dependent taper toward CV hold\n"
+            "            i_lim = 4.0 * cell.capacity_Ah * (1 - cell.soc) ** 0.5\n"
+            "        cell.apply_current(i_lim)\n"
+            "        cell.step(dt=1.0)\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Control_Locomotion",
+                "insight": (
+                    "Same shape as gain-scheduled PID: full gain near the operating "
+                    "point, taper as you approach the saturation boundary."
+                ),
+                "action_suggestion": (
+                    "Derate the control effort (charging current) as the state "
+                    "(SOC) approaches the unsafe regime where plating dominates."
+                ),
+            },
+        ],
+    ),
+    CuratedPattern(
+        pattern_id="simd_aes_ni_hardware_crypto",
+        safety_label="Crypto_Throughput_Bottleneck",
+        standard_name=(
+            "Pure-software block-cipher round functions saturate CPU on "
+            "SubBytes/MixColumns; throughput plateaus at <100 MB/s on x86_64"
+        ),
+        domain="Systems_Compute",
+        matched_keywords=[
+            "aes", "aes-ni", "aes128", "aes256", "throughput", "mb/s",
+            "gb/s", "crypto", "cipher", "encryption", "decryption",
+            "subbytes", "mixcolumns", "sbox", "round function",
+            "intrinsics", "_mm_aesenc_si128", "vectorize", "simd",
+            "avx", "sse", "pclmulqdq", "bitslice", "bitslicing",
+            "hardware acceleration", "gcm", "ctr mode",
+        ],
+        fix_pattern=(
+            "Replace the SBOX-table + ShiftRows + MixColumns inner loop with "
+            "x86 AES-NI intrinsics (`_mm_aesenc_si128`, `_mm_aesenclast_si128`) — "
+            "one AESENC instruction per round retires in ~3 cycles, delivering "
+            "1-2 GB/s per core. Use `_mm_clmulepi64_si128` (PCLMULQDQ) for the "
+            "GHASH multiply in GCM mode. For platforms without AES-NI, fall "
+            "back to a bitsliced implementation (parallel 8-block lanes) "
+            "rather than the scalar SBOX-table loop."
+        ),
+        failed_attempt=(
+            "Hand-rolled SBOX lookup tables in C with `unsigned char state[16]` "
+            "— even with `-O3` the compiler can't vectorize the 16-byte SBOX "
+            "indirection, so the loop bottlenecks on L1 latency at ~80 MB/s."
+        ),
+        before_code=(
+            "// scalar AES round — SBOX lookup serialises on L1 latency\n"
+            "static void aes_round(uint8_t s[16], const uint8_t k[16]) {\n"
+            "    for (int i = 0; i < 16; ++i) s[i] = SBOX[s[i]];\n"
+            "    shift_rows(s);\n"
+            "    mix_columns(s);\n"
+            "    for (int i = 0; i < 16; ++i) s[i] ^= k[i];\n"
+            "}\n"
+        ),
+        after_code=(
+            "// AES-NI round — single instruction, ~3 cycle latency, ~1.5 GB/s\n"
+            "#include <wmmintrin.h>\n"
+            "static __m128i aes_round_ni(__m128i state, __m128i round_key) {\n"
+            "    return _mm_aesenc_si128(state, round_key);\n"
+            "}\n"
+            "// GCM multiply: use PCLMULQDQ\n"
+            "static __m128i ghash_mul(__m128i a, __m128i b) {\n"
+            "    return _mm_clmulepi64_si128(a, b, 0x00);\n"
+            "}\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Learning_Training",
+                "insight": (
+                    "Same insight as moving a softmax from Python to fused "
+                    "CUDA kernels: when the hot path is a tight 16-byte loop, "
+                    "the fix is hardware-specific intrinsics, not a smarter "
+                    "algorithm."
+                ),
+                "action_suggestion": (
+                    "Profile to confirm the bottleneck is the round function, "
+                    "then drop to platform intrinsics. Keep a portable "
+                    "fallback (bitsliced) for non-x86 / unprivileged targets."
+                ),
+            },
+        ],
+    ),
+    CuratedPattern(
+        pattern_id="time_optimal_path_blending",
+        safety_label="Robot_Cycle_Time_Inflation",
+        standard_name=(
+            "Joint-space trajectories that decelerate to zero at every via-point "
+            "inflate cycle time by 40-60 % even when via-points are colinear"
+        ),
+        domain="Control_Locomotion",
+        matched_keywords=[
+            "trajectory", "cycle time", "via-point", "via point",
+            "waypoint", "joint space", "joint-space", "pick and place",
+            "pick-and-place", "robot arm", "manipulator", "deceleration",
+            "topp", "time-optimal", "time optimal", "path parameterization",
+            "trajectory blending", "via-point blending", "blend radius",
+            "s-curve", "jerk limited", "jerk-limited", "trapezoidal",
+            "motion planning", "dof", "throughput",
+        ],
+        fix_pattern=(
+            "Use Time-Optimal Path Parameterization (TOPP-RA or equivalent) "
+            "over the full multi-via-point path so the velocity profile is "
+            "computed against joint torque/velocity/acceleration limits "
+            "globally, not per-segment. For colinear via-points let the "
+            "blender preserve a non-zero pass velocity (blend_radius > 0). "
+            "Where TOPP is unavailable, fall back to jerk-limited S-curve "
+            "profiles per segment with explicit blend-velocity continuity at "
+            "via-points — the arm never stops at intermediate poses."
+        ),
+        failed_attempt=(
+            "Calling MoveIt's joint_trajectory_controller with each via-point "
+            "as a separate goal — the controller decelerates to zero at every "
+            "intermediate pose because each goal is a stop-condition, even "
+            "though the geometric path could be traversed at constant speed."
+        ),
+        before_code=(
+            "for via in via_points:\n"
+            "    # each call decelerates to zero at `via` — wastes 60% of cycle\n"
+            "    arm.move_to(via, velocity_scale=1.0)\n"
+        ),
+        after_code=(
+            "from toppra import TOPPRA\n"
+            "# Compute a single time-optimal velocity profile across ALL via-points,\n"
+            "# preserving non-zero pass velocity at colinear segments.\n"
+            "profile = TOPPRA(\n"
+            "    path=via_points,\n"
+            "    vlim=arm.joint_velocity_limits,\n"
+            "    alim=arm.joint_acceleration_limits,\n"
+            "    blend_radius=0.05,                  # meters of blend overlap\n"
+            ").compute_trajectory()\n"
+            "arm.follow_trajectory(profile)         # never stops mid-path\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Planning_Decision",
+                "insight": (
+                    "Solving each via-point in isolation is the same anti-"
+                    "pattern as greedy local search on a global schedule — "
+                    "the local optimum (full deceleration at each goal) is "
+                    "far from the global one (constant speed through colinear "
+                    "segments)."
+                ),
+                "action_suggestion": (
+                    "Plan the velocity profile over the FULL multi-via-point "
+                    "path, not segment-by-segment. Hand the planner the "
+                    "joint-level kinematic limits, not just the geometric "
+                    "waypoints."
+                ),
+            },
+        ],
+    ),
+    CuratedPattern(
+        pattern_id="motion_blur_imu_aided_deblur",
+        safety_label="Image_Motion_Blur",
+        standard_name=(
+            "Onboard camera produces motion-blurred frames during fast "
+            "platform motion; downstream detection / classification recall "
+            "drops 40-60 % vs. stationary baseline"
+        ),
+        domain="Perception_Vision",
+        matched_keywords=[
+            "motion blur", "blur kernel", "exposure time", "exposure",
+            "shutter", "rolling shutter", "global shutter", "iso",
+            "imu", "imu-aided", "imu aided", "deblur", "deblurring",
+            "wiener", "richardson lucy", "uav", "drone", "quadrotor",
+            "flyby", "hover", "hover-and-stare", "inspection",
+            "detection recall", "blur compensation", "image stabilization",
+            "frame quality", "blur extent", "shutter speed",
+        ],
+        fix_pattern=(
+            "Three layered fixes, applied in order of cost: (1) shorten "
+            "shutter (e.g. 1/500 s) and bump ISO + denoise — eliminates blur "
+            "at the source for fast platforms with adequate light. (2) "
+            "Replace continuous flybys with hover-and-stare waypoints near "
+            "the inspection target — at v≈0 the blur extent is zero. "
+            "(3) When neither is feasible (low light, fixed mission profile), "
+            "estimate a per-frame blur kernel from the IMU-predicted camera "
+            "motion during the exposure window and Wiener-deconvolve or feed "
+            "the predicted kernel to a learned deblur network (e.g. "
+            "DeblurGAN, NAFNet)."
+        ),
+        failed_attempt=(
+            "Naively bumping ISO without shortening exposure — blur stays "
+            "the same but noise grows, and the detection network is now "
+            "robust to neither. Or training only on stationary images and "
+            "hoping the network generalizes to blur."
+        ),
+        before_code=(
+            "# fixed exposure regardless of platform velocity → blur scales with v\n"
+            "frame = camera.capture(exposure_s=1.0/120, iso=400)\n"
+            "boxes = detector.predict(frame)\n"
+        ),
+        after_code=(
+            "# adapt exposure to platform velocity AND deconvolve IMU-predicted blur\n"
+            "v_rel = imu.estimate_rel_velocity(target_pose)\n"
+            "expo_s = min(0.5 / (v_rel + 1e-3), 1.0/500)   # cap blur extent\n"
+            "frame = camera.capture(exposure_s=expo_s, iso=auto)\n"
+            "if v_rel > BLUR_THRESHOLD:\n"
+            "    kernel = imu.predict_blur_kernel(camera, expo_s)\n"
+            "    frame = wiener_deconvolve(frame, kernel)\n"
+            "boxes = detector.predict(frame)\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Systems_Compute",
+                "insight": (
+                    "Same shape as adaptive batch sizing under variable load: "
+                    "set the exposure (batch) based on the live state of the "
+                    "system (platform velocity), not a fixed default."
+                ),
+                "action_suggestion": (
+                    "Bind capture parameters to the IMU-estimated motion "
+                    "rather than mission-time constants — the right exposure "
+                    "for the hover phase is wrong for the flyby phase."
+                ),
+            },
+        ],
+    ),
+    CuratedPattern(
+        pattern_id="metaheuristic_combinatorial_escape",
+        safety_label="Combinatorial_Local_Optimum",
+        standard_name=(
+            "Greedy / local-search on combinatorial scheduling (job-shop, "
+            "TSP, VRP) stagnates after the descent phase; objective plateaus "
+            "well above the known optimum"
+        ),
+        domain="Planning_Decision",
+        matched_keywords=[
+            "job-shop", "job shop", "jsp", "scheduling", "makespan",
+            "dispatch rule", "tabu search", "simulated annealing",
+            "genetic algorithm", "ga", "metaheuristic", "neighborhood",
+            "local optimum", "local minimum", "plateau", "stagnation",
+            "shift move", "swap move", "critical path", "disjunctive graph",
+            "tsp", "vrp", "vehicle routing", "permutation", "abz5",
+            "ft10", "la01", "combinatorial",
+        ],
+        fix_pattern=(
+            "Replace pure greedy descent with a neighborhood-escape "
+            "metaheuristic. For job-shop specifically: tabu search with "
+            "critical-path moves (swap two consecutive operations on the "
+            "critical path) — the tabu list of size ~7-10 prevents reversal "
+            "cycles, and the critical-path restriction means every move "
+            "directly attacks the bottleneck. Alternatives that also work: "
+            "GA with operation-based or precedence-preserving crossover, OR "
+            "simulated annealing with shift moves (insert an operation at a "
+            "different position in the sequence). The deciding choice between "
+            "them is implementation effort, not solution quality at the "
+            "abz5 / ft10 / la0X benchmark scale."
+        ),
+        failed_attempt=(
+            "Running the same greedy dispatch rule longer, or restarting it "
+            "from a different seed — the rule converges to the same family "
+            "of local optima because the move set never crosses the basin "
+            "boundary."
+        ),
+        before_code=(
+            "# greedy first-available — saturates around 1400 on abz5 (opt=1234)\n"
+            "schedule = []\n"
+            "for op in operations:\n"
+            "    earliest = max(machine_avail[op.machine], job_avail[op.job])\n"
+            "    schedule.append((op, earliest))\n"
+            "    machine_avail[op.machine] = job_avail[op.job] = earliest + op.dur\n"
+        ),
+        after_code=(
+            "# tabu search with critical-path moves — reaches 1234-1260 on abz5\n"
+            "best = greedy_initial_schedule(operations)\n"
+            "tabu = deque(maxlen=10)\n"
+            "for _ in range(MAX_ITERS):\n"
+            "    cp = critical_path(best)                       # bottleneck ops\n"
+            "    moves = [(i, i+1) for i in range(len(cp)-1)\n"
+            "             if (cp[i].job, cp[i+1].job) not in tabu]\n"
+            "    cand = min((apply_move(best, m) for m in moves), key=makespan)\n"
+            "    if makespan(cand) < makespan(best):\n"
+            "        best = cand\n"
+            "        tabu.append((cand.swapped_jobs))\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Learning_Training",
+                "insight": (
+                    "Tabu / SA / GA are to combinatorial search what "
+                    "exploration noise + replay are to reinforcement "
+                    "learning: structured escape from local optima."
+                ),
+                "action_suggestion": (
+                    "Don't tune the greedy heuristic further; switch the "
+                    "outer-loop algorithm to one with a non-trivial "
+                    "neighborhood and a memory of where it's been."
+                ),
+            },
+        ],
+    ),
+    CuratedPattern(
         pattern_id="exponential_backoff_retry",
         safety_label="Communication_Timeout",
         standard_name="Network/RPC timeout cascades cause request storms after a partial outage",
