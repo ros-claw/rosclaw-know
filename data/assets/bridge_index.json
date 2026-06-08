@@ -22501,11 +22501,106 @@
       "associated_patterns": [
         "metaheuristic_combinatorial_escape"
       ]
+    },
+    "terrain_aware_locomotion": {
+      "standard_name": "Legged-robot trot gait diverges on uneven or slippery terrain — foot-slip events compound center-of-mass tracking error each cycle until the robot falls",
+      "domain": "Control_Locomotion",
+      "safety_label": "Tracking_Error",
+      "source": "curated",
+      "matched_keywords": [
+        "compliance",
+        "contact",
+        "fall",
+        "foot slip",
+        "gait",
+        "gravel",
+        "ground",
+        "legged",
+        "locomotion",
+        "phase",
+        "quadruped",
+        "robot",
+        "slippery",
+        "stance",
+        "step",
+        "swing foot",
+        "terrain",
+        "tracking error",
+        "tracking_error",
+        "trot",
+        "trotting",
+        "uneven"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Learning_Training",
+          "insight": "Domain randomization in RL training is the same idea as model-mismatch robustification in classical MPC: don't overfit one operating model.",
+          "action_suggestion": "If the controller assumes friction=0.7 and the test surface is friction=0.3, augment training distributions accordingly.",
+          "neighbor_id": "curated"
+        },
+        {
+          "source_domain": "Memory_Reasoning",
+          "insight": "Slip detection via residual monitoring is analogous to anomaly detection in time-series data — both watch for deviation from expected dynamics.",
+          "action_suggestion": "Use the same threshold + windowing logic that you'd apply to a Kalman innovation sequence.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "terrain_aware_locomotion"
+      ]
+    },
+    "flash_attention_tiled_softmax": {
+      "standard_name": "Transformer self-attention layer materializes the full NxN matrix in HBM at long context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference throughput",
+      "domain": "Systems_Compute",
+      "safety_label": "Memory_Exhaustion",
+      "source": "curated",
+      "matched_keywords": [
+        "16k",
+        "8k",
+        "attention",
+        "bandwidth-bound",
+        "block",
+        "compute-bound",
+        "context length",
+        "flashattention",
+        "hbm",
+        "long context",
+        "matrix",
+        "memory bandwidth",
+        "memory exhaustion",
+        "memory_exhaustion",
+        "nxn",
+        "online softmax",
+        "oom",
+        "q k v",
+        "self-attention",
+        "softmax",
+        "sram",
+        "tiled",
+        "transformer"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "insight": "Online softmax is mathematically a streaming reduction: maintain (max, sum) statistics and rescale partials. Same pattern as streaming variance (Welford's algorithm).",
+          "action_suggestion": "Treat the softmax denominator as a running statistic updated incrementally rather than recomputed.",
+          "neighbor_id": "curated"
+        },
+        {
+          "source_domain": "Systems_Compute",
+          "insight": "HBM-bandwidth-bound becomes compute-bound when working set fits in SRAM. Same trade-off as cache-blocking in dense linear algebra.",
+          "action_suggestion": "Size block_size to match L2/SRAM capacity divided by matrix-element bytes.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "flash_attention_tiled_softmax"
+      ]
     }
   },
   "safety_label_index": {
     "Torque_Overflow": "anti_windup_pid",
-    "Memory_Exhaustion": "sliding_window_kv_cache",
+    "Memory_Exhaustion": "flash_attention_tiled_softmax",
     "Numerical_Instability": "gradient_clipping",
     "Velocity_Divergence": "output_saturation_clamp",
     "Oscillation_Divergence": "closed_loop_replanning",
@@ -22515,7 +22610,8 @@
     "Robot_Cycle_Time_Inflation": "time_optimal_path_blending",
     "Image_Motion_Blur": "motion_blur_imu_aided_deblur",
     "Combinatorial_Local_Optimum": "metaheuristic_combinatorial_escape",
-    "Communication_Timeout": "exponential_backoff_retry"
+    "Communication_Timeout": "exponential_backoff_retry",
+    "Tracking_Error": "terrain_aware_locomotion"
   },
   "schema_version": "2.0"
 }

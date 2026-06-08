@@ -660,6 +660,147 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
             },
         ],
     ),
+    # ── Iteration 2 (2026-06-08): cold-coverage curated for wild panel ─
+    CuratedPattern(
+        pattern_id="terrain_aware_locomotion",
+        safety_label="Tracking_Error",
+        standard_name=(
+            "Legged-robot trot gait diverges on uneven or slippery terrain — "
+            "foot-slip events compound center-of-mass tracking error each cycle "
+            "until the robot falls"
+        ),
+        domain="Control_Locomotion",
+        matched_keywords=[
+            "quadruped", "legged", "trot", "gait", "terrain", "uneven",
+            "slippery", "gravel", "foot slip", "swing foot", "contact",
+            "phase", "stance", "locomotion", "fall", "trotting", "step",
+            "robot", "ground", "compliance",
+        ],
+        fix_pattern=(
+            "Pick one of three orthogonal mitigations matched to the failure mode: "
+            "(a) FOOT-CONTACT-AWARE MPC — predict contact events 1-2 stance phases "
+            "ahead and constrain swing-foot placement to minimize estimated slip; "
+            "(b) DOMAIN-RANDOMIZED RL — re-train the policy with friction-coefficient "
+            "and terrain-height perturbations so it doesn't overfit a clean ground model; "
+            "(c) SLIP-DETECTION REFLEX — monitor IMU + leg-encoder residuals during each "
+            "stance; on detected slip, preempt the planned swing foot trajectory and "
+            "replan toward a stable footstep within the support polygon."
+        ),
+        failed_attempt=(
+            "Cranking up joint-PD gains to chase the tracking error — this amplifies "
+            "slip-induced impulses and accelerates fall, because the underlying issue "
+            "is contact uncertainty, not actuator compliance."
+        ),
+        before_code=(
+            "def step(obs):\n"
+            "    foot_target = mpc_solve(obs.com_state)  # assumes flat ground\n"
+            "    return foot_target\n"
+        ),
+        after_code=(
+            "def step(obs):\n"
+            "    foot_target = mpc_solve(obs.com_state,\n"
+            "                            contact_pred=predict_contacts(obs))\n"
+            "    if detect_slip(obs.imu_residual, obs.encoder_residual):\n"
+            "        foot_target = replan_for_stable_footstep(obs.support_polygon)\n"
+            "    return foot_target\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Learning_Training",
+                "insight": (
+                    "Domain randomization in RL training is the same idea as model-"
+                    "mismatch robustification in classical MPC: don't overfit one "
+                    "operating model."
+                ),
+                "action_suggestion": (
+                    "If the controller assumes friction=0.7 and the test surface is "
+                    "friction=0.3, augment training distributions accordingly."
+                ),
+            },
+            {
+                "source_domain": "Memory_Reasoning",
+                "insight": (
+                    "Slip detection via residual monitoring is analogous to anomaly "
+                    "detection in time-series data — both watch for deviation from "
+                    "expected dynamics."
+                ),
+                "action_suggestion": (
+                    "Use the same threshold + windowing logic that you'd apply to a "
+                    "Kalman innovation sequence."
+                ),
+            },
+        ],
+    ),
+    CuratedPattern(
+        pattern_id="flash_attention_tiled_softmax",
+        safety_label="Memory_Exhaustion",
+        standard_name=(
+            "Transformer self-attention layer materializes the full NxN matrix in "
+            "HBM at long context length, causing CUDA OOM and HBM-bandwidth-bound "
+            "(not compute-bound) inference throughput"
+        ),
+        domain="Systems_Compute",
+        matched_keywords=[
+            "self-attention", "attention", "transformer", "HBM", "memory bandwidth",
+            "long context", "8k", "16k", "context length", "tiled", "online softmax",
+            "FlashAttention", "SRAM", "block", "compute-bound", "bandwidth-bound",
+            "Q K V", "NxN", "matrix", "softmax", "OOM",
+        ],
+        fix_pattern=(
+            "Adopt FlashAttention-style TILED ONLINE-SOFTMAX attention: split Q and "
+            "K/V into blocks that fit in SRAM, compute partial softmax incrementally "
+            "with rescaling, and never materialize the full attention matrix in HBM. "
+            "As a SECONDARY win, the SRAM-resident softmax becomes compute-bound "
+            "(good for arithmetic intensity). Fallback when tiled attention is "
+            "unavailable: SLIDING-WINDOW attention or circular-buffer KV-cache "
+            "truncation to cap the effective sequence length seen by the softmax."
+        ),
+        failed_attempt=(
+            "Casting QK to fp16 to halve memory — saves only 2x and degrades accuracy; "
+            "the real problem is the N^2 materialization, not precision. Also: bumping "
+            "GPU memory limit is a non-fix that just delays the OOM."
+        ),
+        before_code=(
+            "def attention(Q, K, V):\n"
+            "    scores = Q @ K.transpose(-2,-1) / sqrt(dim)  # NxN materialized\n"
+            "    return softmax(scores) @ V  # OOM at large N\n"
+        ),
+        after_code=(
+            "def flash_attention(Q, K, V, block_size=128):\n"
+            "    out = zeros_like(V)\n"
+            "    for j in range(0, K.shape[-2], block_size):\n"
+            "        Kj = K[..., j:j+block_size, :]\n"
+            "        Vj = V[..., j:j+block_size, :]\n"
+            "        out = online_softmax_update(out, Q, Kj, Vj)\n"
+            "    return out\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Memory_Reasoning",
+                "insight": (
+                    "Online softmax is mathematically a streaming reduction: "
+                    "maintain (max, sum) statistics and rescale partials. Same "
+                    "pattern as streaming variance (Welford's algorithm)."
+                ),
+                "action_suggestion": (
+                    "Treat the softmax denominator as a running statistic updated "
+                    "incrementally rather than recomputed."
+                ),
+            },
+            {
+                "source_domain": "Systems_Compute",
+                "insight": (
+                    "HBM-bandwidth-bound becomes compute-bound when working set "
+                    "fits in SRAM. Same trade-off as cache-blocking in dense "
+                    "linear algebra."
+                ),
+                "action_suggestion": (
+                    "Size block_size to match L2/SRAM capacity divided by "
+                    "matrix-element bytes."
+                ),
+            },
+        ],
+    ),
 ]
 
 
