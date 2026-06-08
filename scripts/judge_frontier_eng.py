@@ -101,6 +101,10 @@ async def _chat_seeded(
     ``/v1/chat/completions`` endpoint, including ``seed=<int>`` in
     the payload so paired judging runs across A/B arms share the
     judge's own sampling randomness.
+
+    Robust to reasoning models (step-3.7-flash, deepseek v4-flash):
+    when ``finish_reason=length`` and ``content`` is empty (reasoning
+    burned the budget), retry once with a larger ``max_tokens``.
     """
     api_key = os.environ.get("DEEPSEEK_API_KEY")
     base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
@@ -110,39 +114,60 @@ async def _chat_seeded(
     )
     if not api_key:
         return None
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "seed": int(seed),
-    }
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    try:
-        async with session.post(
-            f"{base_url.rstrip('/')}/v1/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=aiohttp.ClientTimeout(total=90),
-        ) as resp:
-            if resp.status >= 400:
-                body = await resp.text()
-                logger.error("seeded judge LLM %s: %s", resp.status, body[:200])
+    # Two attempts: caller's budget first; double it on empty content
+    for attempt in range(2):
+        budget = max_tokens if attempt == 0 else max(max_tokens * 2, 16000)
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": temperature,
+            "max_tokens": budget,
+            "seed": int(seed),
+        }
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        try:
+            async with session.post(
+                f"{base_url.rstrip('/')}/v1/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=180),
+            ) as resp:
+                if resp.status >= 400:
+                    body = await resp.text()
+                    logger.error("seeded judge LLM %s: %s", resp.status, body[:200])
+                    if attempt == 0:
+                        continue
+                    return None
+                data = await resp.json()
+                choices = data.get("choices") or []
+                if not choices:
+                    if attempt == 0:
+                        continue
+                    return None
+                msg = choices[0].get("message") or {}
+                content = msg.get("content")
+                if content:
+                    return content
+                # Empty content from reasoning model — retry with larger budget
+                if attempt == 0:
+                    logger.warning(
+                        "judge empty content (likely reasoning ate budget); retrying with %d tokens",
+                        max(max_tokens * 2, 16000),
+                    )
+                    continue
                 return None
-            data = await resp.json()
-            choices = data.get("choices") or []
-            if not choices:
-                return None
-            return choices[0].get("message", {}).get("content")
-    except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-        logger.warning("seeded judge network error: %s", exc)
-        return None
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            logger.warning("seeded judge network error (attempt %d): %s", attempt, exc)
+            if attempt == 0:
+                continue
+            return None
+    return None
 
 
 async def _judge_one(

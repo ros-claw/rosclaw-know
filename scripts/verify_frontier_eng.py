@@ -432,37 +432,60 @@ def _call_agent(
               "constraints to enforce, (3) verification step."
         )
 
-    payload_dict: dict[str, object] = {
-        "model": os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-chat"),
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
-        ],
-        "temperature": temperature,
-        "max_tokens": 8000,
-    }
-    if seed is not None:
-        payload_dict["seed"] = int(seed)
-    payload = json.dumps(payload_dict).encode("utf-8")
+    # Two attempts:  attempt 0 uses caller's max_tokens; attempt 1 doubles it
+    # in case a reasoning model burned the budget on hidden thinking and left
+    # content empty (finish_reason="length", content=None).
+    last_err = "unknown"
+    for attempt in range(2):
+        max_tok = 8000 if attempt == 0 else 16000
+        payload_dict: dict[str, object] = {
+            "model": os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-chat"),
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tok,
+        }
+        if seed is not None:
+            payload_dict["seed"] = int(seed)
+        payload = json.dumps(payload_dict).encode("utf-8")
 
-    req = urllib.request.Request(
-        f"{base_url.rstrip('/')}/v1/chat/completions",
-        data=payload,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=90) as resp:
-            body = resp.read().decode("utf-8")
-    except Exception as exc:  # noqa: BLE001
-        return f"[agent call failed: {exc}]"
-    try:
-        return json.loads(body)["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, ValueError):
-        return f"[agent parse failed: {body[:200]}]"
+        req = urllib.request.Request(
+            f"{base_url.rstrip('/')}/v1/chat/completions",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=180) as resp:
+                body = resp.read().decode("utf-8")
+        except Exception as exc:  # noqa: BLE001
+            last_err = f"[agent call failed: {exc}]"
+            if attempt == 0:
+                continue
+            return last_err
+        try:
+            data = json.loads(body)
+            choice = (data.get("choices") or [{}])[0]
+            content = (choice.get("message") or {}).get("content")
+            finish = choice.get("finish_reason")
+            if content:
+                return content
+            # Empty content from reasoning model (finish=length most likely)
+            last_err = f"[agent empty content finish={finish}]"
+            if attempt == 0:
+                continue
+            return last_err
+        except (KeyError, IndexError, ValueError) as exc:
+            last_err = f"[agent parse failed: {exc}; body={body[:200]}]"
+            if attempt == 0:
+                continue
+            return last_err
+    return last_err
 
 
 def main() -> int:
