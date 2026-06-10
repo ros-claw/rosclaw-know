@@ -5037,7 +5037,8 @@
         "sliding_window_kv_cache"
       ],
       "topic_group": "llm-inference-efficiency",
-      "content_hash": "0a03b919b998576c0882906702fe7523b62bb2f848e6634c3de6f5f84aa635a4"
+      "topic_tag": "sliding-window-kv-cache-rollouts",
+      "content_hash": "c1460830100f2d87351b1837140f2a7eaf5834041f8aea40ca9f6d9d03b2ff7c"
     },
     "gradient_clipping": {
       "standard_name": "NaN/Inf in loss or weights after a step explodes the gradient",
@@ -5129,7 +5130,8 @@
         "closed_loop_replanning"
       ],
       "topic_group": "llm-planning-and-reasoning",
-      "content_hash": "4f5d23c1e7fac0b5127052f6926a9ee4db12bd38c6b82ad42cd7c92024116e43"
+      "topic_tag": "closed-loop-mpc-replanning",
+      "content_hash": "b1158c8f74432b0e05ec81d5f38af7cb184b7434f54287163d643e66c4b2ec78"
     },
     "exponential_backoff_retry": {
       "standard_name": "Network/RPC timeout cascades cause request storms after a partial outage",
@@ -5159,7 +5161,8 @@
         "exponential_backoff_retry"
       ],
       "topic_group": "fault-tolerant-compute",
-      "content_hash": "894a0114e865f663f45618db15334105cb13fbdd2dceae1bd2015465b03f84cd"
+      "topic_tag": "exponential-backoff-with-jitter",
+      "content_hash": "9ddd439e36fa8bd2c516a8f526f09e8220b6fc45c2a4eeed6915154eb05a48f3"
     },
     "ppo_entropy_collapse_guard": {
       "standard_name": "PPO entropy crashes to zero and the policy fixates on a degenerate action",
@@ -5198,7 +5201,8 @@
         "ppo_entropy_collapse_guard"
       ],
       "topic_group": "rl-training-stability",
-      "content_hash": "986d18c320dd41e249d2fb8fcf67c1ecada09d476512b22cb4212917f2da2a6e"
+      "topic_tag": "ppo-entropy-collapse-guard",
+      "content_hash": "db0ec818915ff3c10dec8b192f8d7ef01d45e728208ad3b456eacb89df577a02"
     },
     "ground_slow_move_fast_a_dual_system_foundation_model_for_generalizable_vision_an": {
       "standard_name": "VLN agents struggle with real-time obstacle avoidance and smooth trajectory generation under high-frequency control loops when using large VLMs end-to-end.",
@@ -23105,7 +23109,8 @@
         "multi_stage_cc_cv_fast_charging"
       ],
       "topic_group": "battery-and-energy-management",
-      "content_hash": "818657152324d7b3a83f0d99b38afccf559d8a12820eaeb182197d047d95e45b"
+      "topic_tag": "constant-current-constant-voltage-charging",
+      "content_hash": "1450bf27443ee9708c3ff9b806d64ae90394e81f46355e5457b77a28fab1e323"
     },
     "simd_aes_ni_hardware_crypto": {
       "standard_name": "Pure-software block-cipher round functions saturate CPU on SubBytes/MixColumns; throughput plateaus at <100 MB/s on x86_64",
@@ -23259,7 +23264,8 @@
         "motion_blur_imu_aided_deblur"
       ],
       "topic_group": "3d-perception-and-mapping",
-      "content_hash": "12c655be888c0db1a01710de81ebfbe6982f48071277906ca6e8f53ee96c382e"
+      "topic_tag": "imu-aided-motion-blur-deblur",
+      "content_hash": "29ae1fb34c0f532454929a6297a85803a7dd62922672b6bb454d7de5c8c39752"
     },
     "metaheuristic_combinatorial_escape": {
       "standard_name": "Greedy / local-search on combinatorial scheduling (job-shop, TSP, VRP) stagnates after the descent phase; objective plateaus well above the known optimum",
@@ -23412,7 +23418,8 @@
         "flash_attention_tiled_softmax"
       ],
       "topic_group": "llm-inference-efficiency",
-      "content_hash": "60c3bdd9b605a64ca06c3d6c30e6a3fa2ff7a1d7c484f4f1e6a9bc149f7efbf7"
+      "topic_tag": "flash-attention-tiled-softmax",
+      "content_hash": "9d54dfcdfcaacca7627064113c2bb27f65d4eb10808f49484bd6ead099fcbeed"
     }
   },
   "safety_label_index": {

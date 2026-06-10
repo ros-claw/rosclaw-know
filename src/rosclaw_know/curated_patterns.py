@@ -131,6 +131,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="sliding_window_kv_cache",
         topic_group="llm-inference-efficiency",
+        topic_tag="sliding-window-kv-cache-rollouts",
         safety_label="Memory_Exhaustion",
         standard_name="Unbounded KV-cache growth during long-horizon LLM rollouts causes CUDA OOM",
         domain="Memory_Reasoning",
@@ -242,6 +243,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="closed_loop_replanning",
         topic_group="llm-planning-and-reasoning",
+        topic_tag="closed-loop-mpc-replanning",
         safety_label="Oscillation_Divergence",
         standard_name="Open-loop plan tracks ground truth poorly when latency exceeds 50 ms",
         domain="Planning_Decision",
@@ -280,6 +282,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="ppo_entropy_collapse_guard",
         topic_group="rl-training-stability",
+        topic_tag="ppo-entropy-collapse-guard",
         safety_label="Entropy_Collapse",
         standard_name="PPO entropy crashes to zero and the policy fixates on a degenerate action",
         domain="Learning_Training",
@@ -330,6 +333,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="multi_stage_cc_cv_fast_charging",
         topic_group="battery-and-energy-management",
+        topic_tag="constant-current-constant-voltage-charging",
         safety_label="Battery_Capacity_Fade",
         standard_name=(
             "Aggressive constant-current fast-charging accelerates capacity fade "
@@ -553,6 +557,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="motion_blur_imu_aided_deblur",
         topic_group="3d-perception-and-mapping",
+        topic_tag="imu-aided-motion-blur-deblur",
         safety_label="Image_Motion_Blur",
         standard_name=(
             "Onboard camera produces motion-blurred frames during fast "
@@ -696,6 +701,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="exponential_backoff_retry",
         topic_group="fault-tolerant-compute",
+        topic_tag="exponential-backoff-with-jitter",
         safety_label="Communication_Timeout",
         standard_name="Network/RPC timeout cascades cause request storms after a partial outage",
         domain="Systems_Compute",
@@ -810,6 +816,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="flash_attention_tiled_softmax",
         topic_group="llm-inference-efficiency",
+        topic_tag="flash-attention-tiled-softmax",
         safety_label="Memory_Exhaustion",
         standard_name=(
             "Transformer self-attention layer materializes the full NxN matrix in "

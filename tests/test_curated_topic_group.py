@@ -225,6 +225,46 @@ class TestCuratedPublisherEmitsTopicGroup:
         )
         assert simd.topic_group == "hardware-accelerated-cryptography"
 
+    def test_iter4_p5_tagged_curated_keep_topic_tag(self):
+        """iter4_p5 invariant: the 7 clusters tagged in iter4_p5 MUST keep their tag.
+
+        Verified safe-to-ship via per-cluster what-if probe (/tmp/probe_iter4_p5_oneatatime.py):
+          - closed_loop_replanning, exponential_backoff_retry,
+            flash_attention_tiled_softmax, motion_blur_imu_aided_deblur,
+            ppo_entropy_collapse_guard: 0/18 admit-set change
+          - multi_stage_cc_cv_fast_charging: 1/18 (own task T_007 admit narrows)
+          - sliding_window_kv_cache: 1/18 (T_008 admit, llm-inference replaces SE-tooling)
+        Combined 7-tag bundle on top of iter4_p4: 3/18 changes
+        (T_006 add llm-inference admit2, T_007 narrow to battery-only, T_W_008 flip
+        llm-inference to top-1 — the actual target lift).
+
+        Dropping any of these tags would re-open the silent-drop failure mode
+        the iter4_p4 memory warns about.
+        """
+        from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS
+        iter4_p5_tagged = {
+            "sliding_window_kv_cache",
+            "closed_loop_replanning",
+            "ppo_entropy_collapse_guard",
+            "multi_stage_cc_cv_fast_charging",
+            "motion_blur_imu_aided_deblur",
+            "exponential_backoff_retry",
+            "flash_attention_tiled_softmax",
+        }
+        by_id = {p.pattern_id: p for p in CURATED_SAFETY_PATTERNS}
+        missing = []
+        for cid in iter4_p5_tagged:
+            p = by_id.get(cid)
+            assert p is not None, f"{cid} missing from curated registry"
+            if p.topic_tag is None:
+                missing.append(cid)
+        assert not missing, (
+            f"iter4_p5 cluster(s) lost topic_tag: {missing}. "
+            "These were tagged in iter4_p5 (commit after 1f09cf1) to lift T_W_008 "
+            "admit-set into llm-inference-efficiency. Dropping the tag drops the "
+            "cluster from its group's fingerprint."
+        )
+
 
 class TestLiveBridgeReflectsTopicGroup:
     """Post-republish smoke: the actual bridge file MUST carry topic_group.
