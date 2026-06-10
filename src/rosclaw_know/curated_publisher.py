@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from . import config
+from .curated_conflict_detector import detect_conflicts, format_report
 from .curated_patterns import CURATED_SAFETY_PATTERNS, CuratedPattern
 from .source_tier import infer_source_tier
 
@@ -182,6 +183,15 @@ def publish_curated_assets() -> dict[str, int]:
     """
     config.ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     config.CODE_PATTERNS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # P1 §7 — surface curated registry collisions BEFORE grafting so
+    # silent K-CURATED-006-style bugs are caught here, not in a paired-AB
+    # surprise. Doesn't block; just logs. The unit test
+    # test_known_safety_label_collisions_documented is the gate that
+    # FAILS when a new (un-acknowledged) collision appears.
+    conflicts = detect_conflicts(CURATED_SAFETY_PATTERNS)
+    if conflicts:
+        log.warning("Curated publisher: %s", format_report(conflicts))
 
     bridge_path = config.ASSETS_DIR / "bridge_index.json"
     if bridge_path.exists():
