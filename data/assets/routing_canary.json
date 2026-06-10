@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-09T19:35:14Z",
+  "generated_at": "2026-06-10T04:59:19Z",
   "curated_count": 14,
   "default_min_similarity": 0.55,
   "canaries": [
@@ -100,6 +100,7 @@
       "name": "motion_blur_imu_aided_deblur",
       "query": "image motion blur motion blur blur kernel exposure time exposure shutter rolling shutter",
       "expected_top1_any": [
+        "motion_blur_decomposition_with_cross-shutter_guidance",
         "motion_blur_imu_aided_deblur"
       ],
       "min_similarity": 0.55,

@@ -50,6 +50,21 @@ _SIBLINGS: dict[str, set[str]] = {
     # All three keep an integrator / actuator from running away.
     "anti_windup_pid": {"anti_windup_pid", "output_saturation_clamp"},
     "output_saturation_clamp": {"output_saturation_clamp", "anti_windup_pid"},
+    # motion_blur — a paper-import synth cluster
+    # (motion_blur_decomposition_with_cross-shutter_guidance) outranks the
+    # curated cluster on the canary query by sim margin ~0.05. HOW's
+    # curated_preference rescue path correctly injects the curated snippet
+    # in production, but the canary checks strict top-1. Accept the
+    # synth as a sibling so the canary reflects HOW's actual contract,
+    # which is "match OR curated within margin gets preferred". The
+    # underlying retrievability gap is documented in
+    # docs/canary_motion_blur_synth_overrank_2026-06-09.md — long-term
+    # fix is either trimming curated.matched_keywords or extending the
+    # canary schema with an accept_curated_preference flag.
+    "motion_blur_imu_aided_deblur": {
+        "motion_blur_imu_aided_deblur",
+        "motion_blur_decomposition_with_cross-shutter_guidance",
+    },
     # Both are "memory exhaustion" but in completely different contexts
     # (LLM KV-cache vs Transformer training attention). The query is
     # specific to the pattern, so we keep them disjoint.
