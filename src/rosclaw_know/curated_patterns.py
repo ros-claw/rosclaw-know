@@ -83,6 +83,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="anti_windup_pid",
         topic_group="control-loop-stability",
+        topic_tag="pid-integral-windup-anti-saturation",
         safety_label="Torque_Overflow",
         standard_name="PID integral wind-up drives actuator into torque saturation",
         domain="Control_Locomotion",

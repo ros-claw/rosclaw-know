@@ -265,6 +265,42 @@ class TestCuratedPublisherEmitsTopicGroup:
             "cluster from its group's fingerprint."
         )
 
+    def test_iter4_p6_anti_windup_pid_has_topic_tag(self):
+        """iter4_p6 invariant: anti_windup_pid MUST carry topic_tag.
+
+        Selected as the iter4_p6 standalone holdout ship per per-cluster what-if
+        probe on iter4_p5 baseline (/tmp/probe_iter4_p6_holdouts_onp5.py):
+          - 2 admit-set changes vs iter4_p5: T_001 (broadens to admit
+            robot-morphology-and-constraints alongside control-loop-stability),
+            T_W_006 (broadens to admit rl-training-stability alongside
+            control-loop-stability).
+          - T_001 is the ONLY AUTHOR_CURATED task (h=2.20 per 2026-06-09 probe)
+            without current paired_ab lift (Δ̄=-0.9 in iter4_p5, within CI of 0
+            but consistently negative across iter4_p4/p5). Targeting it.
+          - T_W_006 has C̄=10.00 (LLM-saturated bimodal-judge) so admit-set
+            broadening has zero measurable effect.
+
+        Without this tag, anti_windup_pid contributes ZERO to control-loop-stability's
+        fingerprint (HOW's _build_group_to_fingerprint_text requires both
+        topic_group AND topic_tag). The fingerprint is dominated by 21 synth
+        clusters' standard_names. Adding the tag activates anti_windup's
+        ~5% contribution — pure structural insurance, neutral expected paired_ab
+        outcome (similar framing to iter4_p5: ship for fingerprint coverage,
+        not for measurable lift).
+        """
+        from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS
+        awp = next(
+            (p for p in CURATED_SAFETY_PATTERNS if p.pattern_id == "anti_windup_pid"),
+            None,
+        )
+        assert awp is not None, "anti_windup_pid missing from curated registry"
+        assert awp.topic_tag is not None, (
+            "anti_windup_pid needs topic_tag for its control-loop-stability "
+            "group fingerprint to include it. Dropping the tag re-opens the "
+            "silent-fingerprint-drop failure mode the iter4_p4 memory warns about."
+        )
+        assert awp.topic_group == "control-loop-stability"
+
 
 class TestLiveBridgeReflectsTopicGroup:
     """Post-republish smoke: the actual bridge file MUST carry topic_group.

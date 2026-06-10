@@ -5004,7 +5004,8 @@
         "anti_windup_pid"
       ],
       "topic_group": "control-loop-stability",
-      "content_hash": "c4a1c1db04c0a6f2fca9d1a938a196f411b4779fd8f05c009906f2f9c221796c"
+      "topic_tag": "pid-integral-windup-anti-saturation",
+      "content_hash": "9f55653b99afbe9b38608cf17ca34b0fadde1088931e80fef4aef2079720000d"
     },
     "sliding_window_kv_cache": {
       "standard_name": "Unbounded KV-cache growth during long-horizon LLM rollouts causes CUDA OOM",
