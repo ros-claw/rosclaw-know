@@ -1,0 +1,171 @@
+"""iter4_p3 invariants on the curated → topic_group assignment.
+
+Why this test exists: without topic_group, HOW's topic-filtered routing
+(``topic_filter_path=top1``) silently excludes curated clusters from the
+candidate pool whenever the query carries a non-empty topic_group. The
+failure mode is invisible — patterns/search still returns the curated by
+cosine sim, but /prompt/build's CATALYST path filters it out.
+
+These tests guard against:
+1. A future curated added without topic_group (silent reach loss).
+2. topic_group set to a string not present in HOW's bridge (orphans the
+   curated into a topic group nothing else routes to).
+3. The publisher dropping topic_group on its way to bridge_index.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from rosclaw_know import curated_publisher
+from rosclaw_know.curated_patterns import (
+    CURATED_SAFETY_PATTERNS,
+    CuratedPattern,
+)
+
+
+# These are the topic_groups currently emitted by Muse's autodraft pass on
+# the rosclaw-how bridge (~20 distinct values). Curated patterns MUST land
+# in one of these so they join the same topic-filtered candidate pool as
+# the synth clusters that compete with them. New groups added by Muse are
+# fine; this list is a floor, not a cap — but reusing existing groups
+# preserves routing topology.
+KNOWN_TOPIC_GROUPS = frozenset(
+    {
+        "navigation-and-vla",
+        "3d-perception-and-mapping",
+        "language-to-action-grounding",
+        "data-scarcity-and-generalization",
+        "rl-training-stability",
+        "sim-to-real-transfer",
+        "cybersecurity-and-resilience",
+        "llm-planning-and-reasoning",
+        "simulation-and-numerics",
+        "control-loop-stability",
+        "locomotion-and-manipulation",
+        "llm-inference-efficiency",
+        "battery-and-energy-management",
+        "modular-pipeline-failures",
+        "fault-tolerant-compute",
+        "robot-morphology-and-constraints",
+        "llm-context-management",
+        "scheduling-optimization",
+        "software-engineering-and-tooling",
+        "multi-robot-and-multi-agent",
+    }
+)
+
+
+class TestCuratedTopicGroupAssignment:
+    def test_every_curated_has_topic_group(self):
+        """The whole point of iter4_p3 — no silent topic-filter exclusion."""
+        missing = [p.pattern_id for p in CURATED_SAFETY_PATTERNS if p.topic_group is None]
+        assert not missing, (
+            f"{len(missing)} curated pattern(s) without topic_group: {missing}. "
+            "Every curated MUST set topic_group so HOW's topic-filter routing admits "
+            "it to the candidate pool. See iter4_p3 memory for context."
+        )
+
+    def test_topic_groups_are_known(self):
+        """Catch typos / drift from the Muse-emitted group vocabulary."""
+        unknown: list[tuple[str, str]] = []
+        for p in CURATED_SAFETY_PATTERNS:
+            tg = p.topic_group
+            assert tg is not None  # covered by test above; redundant for clarity
+            if tg not in KNOWN_TOPIC_GROUPS:
+                unknown.append((p.pattern_id, tg))
+        assert not unknown, (
+            "Curated pattern(s) assigned to topic_group(s) not present in HOW's "
+            "bridge vocabulary; this orphans the curated into an empty pool. "
+            f"Offenders: {unknown}. Either fix the typo or add the group to "
+            "KNOWN_TOPIC_GROUPS if Muse has started emitting it."
+        )
+
+    def test_control_loop_stability_has_curated(self):
+        """T_001 PIDTuning's bottleneck — at least one curated must live here.
+
+        Without a curated in control-loop-stability, T_001's topic-filtered
+        candidate pool was 11 synth clusters and zero curated, leaving the
+        curated reachable only by safety-label exact match or rescue.
+        """
+        in_group = [
+            p.pattern_id
+            for p in CURATED_SAFETY_PATTERNS
+            if p.topic_group == "control-loop-stability"
+        ]
+        assert len(in_group) >= 1, (
+            "control-loop-stability must contain at least one curated "
+            f"(anti_windup_pid / output_saturation_clamp). Found: {in_group}"
+        )
+
+
+class TestCuratedPublisherEmitsTopicGroup:
+    def test_cluster_entry_includes_topic_group(self):
+        """The bridge writer MUST pass topic_group through."""
+        p = CuratedPattern(
+            pattern_id="test_pattern",
+            safety_label="Test_Label",
+            standard_name="Test pattern",
+            domain="Memory_Reasoning",
+            matched_keywords=["test"],
+            fix_pattern="Do the thing.",
+            failed_attempt="Don't do the thing.",
+            before_code="x = 1\n",
+            after_code="x = 2\n",
+            cross_domain_hints=[],
+            topic_group="control-loop-stability",
+        )
+        entry = curated_publisher._build_cluster_entry(p)
+        assert entry.get("topic_group") == "control-loop-stability"
+
+    def test_cluster_entry_omits_topic_group_when_none(self):
+        """Default None → absent field (don't poison the bridge with nulls)."""
+        p = CuratedPattern(
+            pattern_id="test_no_group",
+            safety_label="Test_Label",
+            standard_name="Test pattern",
+            domain="Memory_Reasoning",
+            matched_keywords=["test"],
+            fix_pattern="Do the thing.",
+            failed_attempt="Don't do the thing.",
+            before_code="x = 1\n",
+            after_code="x = 2\n",
+            cross_domain_hints=[],
+            # topic_group defaults to None
+        )
+        entry = curated_publisher._build_cluster_entry(p)
+        assert "topic_group" not in entry
+
+    def test_topic_group_in_routing_critical_fields(self):
+        """source_tier and topic_group both belong in ROUTING_CRITICAL_FIELDS
+        so content_hash changes when either flips. Without this, a topic_group
+        update wouldn't trigger HOW's re-embed-on-hash-change path."""
+        assert "topic_group" in curated_publisher.ROUTING_CRITICAL_FIELDS
+
+
+class TestLiveBridgeReflectsTopicGroup:
+    """Post-republish smoke: the actual bridge file MUST carry topic_group.
+
+    Skipped if no bridge is present locally (CI fresh-checkout case).
+    """
+
+    def test_anti_windup_pid_has_topic_group_in_bridge(self):
+        bridge_path = (
+            Path(__file__).resolve().parent.parent
+            / "data"
+            / "assets"
+            / "bridge_index.json"
+        )
+        if not bridge_path.exists():
+            pytest.skip("bridge_index.json not present locally")
+        data = json.loads(bridge_path.read_text(encoding="utf-8"))
+        c = data.get("symptom_clusters", {}).get("anti_windup_pid")
+        if c is None:
+            pytest.skip("anti_windup_pid absent from bridge — publisher not run yet")
+        tg = c.get("topic_group")
+        assert tg == "control-loop-stability", (
+            f"anti_windup_pid.topic_group should be 'control-loop-stability' "
+            f"after iter4_p3 publish; got {tg!r}. Re-run curated_publisher."
+        )

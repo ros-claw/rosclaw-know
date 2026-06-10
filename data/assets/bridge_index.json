@@ -5003,7 +5003,8 @@
       "associated_patterns": [
         "anti_windup_pid"
       ],
-      "content_hash": "c9678d61b779b5fffac3cedf22545d933b431d53266f43dcc785c34bc42680b0"
+      "topic_group": "control-loop-stability",
+      "content_hash": "c4a1c1db04c0a6f2fca9d1a938a196f411b4779fd8f05c009906f2f9c221796c"
     },
     "sliding_window_kv_cache": {
       "standard_name": "Unbounded KV-cache growth during long-horizon LLM rollouts causes CUDA OOM",
@@ -5035,7 +5036,8 @@
       "associated_patterns": [
         "sliding_window_kv_cache"
       ],
-      "content_hash": "5198c2df0e264eb1106ca7f8711e06258a7d5b367a100a65c09eeffb44e25d12"
+      "topic_group": "llm-inference-efficiency",
+      "content_hash": "0a03b919b998576c0882906702fe7523b62bb2f848e6634c3de6f5f84aa635a4"
     },
     "gradient_clipping": {
       "standard_name": "NaN/Inf in loss or weights after a step explodes the gradient",
@@ -5064,7 +5066,8 @@
       "associated_patterns": [
         "gradient_clipping"
       ],
-      "content_hash": "bab4de70472cdc6071f18369d241181a322bf4120d99706754cd07e5aa0f9b88"
+      "topic_group": "rl-training-stability",
+      "content_hash": "c33720e2ea9e7734ca657dd44b64656ac5b66302c197eab187c76170d7dfa649"
     },
     "output_saturation_clamp": {
       "standard_name": "Commanded velocity diverges to ±∞ when the integrator has no clamp",
@@ -5094,7 +5097,8 @@
       "associated_patterns": [
         "output_saturation_clamp"
       ],
-      "content_hash": "312a0a0737d583d071ef49fa34223ccb32417adadbad8cd54563306b4497d347"
+      "topic_group": "control-loop-stability",
+      "content_hash": "2efc736a7dcc14414f022c96d03505fdd6b2332899d9a69fd43485dfab3173f4"
     },
     "closed_loop_replanning": {
       "standard_name": "Open-loop plan tracks ground truth poorly when latency exceeds 50 ms",
@@ -5124,7 +5128,8 @@
       "associated_patterns": [
         "closed_loop_replanning"
       ],
-      "content_hash": "a23af5b91b0c0e6b519a0e1b0dc078f06e6319d45dd588d0fc9df51566ae32a0"
+      "topic_group": "llm-planning-and-reasoning",
+      "content_hash": "4f5d23c1e7fac0b5127052f6926a9ee4db12bd38c6b82ad42cd7c92024116e43"
     },
     "exponential_backoff_retry": {
       "standard_name": "Network/RPC timeout cascades cause request storms after a partial outage",
@@ -5153,7 +5158,8 @@
       "associated_patterns": [
         "exponential_backoff_retry"
       ],
-      "content_hash": "9189c61e098c8b9d8a09767c883d6c048709a99e7be56ad9d257112b8e01883b"
+      "topic_group": "fault-tolerant-compute",
+      "content_hash": "894a0114e865f663f45618db15334105cb13fbdd2dceae1bd2015465b03f84cd"
     },
     "ppo_entropy_collapse_guard": {
       "standard_name": "PPO entropy crashes to zero and the policy fixates on a degenerate action",
@@ -5191,7 +5197,8 @@
       "associated_patterns": [
         "ppo_entropy_collapse_guard"
       ],
-      "content_hash": "d6a0d8024dd9679991ef065285ad20ac8633130655ba4342a72746adadf65714"
+      "topic_group": "rl-training-stability",
+      "content_hash": "986d18c320dd41e249d2fb8fcf67c1ecada09d476512b22cb4212917f2da2a6e"
     },
     "ground_slow_move_fast_a_dual_system_foundation_model_for_generalizable_vision_an": {
       "standard_name": "VLN agents struggle with real-time obstacle avoidance and smooth trajectory generation under high-frequency control loops when using large VLMs end-to-end.",
@@ -23097,7 +23104,8 @@
       "associated_patterns": [
         "multi_stage_cc_cv_fast_charging"
       ],
-      "content_hash": "01ba378770878a2563ac31e20e6747157b209a9171018d4e448ae5b0290a2a02"
+      "topic_group": "battery-and-energy-management",
+      "content_hash": "818657152324d7b3a83f0d99b38afccf559d8a12820eaeb182197d047d95e45b"
     },
     "simd_aes_ni_hardware_crypto": {
       "standard_name": "Pure-software block-cipher round functions saturate CPU on SubBytes/MixColumns; throughput plateaus at <100 MB/s on x86_64",
@@ -23147,7 +23155,8 @@
       "associated_patterns": [
         "simd_aes_ni_hardware_crypto"
       ],
-      "content_hash": "af71d6ecbc7fdafaddbf9e3c101df0479f42c6557b13f039813e045b96118f93"
+      "topic_group": "cybersecurity-and-resilience",
+      "content_hash": "a96a13f27fbdc10ea55099f8ac10953cd4347dbcf3b0b86d1db0c962f05a2cf1"
     },
     "time_optimal_path_blending": {
       "standard_name": "Joint-space trajectories that decelerate to zero at every via-point inflate cycle time by 40-60 % even when via-points are colinear",
@@ -23196,7 +23205,8 @@
       "associated_patterns": [
         "time_optimal_path_blending"
       ],
-      "content_hash": "6884dd41be1645b2666fe5fb1a8c412ea3087df264ccd5c40d36663d86a73677"
+      "topic_group": "locomotion-and-manipulation",
+      "content_hash": "e1450d803c2a60e58f8ce11c81499f4a044e8285d974d545a79185c24061d50a"
     },
     "motion_blur_imu_aided_deblur": {
       "standard_name": "Onboard camera produces motion-blurred frames during fast platform motion; downstream detection / classification recall drops 40-60 % vs. stationary baseline",
@@ -23247,7 +23257,8 @@
       "associated_patterns": [
         "motion_blur_imu_aided_deblur"
       ],
-      "content_hash": "ac92cb9f4f5b60d0b4ae96bedb3ef3baed015fa642df0b3eb8d11c05f99df1af"
+      "topic_group": "3d-perception-and-mapping",
+      "content_hash": "12c655be888c0db1a01710de81ebfbe6982f48071277906ca6e8f53ee96c382e"
     },
     "metaheuristic_combinatorial_escape": {
       "standard_name": "Greedy / local-search on combinatorial scheduling (job-shop, TSP, VRP) stagnates after the descent phase; objective plateaus well above the known optimum",
@@ -23298,7 +23309,8 @@
       "associated_patterns": [
         "metaheuristic_combinatorial_escape"
       ],
-      "content_hash": "fc7e0823bca0baf81c56a3be0b5fcaea2de3a1050e094c67f2eca278e195c4ec"
+      "topic_group": "scheduling-optimization",
+      "content_hash": "5d5829af16a6ea49fce948519510504034acc85fca05c078823442b41797e15b"
     },
     "terrain_aware_locomotion": {
       "standard_name": "Legged-robot trot gait diverges on uneven or slippery terrain — foot-slip events compound center-of-mass tracking error each cycle until the robot falls",
@@ -23347,7 +23359,8 @@
       "associated_patterns": [
         "terrain_aware_locomotion"
       ],
-      "content_hash": "76cfd3a872f2454dedcea801500f677d3d56e4b7326b5cf65e19744f7c79e0bd"
+      "topic_group": "locomotion-and-manipulation",
+      "content_hash": "4f43f7bc6bf7b26b372ee7ce9468c99c902405e879cefe08ec875baae0af7055"
     },
     "flash_attention_tiled_softmax": {
       "standard_name": "Transformer self-attention layer materializes the full NxN matrix in HBM at long context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference throughput",
@@ -23397,7 +23410,8 @@
       "associated_patterns": [
         "flash_attention_tiled_softmax"
       ],
-      "content_hash": "3b66da8217f8ff60841b7fd2ae4345926a3a7fcf8fa21170285fa0571e8ee3ed"
+      "topic_group": "llm-inference-efficiency",
+      "content_hash": "60c3bdd9b605a64ca06c3d6c30e6a3fa2ff7a1d7c484f4f1e6a9bc149f7efbf7"
     }
   },
   "safety_label_index": {

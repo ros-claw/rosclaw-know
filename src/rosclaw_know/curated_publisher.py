@@ -167,6 +167,13 @@ def _build_cluster_entry(p: CuratedPattern) -> dict[str, Any]:
         ],
         "associated_patterns": [p.pattern_id],
     }
+    # iter4_p3 (2026-06-10) — topic_group routes the curated into HOW's
+    # topic-filtered candidate pool. Without this, curated is invisible to
+    # ``topic_filter_path=top1`` even when its cosine sim would rank it in
+    # top-K. Only emit when set so the field stays absent for any future
+    # curated that legitimately doesn't fit an existing topic group.
+    if p.topic_group is not None:
+        entry["topic_group"] = p.topic_group
     # Compute deterministic content_hash AFTER all routing-critical fields
     # are populated; the hash itself is excluded from the payload.
     entry["content_hash"] = compute_cluster_content_hash(entry)

@@ -35,11 +35,31 @@ class CuratedPattern:
     """Pre-baked cross-domain analogies — used when Muse hasn't yet produced
     organic ones for this safety label. Each dict has source_domain, insight,
     action_suggestion. neighbor_id can be omitted."""
+    topic_group: str | None = None
+    """The runtime topic_group this curated cluster belongs to. iter4_p3
+    (2026-06-10) — without this field, HOW's topic-filter routing
+    (``topic_filter_path=top1``) excludes curated clusters entirely from the
+    candidate pool whenever the query's topic_group is non-empty, because
+    only synth/autodraft clusters carry topic_group from Muse extraction.
+
+    The classic case is T_001 PIDTuning: query_topic_group=control-loop-stability
+    admits 11 synth clusters but anti_windup_pid (curated, no topic_group) is
+    not admitted at all — even though its cosine sim 0.5583 would have put it
+    at #3 in the unfiltered top-K.
+
+    Each value MUST be one of the existing topic_groups in HOW's bridge
+    (e.g. control-loop-stability, llm-inference-efficiency,
+    rl-training-stability, ...). Never invent new groups here — that
+    fragments the routing pool. If a curated truly doesn't fit any existing
+    group, leave None and accept reduced topic-filter reach (it can still
+    win via safety_label exact match or rescue ≥ 0.60 sim).
+    """
 
 
 CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="anti_windup_pid",
+        topic_group="control-loop-stability",
         safety_label="Torque_Overflow",
         standard_name="PID integral wind-up drives actuator into torque saturation",
         domain="Control_Locomotion",
@@ -87,6 +107,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="sliding_window_kv_cache",
+        topic_group="llm-inference-efficiency",
         safety_label="Memory_Exhaustion",
         standard_name="Unbounded KV-cache growth during long-horizon LLM rollouts causes CUDA OOM",
         domain="Memory_Reasoning",
@@ -126,6 +147,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="gradient_clipping",
+        topic_group="rl-training-stability",
         safety_label="Numerical_Instability",
         standard_name="NaN/Inf in loss or weights after a step explodes the gradient",
         domain="Learning_Training",
@@ -162,6 +184,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="output_saturation_clamp",
+        topic_group="control-loop-stability",
         safety_label="Velocity_Divergence",
         standard_name="Commanded velocity diverges to ±∞ when the integrator has no clamp",
         domain="Control_Locomotion",
@@ -195,6 +218,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="closed_loop_replanning",
+        topic_group="llm-planning-and-reasoning",
         safety_label="Oscillation_Divergence",
         standard_name="Open-loop plan tracks ground truth poorly when latency exceeds 50 ms",
         domain="Planning_Decision",
@@ -232,6 +256,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="ppo_entropy_collapse_guard",
+        topic_group="rl-training-stability",
         safety_label="Entropy_Collapse",
         standard_name="PPO entropy crashes to zero and the policy fixates on a degenerate action",
         domain="Learning_Training",
@@ -281,6 +306,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="multi_stage_cc_cv_fast_charging",
+        topic_group="battery-and-energy-management",
         safety_label="Battery_Capacity_Fade",
         standard_name=(
             "Aggressive constant-current fast-charging accelerates capacity fade "
@@ -344,6 +370,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="simd_aes_ni_hardware_crypto",
+        topic_group="cybersecurity-and-resilience",
         safety_label="Crypto_Throughput_Bottleneck",
         standard_name=(
             "Pure-software block-cipher round functions saturate CPU on "
@@ -411,6 +438,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="time_optimal_path_blending",
+        topic_group="locomotion-and-manipulation",
         safety_label="Robot_Cycle_Time_Inflation",
         standard_name=(
             "Joint-space trajectories that decelerate to zero at every via-point "
@@ -480,6 +508,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="motion_blur_imu_aided_deblur",
+        topic_group="3d-perception-and-mapping",
         safety_label="Image_Motion_Blur",
         standard_name=(
             "Onboard camera produces motion-blurred frames during fast "
@@ -547,6 +576,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="metaheuristic_combinatorial_escape",
+        topic_group="scheduling-optimization",
         safety_label="Combinatorial_Local_Optimum",
         standard_name=(
             "Greedy / local-search on combinatorial scheduling (job-shop, "
@@ -621,6 +651,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="exponential_backoff_retry",
+        topic_group="fault-tolerant-compute",
         safety_label="Communication_Timeout",
         standard_name="Network/RPC timeout cascades cause request storms after a partial outage",
         domain="Systems_Compute",
@@ -663,6 +694,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     # ── Iteration 2 (2026-06-08): cold-coverage curated for wild panel ─
     CuratedPattern(
         pattern_id="terrain_aware_locomotion",
+        topic_group="locomotion-and-manipulation",
         safety_label="Tracking_Error",
         standard_name=(
             "Legged-robot trot gait diverges on uneven or slippery terrain — "
@@ -733,6 +765,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="flash_attention_tiled_softmax",
+        topic_group="llm-inference-efficiency",
         safety_label="Memory_Exhaustion",
         standard_name=(
             "Transformer self-attention layer materializes the full NxN matrix in "
