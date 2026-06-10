@@ -94,7 +94,7 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def _run_one_seed(seed: int, out_dir: Path, how_base: str, temperature: float) -> dict[str, Any]:
+def _run_one_seed(seed: int, out_dir: Path, how_base: str, temperature: float, task_ids: list[str] | None = None) -> dict[str, Any]:
     """Run verify_frontier_eng.py for one seed; return per-task hashes."""
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir.parent / f"seed_{seed}.verify.log"
@@ -107,6 +107,9 @@ def _run_one_seed(seed: int, out_dir: Path, how_base: str, temperature: float) -
         "--temperature", str(temperature),
         "--seed", str(seed),
     ]
+    if task_ids:
+        cmd.append("--task-ids")
+        cmd.extend(task_ids)
     with open(log_path, "wb") as fh:
         rc = subprocess.call(cmd, stdout=fh, stderr=subprocess.STDOUT, cwd=config.PROJECT_ROOT)
     duration = time.time() - start
@@ -171,6 +174,16 @@ def main() -> int:
     ap.add_argument(
         "--skip-judge", action="store_true", help="Run verify only; skip the judge stage."
     )
+    ap.add_argument(
+        "--task-ids",
+        nargs="*",
+        default=None,
+        help=(
+            "Optional list of exact task_ids or regex patterns. Forwarded to "
+            "verify_frontier_eng.py --task-ids to run a subset of the panel. "
+            "Default None runs all 18 tasks."
+        ),
+    )
     args = ap.parse_args()
 
     run_root = HARNESS_ROOT / args.label
@@ -208,7 +221,7 @@ def main() -> int:
     for s in args.seeds:
         seed_dir = run_root / f"seed_{s}"
         print(f"[paired-ab] seed={s} → {seed_dir}")
-        per_seed.append(_run_one_seed(s, seed_dir, args.how_base, args.temperature))
+        per_seed.append(_run_one_seed(s, seed_dir, args.how_base, args.temperature, task_ids=args.task_ids))
         if not args.skip_judge:
             per_seed[-1].update(_judge_one_seed(s, seed_dir))
 

@@ -553,6 +553,15 @@ def main() -> int:
             "original unseeded flow."
         ),
     )
+    ap.add_argument(
+        "--task-ids",
+        nargs="*",
+        default=None,
+        help=(
+            "Optional list of exact task_ids or regex patterns to filter "
+            "BENCHMARK_SUITE down to. Empty / not set runs the full 18-task panel."
+        ),
+    )
     args = ap.parse_args()
 
     ensure_dirs()
@@ -566,7 +575,21 @@ def main() -> int:
         print(f"[via /prompt/build @ {args.how_base}] per-task semantic retrieval\n")
 
     report = []
-    for task in BENCHMARK_SUITE:
+    if args.task_ids:
+        import re as _re
+        patterns = [_re.compile(p) for p in args.task_ids]
+        tasks = [
+            t for t in BENCHMARK_SUITE
+            if t["task_id"] in args.task_ids
+            or any(p.search(t["task_id"]) for p in patterns)
+        ]
+        if not tasks:
+            print(f"[verify] no tasks matched --task-ids {args.task_ids}")
+            return 1
+        print(f"[verify] filtered to {len(tasks)} of {len(BENCHMARK_SUITE)} tasks")
+    else:
+        tasks = list(BENCHMARK_SUITE)
+    for task in tasks:
         if args.seed is not None:
             print(f"▶ {task['task_id']}  (seed={args.seed})")
         else:
