@@ -21539,11 +21539,15 @@
       "associated_patterns": [
         "pattern_pid_antiwindup"
       ],
-      "priority": 0,
+      "priority": -1,
       "topic_tag": "actuator-saturation-windup",
       "topic_group": "control-loop-stability",
-      "content_hash": "2e41e13a41badf151b0823c8f64a959dd9e43390896732bb5fb8e9ee40b6b8c7",
-      "source_tier": "C_MUSE_SYNTH"
+      "content_hash": "698cf4f02198ca8efbbb30b8462d9d2b84c83301353b4f2267a39eea51116146",
+      "source_tier": "F_DEMOTED",
+      "metadata": {
+        "lifecycle_status": "demoted",
+        "lifecycle_status_reason": "synth_overrides_demotion"
+      }
     },
     "spot-on_a_checkpointing_framework_for_fault-tolerant_long-running_workloads_on_c": {
       "standard_name": "Long-running jobs on spot instances fail unpredictably due to evictions, causing wasted computation and increased costs.",
