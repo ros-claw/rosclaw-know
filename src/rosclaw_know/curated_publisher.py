@@ -10,6 +10,7 @@ existing for exact-match safety routing.
 from __future__ import annotations
 
 import difflib
+import hashlib
 import json
 import logging
 import re
@@ -20,6 +21,59 @@ from . import config
 from .curated_patterns import CURATED_SAFETY_PATTERNS, CuratedPattern
 
 log = logging.getLogger("rosclaw_know.curated_publisher")
+
+
+# P0 Week-1 from docs/know-how下一步建议.md §4.1.1 — routing-critical fields
+# must trigger a content_hash change so that rosclaw-how's `/admin/reload`
+# can detect "this cluster needs re-embed" vs "metadata-only update".
+# Order doesn't matter; presence does.
+ROUTING_CRITICAL_FIELDS: tuple[str, ...] = (
+    "standard_name",
+    "domain",
+    "topic_group",
+    "topic_tag",
+    "matched_keywords",
+    "cross_domain_analogies",
+    "associated_patterns",
+    "source",
+    "source_tier",
+    "safety_label",
+    "priority",
+    "snippet_mode_hint",
+)
+
+
+def _normalize_for_hash(value: Any) -> Any:
+    """Canonicalize a value before hashing so order-insensitive lists hash stably."""
+    if isinstance(value, list):
+        # Sort list of primitives by string repr; list of dicts by JSON repr.
+        try:
+            return sorted(_normalize_for_hash(v) for v in value)
+        except TypeError:
+            return sorted(
+                (_normalize_for_hash(v) for v in value),
+                key=lambda v: json.dumps(v, sort_keys=True, ensure_ascii=False),
+            )
+    if isinstance(value, dict):
+        return {k: _normalize_for_hash(value[k]) for k in sorted(value)}
+    return value
+
+
+def compute_cluster_content_hash(cluster: dict[str, Any]) -> str:
+    """Deterministic sha256 over the routing-critical subset of a cluster.
+
+    The hash deliberately excludes ``content_hash`` itself and any
+    ephemeral observability fields (uplift counters, last-touched
+    timestamps, evidence rollups). Two clusters that produce the same
+    hash should be byte-equivalent from the runtime router's perspective.
+    """
+    payload = {
+        f: _normalize_for_hash(cluster.get(f))
+        for f in ROUTING_CRITICAL_FIELDS
+        if f in cluster
+    }
+    blob = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()
 
 
 def _build_unified_diff(p: CuratedPattern) -> str:
@@ -88,11 +142,16 @@ def _build_cluster_entry(p: CuratedPattern) -> dict[str, Any]:
             *[k.lower() for k in p.matched_keywords],
         }
     )
-    return {
+    entry: dict[str, Any] = {
         "standard_name": p.standard_name,
         "domain": p.domain,
         "safety_label": p.safety_label,            # used by rosclaw-how for exact match
         "source": "curated",                       # so the runtime can prefer these
+        # P0 Bridge-Schema v2 docs §5.3 — all 14 hand-curated patterns have
+        # passed n=30 paired A/B vs no-injection (see docs/REPORT_2026-06-09.md);
+        # they ship as S_CURATED_VERIFIED. Future drafts not yet validated
+        # would land as A_CURATED_REVIEWED.
+        "source_tier": "S_CURATED_VERIFIED",
         "matched_keywords": keyword_set,
         "cross_domain_analogies": [
             {
@@ -105,6 +164,10 @@ def _build_cluster_entry(p: CuratedPattern) -> dict[str, Any]:
         ],
         "associated_patterns": [p.pattern_id],
     }
+    # Compute deterministic content_hash AFTER all routing-critical fields
+    # are populated; the hash itself is excluded from the payload.
+    entry["content_hash"] = compute_cluster_content_hash(entry)
+    return entry
 
 
 _SAFETY_LABEL_RE = re.compile(r"^[A-Z][A-Za-z_]+$")
@@ -131,13 +194,32 @@ def publish_curated_assets() -> dict[str, int]:
     # Optional top-level reverse-lookup table — populated regardless of which
     # Muse run produced the bridge; rosclaw-how can consult it for an O(1)
     # safety-label → pattern_id shortcut.
-    safety_lookup: dict[str, str] = {}
+    #
+    # Schema: dict[str, list[str]] — a label can map to multiple curated
+    # patterns when more than one applies (e.g. Memory_Exhaustion is
+    # claimed by both sliding_window_kv_cache and flash_attention_tiled_softmax).
+    # The previous dict[str, str] form silently lost everything but the
+    # last-iterated pattern, which broke K-CURATED-006.
+    safety_lookup: dict[str, list[str]] = {}
 
     written_pattern_files: list[str] = []
     for p in CURATED_SAFETY_PATTERNS:
         data["symptom_clusters"][p.pattern_id] = _build_cluster_entry(p)
         written_pattern_files.append(str(_write_pattern_md(p)))
-        safety_lookup[p.safety_label] = p.pattern_id
+        safety_lookup.setdefault(p.safety_label, []).append(p.pattern_id)
+
+    # P0 §4.1.1 backfill: any non-curated cluster (Muse synth, autodraft,
+    # trajectory-mined) that lacks a content_hash gets one stamped now so
+    # rosclaw-how's reload delta path has a stable identity for it. Existing
+    # hashes are left untouched (immutable on disk → immutable on hash).
+    backfilled = 0
+    for cid, c in data["symptom_clusters"].items():
+        if not isinstance(c, dict):
+            continue
+        if "content_hash" in c:
+            continue
+        c["content_hash"] = compute_cluster_content_hash(c)
+        backfilled += 1
 
     data["safety_label_index"] = safety_lookup
 
@@ -146,15 +228,22 @@ def publish_curated_assets() -> dict[str, int]:
         encoding="utf-8",
     )
     log.info(
-        "Curated publisher: %d patterns grafted, safety_label_index has %d entries",
+        "Curated publisher: %d patterns grafted, safety_label_index has %d entries, "
+        "content_hash backfilled on %d non-curated clusters",
         len(written_pattern_files),
         len(safety_lookup),
+        backfilled,
     )
     return {
         "curated_clusters": len(CURATED_SAFETY_PATTERNS),
         "curated_patterns": len(written_pattern_files),
         "safety_label_entries": len(safety_lookup),
+        "content_hash_backfilled": backfilled,
     }
 
 
-__all__ = ["publish_curated_assets"]
+__all__ = [
+    "publish_curated_assets",
+    "compute_cluster_content_hash",
+    "ROUTING_CRITICAL_FIELDS",
+]
