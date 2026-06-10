@@ -301,6 +301,51 @@ class TestCuratedPublisherEmitsTopicGroup:
         )
         assert awp.topic_group == "control-loop-stability"
 
+    def test_iter4_p7_gradient_clipping_has_topic_tag(self):
+        """iter4_p7 invariant: gradient_clipping MUST carry topic_tag.
+
+        Chosen per cross-reference of:
+          (a) 2026-06-09 headroom probe: T_W_002 GradExplosionRL has C̄=9.20
+              (h=0.80, just below AUTHOR_CURATED threshold but still measurable
+              gap, and is the only non-saturated wild cold spot per
+              project_wild_cold_spots_llm_ceiling).
+          (b) Autodraft `infer_autodraft_topic_group.py --dry-run --force`
+              against iter4_p6 bridge: gradient_clipping would resolve to
+              topic_group=rl-training-stability(sim=0.347) but topic_tag=None
+              (kNN-1 lookup returns no labeled neighbor with a tag). So KNOW
+              MUST author the tag explicitly — autodraft can't supply it.
+          (c) iter4_p5 per-cluster what-if probe on iter4_p4 baseline:
+              gradient_clipping has 3 admit-set changes (T_010, T_W_004, T_W_006)
+              — all 3 are SKIP_CURATED per the 2026-06-09 probe so the admit-set
+              broadening is structural-insurance only, no measurable paired_ab lift.
+
+        T_W_002's current routing is via SAFETY path (Numerical_Instability label
+        match), not CATALYST cluster cosine. So adding the topic_tag does NOT
+        change T_W_002's inject. iter4_p7 is the same "no-regression structural
+        insurance" framing as iter4_p5 and iter4_p6 — activates
+        gradient_clipping's contribution to rl-training-stability group
+        fingerprint without changing any task's routing.
+
+        Long-term value: rl-training-stability currently has zero curated
+        contribution to its fingerprint (anti_windup_pid is in control-loop-
+        stability, ppo_entropy_collapse_guard's iter4_p5 tag isn't in
+        rl-training-stability). gradient_clipping is the natural curated to
+        anchor rl-training-stability's fingerprint.
+        """
+        from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS
+        gc = next(
+            (p for p in CURATED_SAFETY_PATTERNS if p.pattern_id == "gradient_clipping"),
+            None,
+        )
+        assert gc is not None, "gradient_clipping missing from curated registry"
+        assert gc.topic_tag is not None, (
+            "gradient_clipping needs topic_tag for its rl-training-stability "
+            "group fingerprint to include it. Autodraft kNN-1 inference can't "
+            "supply this tag (no labeled neighbor with a topic_tag matches), "
+            "so KNOW publisher is the only canonical source."
+        )
+        assert gc.topic_group == "rl-training-stability"
+
 
 class TestLiveBridgeReflectsTopicGroup:
     """Post-republish smoke: the actual bridge file MUST carry topic_group.

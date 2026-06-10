@@ -173,6 +173,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="gradient_clipping",
         topic_group="rl-training-stability",
+        topic_tag="gradient-clipping-explosion-guard",
         safety_label="Numerical_Instability",
         standard_name="NaN/Inf in loss or weights after a step explodes the gradient",
         domain="Learning_Training",

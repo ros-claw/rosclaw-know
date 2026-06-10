@@ -5069,7 +5069,8 @@
         "gradient_clipping"
       ],
       "topic_group": "rl-training-stability",
-      "content_hash": "c33720e2ea9e7734ca657dd44b64656ac5b66302c197eab187c76170d7dfa649"
+      "topic_tag": "gradient-clipping-explosion-guard",
+      "content_hash": "db7d57e7e5fd971d5da90421a8ff5b42218feadbca936e64b922383638e4e261"
     },
     "output_saturation_clamp": {
       "standard_name": "Commanded velocity diverges to ±∞ when the integrator has no clamp",
