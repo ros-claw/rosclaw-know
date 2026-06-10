@@ -19,6 +19,7 @@ from typing import Any
 
 from . import config
 from .curated_patterns import CURATED_SAFETY_PATTERNS, CuratedPattern
+from .source_tier import infer_source_tier
 
 log = logging.getLogger("rosclaw_know.curated_publisher")
 
@@ -208,18 +209,27 @@ def publish_curated_assets() -> dict[str, int]:
         written_pattern_files.append(str(_write_pattern_md(p)))
         safety_lookup.setdefault(p.safety_label, []).append(p.pattern_id)
 
-    # P0 §4.1.1 backfill: any non-curated cluster (Muse synth, autodraft,
-    # trajectory-mined) that lacks a content_hash gets one stamped now so
-    # rosclaw-how's reload delta path has a stable identity for it. Existing
-    # hashes are left untouched (immutable on disk → immutable on hash).
+    # P0 §4.1.1 / P1 §5.3 backfill in lockstep — stamping source_tier
+    # MUST recompute content_hash (tier is a ROUTING_CRITICAL_FIELD). The
+    # two backfills share a single loop so we don't run into "tier stamped
+    # but hash still excludes it" state. If neither needs touching, leave
+    # the cluster alone (idempotent reload).
     backfilled = 0
+    tier_stamped = 0
     for cid, c in data["symptom_clusters"].items():
         if not isinstance(c, dict):
             continue
-        if "content_hash" in c:
-            continue
-        c["content_hash"] = compute_cluster_content_hash(c)
-        backfilled += 1
+        tier_added = False
+        if "source_tier" not in c:
+            c["source_tier"] = infer_source_tier(c)
+            tier_added = True
+            tier_stamped += 1
+        if tier_added or "content_hash" not in c:
+            # Tier change OR hash missing → (re)compute. Existing hashes
+            # over clusters whose tier was already set are left untouched
+            # (the on-disk hash is canonical for that cluster).
+            c["content_hash"] = compute_cluster_content_hash(c)
+            backfilled += 1
 
     data["safety_label_index"] = safety_lookup
 
@@ -229,16 +239,18 @@ def publish_curated_assets() -> dict[str, int]:
     )
     log.info(
         "Curated publisher: %d patterns grafted, safety_label_index has %d entries, "
-        "content_hash backfilled on %d non-curated clusters",
+        "content_hash backfilled on %d clusters, source_tier stamped on %d clusters",
         len(written_pattern_files),
         len(safety_lookup),
         backfilled,
+        tier_stamped,
     )
     return {
         "curated_clusters": len(CURATED_SAFETY_PATTERNS),
         "curated_patterns": len(written_pattern_files),
         "safety_label_entries": len(safety_lookup),
         "content_hash_backfilled": backfilled,
+        "source_tier_stamped": tier_stamped,
     }
 
 
