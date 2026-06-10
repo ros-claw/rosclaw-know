@@ -1,0 +1,8 @@
+{
+  "repo": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-how",
+  "sha": "ba64ca62656e156a48650a44c9f635e06817aef0",
+  "short_sha": "ba64ca62",
+  "branch": "main",
+  "dirty": true,
+  "porcelain": "?? data/assets"
+}

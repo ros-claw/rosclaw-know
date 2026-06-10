@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-09T19:35:14Z",
+  "curated_count": 14,
+  "default_min_similarity": 0.55,
+  "canaries": [
+    {
+      "name": "anti_windup_pid",
+      "query": "torque overflow torque overflow saturation wind-up windup anti-windup",
+      "expected_top1_any": [
+        "anti_windup_pid",
+        "output_saturation_clamp"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Torque_Overflow"
+    },
+    {
+      "name": "sliding_window_kv_cache",
+      "query": "memory exhaustion memory exhaustion oom out of memory cuda kv-cache",
+      "expected_top1_any": [
+        "sliding_window_kv_cache"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Memory_Reasoning",
+      "safety_label": "Memory_Exhaustion"
+    },
+    {
+      "name": "gradient_clipping",
+      "query": "numerical instability nan inf numerical instability loss explod gradient explod gradient clip",
+      "expected_top1_any": [
+        "gradient_clipping"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Learning_Training",
+      "safety_label": "Numerical_Instability"
+    },
+    {
+      "name": "output_saturation_clamp",
+      "query": "velocity divergence velocity diverg infinite explode saturation clamp",
+      "expected_top1_any": [
+        "anti_windup_pid",
+        "output_saturation_clamp"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Velocity_Divergence"
+    },
+    {
+      "name": "closed_loop_replanning",
+      "query": "oscillation divergence oscillat diverg tracking drift latency open-loop",
+      "expected_top1_any": [
+        "closed_loop_replanning"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Planning_Decision",
+      "safety_label": "Oscillation_Divergence"
+    },
+    {
+      "name": "ppo_entropy_collapse_guard",
+      "query": "entropy collapse ppo entropy collapse policy value loss degenerate",
+      "expected_top1_any": [
+        "ppo_entropy_collapse_guard"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Learning_Training",
+      "safety_label": "Entropy_Collapse"
+    },
+    {
+      "name": "multi_stage_cc_cv_fast_charging",
+      "query": "battery capacity fade lithium plating li-ion battery capacity fade fast charging fast charge",
+      "expected_top1_any": [
+        "multi_stage_cc_cv_fast_charging"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Battery_Capacity_Fade"
+    },
+    {
+      "name": "simd_aes_ni_hardware_crypto",
+      "query": "crypto throughput bottleneck aes aes-ni aes128 aes256 throughput mb/s",
+      "expected_top1_any": [
+        "simd_aes_ni_hardware_crypto"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Crypto_Throughput_Bottleneck"
+    },
+    {
+      "name": "time_optimal_path_blending",
+      "query": "robot cycle time inflation trajectory cycle time via-point via point waypoint joint space",
+      "expected_top1_any": [
+        "time_optimal_path_blending"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Robot_Cycle_Time_Inflation"
+    },
+    {
+      "name": "motion_blur_imu_aided_deblur",
+      "query": "image motion blur motion blur blur kernel exposure time exposure shutter rolling shutter",
+      "expected_top1_any": [
+        "motion_blur_imu_aided_deblur"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Perception_Vision",
+      "safety_label": "Image_Motion_Blur"
+    },
+    {
+      "name": "metaheuristic_combinatorial_escape",
+      "query": "combinatorial local optimum job-shop job shop jsp scheduling makespan dispatch rule",
+      "expected_top1_any": [
+        "metaheuristic_combinatorial_escape"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Planning_Decision",
+      "safety_label": "Combinatorial_Local_Optimum"
+    },
+    {
+      "name": "exponential_backoff_retry",
+      "query": "communication timeout timeout timed out deadline exceeded retry rpc grpc",
+      "expected_top1_any": [
+        "exponential_backoff_retry"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Communication_Timeout"
+    },
+    {
+      "name": "terrain_aware_locomotion",
+      "query": "tracking error quadruped legged trot gait terrain uneven",
+      "expected_top1_any": [
+        "terrain_aware_locomotion"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Tracking_Error"
+    },
+    {
+      "name": "flash_attention_tiled_softmax",
+      "query": "memory exhaustion self-attention attention transformer hbm memory bandwidth long context",
+      "expected_top1_any": [
+        "flash_attention_tiled_softmax"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Memory_Exhaustion"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "repo": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know",
+  "sha": "178338c46e1a6f39109e3abef2e126a2e5462eb5",
+  "short_sha": "178338c4",
+  "branch": "master",
+  "dirty": true,
+  "porcelain": "M data/assets/bridge_index.json\n M src/rosclaw_know/curated_publisher.py\n?? data/assets/routing_canary.json\n?? data/frozen/\n?? docs/KNOW_HOW_SMOKE_TEST_REPORT_2026-06-05.md\n?? docs/REPORT_2026-06-09.md\n?? \"docs/know-how\\344\\270\\213\\344\\270\\200\\346\\255\\245\\345\\273\\272\\350\\256\\256.md\"\n?? scripts/build_routing_canary.py\n?? scripts/freeze_bundle.py\n?? tests/test_curated_publisher_hash.py"
+}

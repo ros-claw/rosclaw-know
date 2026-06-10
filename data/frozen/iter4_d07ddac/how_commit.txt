@@ -1,0 +1,8 @@
+{
+  "repo": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-how",
+  "sha": "d07ddac67086e891cb521f1b062ab2d297193177",
+  "short_sha": "d07ddac6",
+  "branch": "main",
+  "dirty": true,
+  "porcelain": "M src/rosclaw_how/api.py\n M src/rosclaw_how/asset_loader.py\n?? data/assets\n?? docs/REPORT_2026-06-09.md\n?? src/rosclaw_how/canary.py"
+}
