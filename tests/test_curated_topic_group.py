@@ -54,6 +54,19 @@ KNOWN_TOPIC_GROUPS = frozenset(
         "scheduling-optimization",
         "software-engineering-and-tooling",
         "multi-robot-and-multi-agent",
+        # iter4_p4 (2026-06-10) — single-cluster group for
+        # simd_aes_ni_hardware_crypto. Was in cybersecurity-and-resilience
+        # but that group's 19-cluster fingerprint is dominated by 18
+        # ICS/SCADA defense entries (Modbus/PLC/S7), whose vocab has zero
+        # overlap with crypto-throughput queries (T_005 AES-128 80 MB/s).
+        # Live-probe at p3: T_005 admitted=[scheduling-optimization 0.3702,
+        # fault-tolerant-compute 0.3687], cybersecurity-and-resilience at
+        # rank 5 (0.2652). simd_aes_ni was filtered out of CATALYST's
+        # candidate pool entirely. New dedicated group lifts T_005's
+        # cluster admission. Acceptable for a 1-cluster group: this is
+        # how Muse autodrafts new groups too. See
+        # project_iter4_p4_simd_aes_ni_topic_group_move.md.
+        "hardware-accelerated-cryptography",
     }
 )
 
@@ -143,6 +156,74 @@ class TestCuratedPublisherEmitsTopicGroup:
         so content_hash changes when either flips. Without this, a topic_group
         update wouldn't trigger HOW's re-embed-on-hash-change path."""
         assert "topic_group" in curated_publisher.ROUTING_CRITICAL_FIELDS
+
+    def test_cluster_entry_includes_topic_tag_when_set(self):
+        """iter4_p4: topic_tag MUST round-trip through publisher.
+
+        Without this, HOW's _build_group_to_fingerprint_text silently
+        drops the cluster from its group's fingerprint. The whole point
+        of moving simd_aes_ni to a new dedicated topic_group is undone
+        unless the tag is emitted too.
+        """
+        p = CuratedPattern(
+            pattern_id="test_pattern_tagged",
+            safety_label="Test_Label",
+            standard_name="Test pattern with tag",
+            domain="Memory_Reasoning",
+            matched_keywords=["test"],
+            fix_pattern="Do the thing.",
+            failed_attempt="Don't do the thing.",
+            before_code="x = 1\n",
+            after_code="x = 2\n",
+            cross_domain_hints=[],
+            topic_group="control-loop-stability",
+            topic_tag="anti-windup-conditional-integration",
+        )
+        entry = curated_publisher._build_cluster_entry(p)
+        assert entry.get("topic_tag") == "anti-windup-conditional-integration"
+
+    def test_cluster_entry_omits_topic_tag_when_none(self):
+        """Default None → absent field (no null pollution)."""
+        p = CuratedPattern(
+            pattern_id="test_no_tag",
+            safety_label="Test_Label",
+            standard_name="Test pattern",
+            domain="Memory_Reasoning",
+            matched_keywords=["test"],
+            fix_pattern="Do the thing.",
+            failed_attempt="Don't do the thing.",
+            before_code="x = 1\n",
+            after_code="x = 2\n",
+            cross_domain_hints=[],
+            # topic_tag defaults to None
+        )
+        entry = curated_publisher._build_cluster_entry(p)
+        assert "topic_tag" not in entry
+
+    def test_topic_tag_in_routing_critical_fields(self):
+        """iter4_p4: topic_tag in ROUTING_CRITICAL_FIELDS so a tag change
+        flips content_hash and triggers HOW re-embed."""
+        assert "topic_tag" in curated_publisher.ROUTING_CRITICAL_FIELDS
+
+    def test_simd_aes_ni_has_topic_tag(self):
+        """iter4_p4 invariant: simd_aes_ni MUST carry a topic_tag.
+
+        The cluster sits in a single-cluster topic_group
+        ``hardware-accelerated-cryptography``; if topic_tag is None the
+        fingerprint is never built (group becomes invisible) and T_005
+        routing breaks again.
+        """
+        from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS
+        simd = next(
+            (p for p in CURATED_SAFETY_PATTERNS if p.pattern_id == "simd_aes_ni_hardware_crypto"),
+            None,
+        )
+        assert simd is not None, "simd_aes_ni_hardware_crypto missing from curated registry"
+        assert simd.topic_tag is not None, (
+            "simd_aes_ni_hardware_crypto needs topic_tag for its single-cluster "
+            "hardware-accelerated-cryptography group fingerprint to build at all"
+        )
+        assert simd.topic_group == "hardware-accelerated-cryptography"
 
 
 class TestLiveBridgeReflectsTopicGroup:

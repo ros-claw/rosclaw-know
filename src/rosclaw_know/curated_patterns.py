@@ -54,6 +54,29 @@ class CuratedPattern:
     group, leave None and accept reduced topic-filter reach (it can still
     win via safety_label exact match or rescue ≥ 0.60 sim).
     """
+    topic_tag: str | None = None
+    """The topic_tag — a finer-grained label within topic_group. iter4_p4
+    (2026-06-10) — required by HOW's
+    ``topic_group._build_group_to_fingerprint_text`` for THIS cluster's
+    standard_name to contribute to its group's fingerprint. Without a
+    topic_tag, the cluster is silently dropped from the fingerprint compute,
+    so curated entries that lack one don't influence which group their query
+    routes to.
+
+    iter4_p3 added topic_group only; live probing on T_005 (AES-128
+    throughput) showed simd_aes_ni in cybersecurity-and-resilience still
+    wasn't admitted — the group fingerprint was 18 ICS/SCADA defense
+    clusters with simd_aes_ni silently absent. iter4_p4 fixes this by
+    (a) moving simd_aes_ni to its own group ``hardware-accelerated-
+    cryptography`` AND (b) setting topic_tag so the single-cluster group's
+    fingerprint actually gets built.
+
+    Other 13 curated still have None topic_tag — adding tags to them would
+    shift fingerprints for locomotion-and-manipulation, control-loop-
+    stability, rl-training-stability, etc. in ways that need a separate
+    iteration to validate. Set per-cluster after live-probing the routing
+    impact on that group's queries.
+    """
 
 
 CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
@@ -370,7 +393,28 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="simd_aes_ni_hardware_crypto",
-        topic_group="cybersecurity-and-resilience",
+        # iter4_p4 (2026-06-10) — moved from cybersecurity-and-resilience.
+        # That group's 19-cluster fingerprint is dominated by 18 ICS/SCADA
+        # defense entries (Modbus, PLC, SCADA hardening) whose vocabulary
+        # has zero overlap with crypto-throughput queries like T_005's
+        # "AES-128-CBC pure C 80 MB/s SubBytes/MixColumns". Live probe
+        # showed T_005's top-2 admitted groups were scheduling-optimization
+        # (0.3702) and fault-tolerant-compute (0.3687); cybersecurity-and-
+        # resilience landed at rank 5 (0.2652) — simd_aes_ni was filtered
+        # out of CATALYST's candidate pool entirely, never injected, and
+        # T_005 lost a 2.8-point headroom (LLM control 7.2/10 vs eval hint
+        # asking for AES-NI + PCLMULQDQ + bitsliced fallback which this
+        # cluster's fix_pattern covers). New single-cluster group's
+        # fingerprint is just this standard_name; T_005 query should now
+        # admit it as top-1 (~0.68) instead of being filtered. See
+        # project_iter4_p4 memory for the headroom analysis.
+        topic_group="hardware-accelerated-cryptography",
+        # topic_tag is required by HOW's _build_group_to_fingerprint_text
+        # (cluster is silently dropped from the group fingerprint without
+        # it). The new single-cluster group's fingerprint = this
+        # standard_name, so the tag must be present for any fingerprint
+        # to be built at all.
+        topic_tag="aes-ni-hardware-acceleration",
         safety_label="Crypto_Throughput_Bottleneck",
         standard_name=(
             "Pure-software block-cipher round functions saturate CPU on "

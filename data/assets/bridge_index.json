@@ -23155,8 +23155,9 @@
       "associated_patterns": [
         "simd_aes_ni_hardware_crypto"
       ],
-      "topic_group": "cybersecurity-and-resilience",
-      "content_hash": "a96a13f27fbdc10ea55099f8ac10953cd4347dbcf3b0b86d1db0c962f05a2cf1"
+      "topic_group": "hardware-accelerated-cryptography",
+      "topic_tag": "aes-ni-hardware-acceleration",
+      "content_hash": "edeb6ccc8ecdda8e62dde70144179af58bda529eea90fcf77ecc4929c7041ef5"
     },
     "time_optimal_path_blending": {
       "standard_name": "Joint-space trajectories that decelerate to zero at every via-point inflate cycle time by 40-60 % even when via-points are colinear",

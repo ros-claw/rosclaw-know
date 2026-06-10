@@ -174,6 +174,14 @@ def _build_cluster_entry(p: CuratedPattern) -> dict[str, Any]:
     # curated that legitimately doesn't fit an existing topic group.
     if p.topic_group is not None:
         entry["topic_group"] = p.topic_group
+    # iter4_p4 (2026-06-10) — topic_tag is REQUIRED by HOW's
+    # ``topic_group._build_group_to_fingerprint_text`` for this cluster's
+    # standard_name to contribute to its group's fingerprint. A cluster
+    # with topic_group but NO topic_tag is silently dropped from the
+    # fingerprint compute, so it never influences which group its own
+    # query routes to. iter4_p3 was structurally incomplete without this.
+    if p.topic_tag is not None:
+        entry["topic_tag"] = p.topic_tag
     # Compute deterministic content_hash AFTER all routing-critical fields
     # are populated; the hash itself is excluded from the payload.
     entry["content_hash"] = compute_cluster_content_hash(entry)
