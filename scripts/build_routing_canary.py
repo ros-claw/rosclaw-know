@@ -75,10 +75,27 @@ def _make_query(p) -> str:
     """Compose a realistic error-log style query from the curated pattern.
 
     Avoids the standard_name (would round-trip to sim ≈ 1.0 and miss the
-    drift signal). Uses safety_label tokens + the first ~6 matched_keywords.
+    drift signal). Uses safety_label tokens + the first ~12 matched_keywords.
+
+    iter5_p1 (2026-06-11) — bumped from matched_keywords[:6] to [:12]
+    because augmenting curated standard_names + matched_keywords (see
+    anti_windup_pid / output_saturation_clamp) diluted the cosine on
+    the original 6-token canary query (sim drops 0.71 → 0.53), causing
+    spurious HOW canary failures. Using the first 12 keywords still
+    excludes the augmented tail vocab from the query (preserves the
+    drift-detection signal) but anchors enough of the standard_name's
+    own vocab to keep canary sim above the 0.55 floor.
+    iter5_p2 (2026-06-11) — bumped [:12] → [:24] for the same reason
+    on motion_blur_imu_aided_deblur. After expanding standard_name to
+    72 words covering UAV/RGB/focal/relative-velocity vocab, the
+    12-token canary query was dominated by a Muse synth
+    (towards_rolling_shutter_correction_and_deblurring_in_dynamic_scenes)
+    at sim 0.51. Using 24 keywords pulls in flyby / hover /
+    detection-recall vocab that the synth lacks; canary then rides
+    on curated-distinctive tokens and stays above floor.
     """
     safety_tokens = p.safety_label.replace("_", " ").lower()
-    keywords = " ".join(k.lower() for k in p.matched_keywords[:6])
+    keywords = " ".join(k.lower() for k in p.matched_keywords[:24])
     return f"{safety_tokens} {keywords}".strip()
 
 

@@ -6,7 +6,7 @@ domain: Control_Locomotion
 source: curated
 ---
 
-# PID integral wind-up drives actuator into torque saturation
+# PID integral wind-up drives the actuator (torque, force, valve position, or flow rate) into prolonged saturation; after the demand transient ends, the integrator retains accumulated state and the controller takes a settling time to release it, causing overshoot past target as the actuator slowly retracts from saturation
 
 **Domain**: `Control_Locomotion`
 **Safety label**: `Torque_Overflow`

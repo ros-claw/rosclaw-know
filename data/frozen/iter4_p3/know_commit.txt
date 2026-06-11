@@ -1,0 +1,8 @@
+{
+  "repo": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know",
+  "sha": "1b5413cee7d7d6263d8b36e03fa24e7537a174e2",
+  "short_sha": "1b5413ce",
+  "branch": "master",
+  "dirty": true,
+  "porcelain": "?? data/frozen/iter4_p3/"
+}

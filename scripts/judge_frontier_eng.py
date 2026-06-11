@@ -84,6 +84,40 @@ _SCORE_RX = re.compile(
 )
 
 
+# Doc §10.2 — agent-side provider failure markers. The 302.ai / GLM /
+# DeepSeek chat completions return these when the upstream rejected the
+# request mid-flight. They are NOT real candidate responses — judging
+# them produces a meaningless 0 that the aggregator would compound into
+# false uplift. We catch them at the gate.
+_INVALID_AGENT_PREFIXES: tuple[str, ...] = (
+    "[agent call failed:",
+    "[agent empty content",
+    "[agent parse failed:",
+    "[302ai parameter err",
+    "[HTTP ",
+)
+_INVALID_AGENT_MAX_BYTES = 200  # any agent reply shorter than this AND containing only a bracket marker is suspect
+
+
+def _invalid_agent_response_reason(text: str) -> str | None:
+    """Detect provider-failure / agent-error markers in an A/B response.
+
+    Returns the marker reason (for telemetry) when the response should
+    NOT enter LLM judging, else None.
+    """
+    stripped = text.strip()
+    if not stripped:
+        return "empty_agent_response"
+    if len(stripped) <= _INVALID_AGENT_MAX_BYTES and stripped.startswith("["):
+        for prefix in _INVALID_AGENT_PREFIXES:
+            if stripped.startswith(prefix):
+                return stripped.split("\n", 1)[0][:200]
+        # Square-bracket-wrapped one-liner that fits a marker pattern.
+        if stripped.endswith("]") and "\n" not in stripped:
+            return f"bracket_marker: {stripped[:120]}"
+    return None
+
+
 async def _chat_seeded(
     session: aiohttp.ClientSession,
     *,
@@ -102,9 +136,14 @@ async def _chat_seeded(
     the payload so paired judging runs across A/B arms share the
     judge's own sampling randomness.
 
-    Robust to reasoning models (step-3.7-flash, deepseek v4-flash):
-    when ``finish_reason=length`` and ``content`` is empty (reasoning
-    burned the budget), retry once with a larger ``max_tokens``.
+    Two layers of retries:
+      Outer ("budget_attempt"): if a reasoning model returns
+      finish_reason="length" with content=None (it burned the budget on
+      hidden reasoning_tokens), retry once with a much larger max_tokens.
+      Inner ("transient_retry"): 302.ai's free step-3.7-flash tier throws
+      sporadic HTTP 429 / "err_code -10003 Parameter error" on
+      perfectly-formed requests. Exponential backoff so a flaky shard
+      doesn't kill the judge run.
     """
     api_key = os.environ.get("DEEPSEEK_API_KEY")
     base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
@@ -114,9 +153,8 @@ async def _chat_seeded(
     )
     if not api_key:
         return None
-    # Two attempts: caller's budget first; double it on empty content
-    for attempt in range(2):
-        budget = max_tokens if attempt == 0 else max(max_tokens * 2, 16000)
+    for budget_attempt in range(2):
+        budget = max_tokens if budget_attempt == 0 else max(max_tokens * 2, 16000)
         payload = {
             "model": model,
             "messages": [
@@ -131,42 +169,150 @@ async def _chat_seeded(
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
+        empty_content_signal = False
+        for transient_retry in range(6):
+            try:
+                async with session.post(
+                    f"{base_url.rstrip('/')}/v1/chat/completions",
+                    json=payload,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=180),
+                ) as resp:
+                    if resp.status >= 400:
+                        body = await resp.text()
+                        logger.error("seeded judge LLM %s: %s", resp.status, body[:200])
+                        if resp.status == 429 or resp.status >= 500:
+                            if transient_retry < 5:
+                                await asyncio.sleep(2.0 * (2 ** transient_retry))
+                                continue
+                        break  # non-transient or exhausted
+                    data = await resp.json()
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                logger.warning(
+                    "seeded judge network error (retry %d): %s", transient_retry, exc
+                )
+                if transient_retry < 5:
+                    await asyncio.sleep(2.0 * (2 ** transient_retry))
+                    continue
+                break
+            api_err = data.get("error")
+            if isinstance(api_err, dict) and api_err.get("err_code") == -10003:
+                logger.warning(
+                    "302ai parameter err (retry %d): %s",
+                    transient_retry,
+                    api_err.get("message", "")[:120],
+                )
+                if transient_retry < 5:
+                    await asyncio.sleep(2.0 * (2 ** transient_retry))
+                    continue
+                break
+            choices = data.get("choices") or []
+            if not choices:
+                logger.warning("seeded judge empty choices (retry %d)", transient_retry)
+                if transient_retry < 5:
+                    await asyncio.sleep(2.0 * (2 ** transient_retry))
+                    continue
+                break
+            msg = choices[0].get("message") or {}
+            content = msg.get("content")
+            if content:
+                return content
+            # Empty content → outer loop bumps the budget once
+            logger.warning(
+                "judge empty content (likely reasoning ate budget); retrying with %d tokens",
+                max(max_tokens * 2, 16000),
+            )
+            empty_content_signal = True
+            break
+        if not empty_content_signal:
+            return None
+    return None
+
+
+async def _chat_glm_seeded(
+    session: aiohttp.ClientSession,
+    *,
+    system: str,
+    user: str,
+    seed: int,
+    max_tokens: int = 2000,
+    temperature: float = 0.0,
+) -> str | None:
+    """Fallback judge using z.ai GLM-4.7-Flash (free tier).
+
+    Doc §10.2 — when primary judge (step-3.7-flash via 302.ai) returns
+    empty content / non-parseable response, fall back to GLM-4.7-Flash
+    so an unreliable provider can't silently turn a real winner into a
+    missing-data tie.
+
+    GLM-4.7-Flash is a non-reasoning model so a 2000-token budget is
+    plenty; no inner empty-content retry needed. Uses the same OpenAI-
+    compatible chat-completions schema as 302.ai. Seed is passed through.
+
+    Returns the assistant content string or None on hard failure.
+    """
+    api_key = os.environ.get("ROSCLAW_GLM_API_KEY")
+    base_url = os.environ.get(
+        "ROSCLAW_GLM_BASE_URL",
+        "https://api.z.ai/api/paas/v4",
+    )
+    model = os.environ.get("ROSCLAW_GLM_MODEL", "GLM-4.7-Flash")
+    if not api_key:
+        logger.info("GLM fallback unavailable (ROSCLAW_GLM_API_KEY unset)")
+        return None
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "seed": int(seed),
+        "stream": False,
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept-Language": "en-US,en",
+    }
+    for transient_retry in range(4):
         try:
             async with session.post(
-                f"{base_url.rstrip('/')}/v1/chat/completions",
+                f"{base_url.rstrip('/')}/chat/completions",
                 json=payload,
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=180),
+                timeout=aiohttp.ClientTimeout(total=120),
             ) as resp:
                 if resp.status >= 400:
                     body = await resp.text()
-                    logger.error("seeded judge LLM %s: %s", resp.status, body[:200])
-                    if attempt == 0:
-                        continue
+                    logger.warning(
+                        "GLM fallback %s: %s", resp.status, body[:200]
+                    )
+                    if resp.status == 429 or resp.status >= 500:
+                        if transient_retry < 3:
+                            await asyncio.sleep(2.0 * (2 ** transient_retry))
+                            continue
                     return None
                 data = await resp.json()
-                choices = data.get("choices") or []
-                if not choices:
-                    if attempt == 0:
-                        continue
-                    return None
-                msg = choices[0].get("message") or {}
-                content = msg.get("content")
-                if content:
-                    return content
-                # Empty content from reasoning model — retry with larger budget
-                if attempt == 0:
-                    logger.warning(
-                        "judge empty content (likely reasoning ate budget); retrying with %d tokens",
-                        max(max_tokens * 2, 16000),
-                    )
-                    continue
-                return None
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-            logger.warning("seeded judge network error (attempt %d): %s", attempt, exc)
-            if attempt == 0:
+            logger.warning(
+                "GLM fallback network error (retry %d): %s",
+                transient_retry,
+                exc,
+            )
+            if transient_retry < 3:
+                await asyncio.sleep(2.0 * (2 ** transient_retry))
                 continue
             return None
+        choices = data.get("choices") or []
+        if not choices:
+            return None
+        msg = choices[0].get("message") or {}
+        content = msg.get("content")
+        if content:
+            return content
+        return None
     return None
 
 
@@ -178,7 +324,26 @@ async def _judge_one(
     response_text: str,
     seed: int | None = None,
 ) -> dict:
+    # Doc §10.2 — invalid provider-failure markers must NOT enter
+    # the LLM-judge scoring at all; they get score=None status=
+    # invalid_provider_failure, and the aggregator filters them out
+    # rather than counting them as 0 (which would create false uplift).
+    invalid_reason = _invalid_agent_response_reason(response_text)
+    if invalid_reason is not None:
+        return {
+            "score": None,
+            "reason": invalid_reason,
+            "status": "invalid_provider_failure",
+            "judge_provider": None,
+            "judge_model": None,
+        }
+
     user = JUDGE_TEMPLATE.format(symptom=symptom, hint=hint, response=response_text)
+    primary_provider = "302ai"
+    primary_model = os.environ.get(
+        "DEEPSEEK_MUSE_MODEL",
+        os.environ.get("DEEPSEEK_EXTRACTOR_MODEL", "deepseek-chat"),
+    )
     if seed is not None:
         raw = await _chat_seeded(
             session,
@@ -196,17 +361,68 @@ async def _judge_one(
             temperature=0.0,
             max_tokens=4000,
         )
+    judge_provider = primary_provider
+    judge_model = primary_model
+    judge_status = "primary"
+
+    # Fallback to GLM-4.7-Flash on z.ai when primary returned empty.
+    if not raw and os.environ.get("ROSCLAW_GLM_API_KEY"):
+        logger.info(
+            "primary judge empty — falling back to GLM-4.7-Flash z.ai"
+        )
+        fallback_seed = seed if seed is not None else 0
+        raw = await _chat_glm_seeded(
+            session,
+            system=JUDGE_SYSTEM,
+            user=user,
+            seed=fallback_seed,
+            temperature=0.0,
+            max_tokens=2000,
+        )
+        if raw:
+            judge_provider = "z.ai"
+            judge_model = os.environ.get("ROSCLAW_GLM_MODEL", "GLM-4.7-Flash")
+            judge_status = "fallback"
+
     if not raw:
-        return {"score": None, "reason": "judge returned empty", "raw": raw}
+        return {
+            "score": None,
+            "reason": "judge returned empty (primary + fallback both empty)",
+            "status": "invalid_judge_failure",
+            "judge_provider": judge_provider,
+            "judge_model": judge_model,
+            "raw": raw,
+        }
     m = _SCORE_RX.search(raw.strip())
     if not m:
-        return {"score": None, "reason": f"unparseable: {raw[:160]}", "raw": raw}
+        return {
+            "score": None,
+            "reason": f"unparseable: {raw[:160]}",
+            "status": "invalid_judge_parse",
+            "judge_provider": judge_provider,
+            "judge_model": judge_model,
+            "raw": raw,
+        }
     try:
         score = max(0, min(10, int(m.group(1))))
     except ValueError:
-        return {"score": None, "reason": f"non-int score: {m.group(1)}", "raw": raw}
+        return {
+            "score": None,
+            "reason": f"non-int score: {m.group(1)}",
+            "status": "invalid_judge_parse",
+            "judge_provider": judge_provider,
+            "judge_model": judge_model,
+            "raw": raw,
+        }
     reason = (m.group(2) or "").strip()[:200]
-    return {"score": score, "reason": reason, "raw": raw}
+    return {
+        "score": score,
+        "reason": reason,
+        "status": judge_status,
+        "judge_provider": judge_provider,
+        "judge_model": judge_model,
+        "raw": raw,
+    }
 
 
 def _verdict(c: int | None, t: int | None) -> str:
@@ -217,6 +433,30 @@ def _verdict(c: int | None, t: int | None) -> str:
     if c > t:
         return "control_better"
     return "tie"
+
+
+def _pair_status(c_status: str | None, t_status: str | None) -> str:
+    """Classify why a pair was/wasn't scorable (doc §10.2).
+
+    A "valid" pair is one where BOTH arms have a scored answer
+    (judge_status in {"primary","fallback"}); anything else is
+    excluded from the mean Δ and reported separately so an
+    unstable provider can't masquerade as uplift.
+    """
+    invalid_statuses = {
+        "invalid_provider_failure",
+        "invalid_judge_failure",
+        "invalid_judge_parse",
+    }
+    if c_status in invalid_statuses or t_status in invalid_statuses:
+        return "invalid"
+    if c_status in (None, "primary", "fallback") and t_status in (
+        None,
+        "primary",
+        "fallback",
+    ):
+        return "valid"
+    return "unknown"
 
 
 async def _judge_all(report_dir: Path, *, seed: int | None = None) -> dict:
@@ -250,6 +490,10 @@ async def _judge_all(report_dir: Path, *, seed: int | None = None) -> dict:
             entry["judgment"]["verdict"] = _verdict(
                 entry["judgment"]["control"]["score"],
                 entry["judgment"]["treatment"]["score"],
+            )
+            entry["judgment"]["pair_status"] = _pair_status(
+                entry["judgment"]["control"].get("status"),
+                entry["judgment"]["treatment"].get("status"),
             )
 
     # Strip raw judge replies before writing — they bloat the file and
@@ -371,52 +615,80 @@ _SYMPTOM_BY_ID = {
 
 
 def _print_report(summary: list[dict]) -> int:
-    print(f"{'task_id':<30} {'control':>7} {'treatment':>9} {'Δ':>4} verdict")
-    deltas: list[int] = []
-    verdicts: list[str] = []
+    print(
+        f"{'task_id':<30} {'control':>7} {'treatment':>9} {'Δ':>4} "
+        f"{'pair':<8} verdict"
+    )
+    valid_deltas: list[int] = []
+    valid_verdicts: list[str] = []
+    invalid_entries: list[tuple[str, str, str]] = []
     for entry in summary:
         j = entry.get("judgment", {})
         c = j.get("control", {}).get("score")
         t = j.get("treatment", {}).get("score")
+        pair_status = j.get("pair_status", "unknown")
+        verdict = j.get("verdict", "?")
         d = (t - c) if (c is not None and t is not None) else None
-        if d is not None:
-            deltas.append(d)
-        verdicts.append(j.get("verdict", "?"))
+        if pair_status == "valid" and d is not None:
+            valid_deltas.append(d)
+            valid_verdicts.append(verdict)
+        elif pair_status == "invalid":
+            c_reason = j.get("control", {}).get("status") or "ok"
+            t_reason = j.get("treatment", {}).get("status") or "ok"
+            invalid_entries.append(
+                (entry["task_id"], c_reason, t_reason)
+            )
         d_str = f"{d:+d}" if d is not None else "  - "
         print(
             f"{entry['task_id']:<30} "
             f"{('-' if c is None else c):>7} "
             f"{('-' if t is None else t):>9} "
-            f"{d_str:>4} {j.get('verdict','?')}"
+            f"{d_str:>4} "
+            f"{pair_status:<8} {verdict}"
         )
-    print("─" * 70)
+    print("─" * 78)
 
-    if not deltas:
-        print("No scored tasks — judge returned no usable scores.")
+    if invalid_entries:
+        print()
+        print(
+            f"Invalid pairs (excluded from mean Δ — doc §10.2): "
+            f"{len(invalid_entries)}"
+        )
+        for task_id, c_reason, t_reason in invalid_entries:
+            print(f"  {task_id:<30}  control={c_reason:<28} treatment={t_reason}")
+        print()
+
+    if not valid_deltas:
+        print(
+            "No valid scored pairs — all judges either errored or hit "
+            "invalid_provider_failure. Cannot compute uplift."
+        )
         return 1
 
-    n_total = len(verdicts)
-    n_treat = verdicts.count("treatment_better")
-    n_ctrl = verdicts.count("control_better")
-    n_tie = verdicts.count("tie")
-    avg = statistics.mean(deltas)
-    med = statistics.median(deltas)
+    n_total = len(valid_verdicts)
+    n_treat = valid_verdicts.count("treatment_better")
+    n_ctrl = valid_verdicts.count("control_better")
+    n_tie = valid_verdicts.count("tie")
+    avg = statistics.mean(valid_deltas)
+    med = statistics.median(valid_deltas)
 
-    # Pairwise win rate per outline §5.5: treatment_better / total
+    # Pairwise win rate per outline §5.5: treatment_better / valid_total
     # (ties don't count as wins, but they don't count as losses either,
-    #  so the denominator stays as the full panel).
+    #  so the denominator stays as the full VALID panel).
     win_rate = n_treat / n_total
 
     # The outline (§5.6 phase-1 acceptance) sets pairwise win rate ≥ 55%
     # as the smoke-acceptance bar for "hermes_how_only > hermes_no_knowhow".
-    # On a 10-task panel ≥6/10 wins clears the bar; ≥5 wins is borderline.
+    # Per doc §10.2 the bar applies to the VALID panel only — invalid
+    # pairs are reported separately above and DO NOT count as 0.
     print(
-        f"Tasks scored: {n_total}   treatment_better: {n_treat}   "
-        f"control_better: {n_ctrl}   tie: {n_tie}"
+        f"Valid pairs: {n_total}   treatment_better: {n_treat}   "
+        f"control_better: {n_ctrl}   tie: {n_tie}   "
+        f"(invalid: {len(invalid_entries)} excluded)"
     )
-    print(f"Pairwise win rate (treatment): {win_rate:.0%}   ({n_treat}/{n_total})")
-    print(f"Average uplift  (treatment − control): {avg:+.2f}")
-    print(f"Median uplift   (treatment − control): {med:+.1f}")
+    print(f"Pairwise win rate (treatment, valid only): {win_rate:.0%}   ({n_treat}/{n_total})")
+    print(f"Average uplift  (treatment − control, valid only): {avg:+.2f}")
+    print(f"Median uplift   (treatment − control, valid only): {med:+.1f}")
 
     if win_rate >= 0.55 and avg > 0:
         print("PASS: outline §5.6 phase-1 smoke bar met (win rate ≥55%, avg uplift > 0).")

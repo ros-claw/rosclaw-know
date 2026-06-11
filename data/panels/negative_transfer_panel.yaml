@@ -1,0 +1,82 @@
+# Negative-Transfer Panel — Doc §13 P0-W1 (2026-06-11).
+#
+# Tasks whose routing MUST stay byte-identical when a new curated ships.
+# This panel is consulted by:
+#   1. scripts/verify_routing_panel.py --panel negative_transfer_panel.yaml
+#      after every publish_to_how.py + /admin/reload, before any new
+#      paired_ab.
+#   2. Curated registry pre-flight (Week 2) — adding a new curated
+#      cluster is rejected if it changes any negative-transfer task's
+#      top-1 pattern_id unless the change is explicitly allow-listed.
+#
+# Listed tasks are those historically prone to collateral regression
+# across the iter4_pX arc, plus all tasks named as `collateral_protect`
+# in routing_panel.yaml.
+
+schema_version: 1
+generated_at: "2026-06-11"
+panel_id: negative_transfer_panel_v1
+
+tasks:
+  # Voice-coil / actuator — collateral for any new PID-style curated
+  - task_id: TASK_W_005_ActuatorOvershoot
+    baseline_pattern: output_saturation_clamp
+    rationale: |
+      Augmentation of pid_antiwindup in 2026-06-06 nearly broke this
+      task; the two-stage fix lifted -3.10 → -0.20. The exclude-collision
+      vocab on iter4_p9 pid_joint_latency_oscillation (no "voice-coil",
+      no "feedforward") was specifically engineered to keep T_W_005
+      routing stable.
+
+  - task_id: TASK_W_006_PlanningDivergence
+    baseline_pattern: closed_loop_replanning
+    rationale: |
+      MPC / receding-horizon task. Sensitive to any new curated that
+      mentions "trajectory" / "predicted" / "horizon" without proper
+      exclude vocab.
+
+  - task_id: TASK_W_007_IntegrationWindup
+    baseline_pattern: anti_windup_pid
+    rationale: |
+      Long-history canary for PID curated changes. anti_windup_pid sim
+      ~0.71 here under iter4_p6 standard_name. Any new PID-domain
+      curated must NOT outrank anti_windup_pid on this query.
+
+  - task_id: TASK_003_RobotArmCycleTime
+    baseline_pattern: time_optimal_path_blending
+    rationale: |
+      Iter1-era arc had T_003 misroute to pytrajectory wrong group
+      (sim 0.5644). iter4_p8 fixed it via topic_tag completion. Any
+      new robotics-trajectory curated must not displace this.
+
+  # LLM-saturated tasks — small routing changes don't move scores
+  # but they DO move HOW's audit trail, which feeds tier_aware_ranking
+  # telemetry (doc §9.2). Keep stable until ABSTAIN strategies land.
+  - task_id: TASK_006_FlashAttention
+    baseline_pattern: flash_attention_tiled_softmax
+    rationale: |
+      LLM-saturated; route stability matters for telemetry only.
+
+  - task_id: TASK_W_001_KVCacheLongContext
+    baseline_pattern: sliding_window_kv_cache
+    rationale: |
+      LLM-saturated; route stability matters for telemetry only.
+
+  - task_id: TASK_W_004_EntropyCollapsePPO
+    baseline_pattern: ppo_entropy_collapse_guard
+    rationale: |
+      LLM-saturated; route stability matters for telemetry only.
+
+  - task_id: TASK_W_008_AttentionMemoryOOM
+    baseline_pattern: flash_attention_tiled_softmax
+    rationale: |
+      LLM-saturated; route stability matters for telemetry only.
+
+# ─── Allow-list ──────────────────────────────────────────────────────
+#
+# When a routing change on a negative-transfer task is intentional and
+# verified, add a tombstone entry under `allowed_changes` with the new
+# expected pattern + the verifier evidence link. Until then, ANY
+# change is treated as a regression.
+
+allowed_changes: []

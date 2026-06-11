@@ -432,12 +432,21 @@ def _call_agent(
               "constraints to enforce, (3) verification step."
         )
 
-    # Two attempts:  attempt 0 uses caller's max_tokens; attempt 1 doubles it
-    # in case a reasoning model burned the budget on hidden thinking and left
-    # content empty (finish_reason="length", content=None).
+    # Two layers of retries:
+    #   Outer loop ("budget_attempt"): if a reasoning model returns
+    #   finish_reason="length" with content=None (it burned the budget on
+    #   hidden reasoning_tokens), retry once with a much larger max_tokens.
+    #   Inner loop ("transient_retry"): 302.ai's free step-3.7-flash tier
+    #   throws sporadic HTTP 429 / "err_code -10003 Parameter error" even
+    #   on perfectly-formed requests (load-balancer rejection on busy
+    #   shard). Retry with exponential backoff so a single bad routing
+    #   decision doesn't kill a paired_ab seed.
+    import urllib.error
+    import time as _time
+
     last_err = "unknown"
-    for attempt in range(2):
-        max_tok = 8000 if attempt == 0 else 16000
+    for budget_attempt in range(2):
+        max_tok = 8000 if budget_attempt == 0 else 16000
         payload_dict: dict[str, object] = {
             "model": os.environ.get("DEEPSEEK_MUSE_MODEL", "deepseek-chat"),
             "messages": [
@@ -451,39 +460,69 @@ def _call_agent(
             payload_dict["seed"] = int(seed)
         payload = json.dumps(payload_dict).encode("utf-8")
 
-        req = urllib.request.Request(
-            f"{base_url.rstrip('/')}/v1/chat/completions",
-            data=payload,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=180) as resp:
-                body = resp.read().decode("utf-8")
-        except Exception as exc:  # noqa: BLE001
-            last_err = f"[agent call failed: {exc}]"
-            if attempt == 0:
-                continue
-            return last_err
-        try:
-            data = json.loads(body)
+        empty_content_signal = False
+        for transient_retry in range(6):
+            req = urllib.request.Request(
+                f"{base_url.rstrip('/')}/v1/chat/completions",
+                data=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            body: str | None = None
+            status: int | None = None
+            try:
+                with urllib.request.urlopen(req, timeout=180) as resp:
+                    body = resp.read().decode("utf-8")
+                    status = resp.status
+            except urllib.error.HTTPError as exc:
+                status = exc.code
+                try:
+                    body = exc.read().decode("utf-8")
+                except Exception:  # noqa: BLE001
+                    body = ""
+                last_err = f"[HTTP {status}: {body[:200] if body else exc}]"
+                if status == 429 or status >= 500:
+                    if transient_retry < 5:
+                        _time.sleep(2.0 * (2 ** transient_retry))  # 2,4,8,16,32,64s
+                        continue
+                    break  # exhausted
+                # Non-transient 4xx (e.g. 401/403/400) — give up this budget
+                break
+            except Exception as exc:  # noqa: BLE001
+                last_err = f"[agent call failed: {exc}]"
+                if transient_retry < 5:
+                    _time.sleep(2.0 * (2 ** transient_retry))
+                    continue
+                break
+
+            # Body present. Parse and check for 302.ai-style in-body errors.
+            try:
+                data = json.loads(body)
+            except (ValueError, TypeError) as exc:
+                last_err = f"[agent parse failed: {exc}; body={body[:200]}]"
+                break
+            api_err = data.get("error")
+            if isinstance(api_err, dict) and api_err.get("err_code") == -10003:
+                last_err = f"[302ai parameter err: {api_err.get('message','')[:120]}]"
+                if transient_retry < 5:
+                    _time.sleep(2.0 * (2 ** transient_retry))
+                    continue
+                break
             choice = (data.get("choices") or [{}])[0]
             content = (choice.get("message") or {}).get("content")
             finish = choice.get("finish_reason")
             if content:
                 return content
-            # Empty content from reasoning model (finish=length most likely)
+            # Empty content → reasoning model ate budget; signal outer to retry bigger
             last_err = f"[agent empty content finish={finish}]"
-            if attempt == 0:
-                continue
-            return last_err
-        except (KeyError, IndexError, ValueError) as exc:
-            last_err = f"[agent parse failed: {exc}; body={body[:200]}]"
-            if attempt == 0:
-                continue
+            empty_content_signal = True
+            break
+
+        if not empty_content_signal:
+            # Either non-transient failure or exhausted transient retries.
             return last_err
     return last_err
 

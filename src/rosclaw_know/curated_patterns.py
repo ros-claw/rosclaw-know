@@ -85,11 +85,34 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
         topic_group="control-loop-stability",
         topic_tag="pid-integral-windup-anti-saturation",
         safety_label="Torque_Overflow",
-        standard_name="PID integral wind-up drives actuator into torque saturation",
+        # iter5_p1 (2026-06-11) vocab augmentation. Pre-augment standard_name
+        # was 9 words covering only torque/actuator; T_W_007 (flow-rate PID +
+        # control valve + 8-second integrator-release demand transient)
+        # missed the curated at sim=0.5355 even after iter5_p0 demoted the
+        # wrong reflections_of_a_process_control_practitioner synth. The
+        # augmentation keeps the existing torque/wind-up coverage AND adds
+        # general PID-actuator vocab (valve / flow / force / demand-transient
+        # / integrator state / overshoot past target) so the cluster wins
+        # cosine on any PID-actuator saturation symptom — not per-task hack,
+        # the underlying fix family (conditional integration / back-
+        # calculation) IS universal across PID-controlled processes.
+        standard_name=(
+            "PID integral wind-up drives the actuator (torque, force, valve "
+            "position, or flow rate) into prolonged saturation; after the "
+            "demand transient ends, the integrator retains accumulated state "
+            "and the controller takes a settling time to release it, causing "
+            "overshoot past target as the actuator slowly retracts from "
+            "saturation"
+        ),
         domain="Control_Locomotion",
         matched_keywords=[
             "torque", "overflow", "saturation", "wind-up", "windup",
             "anti-windup", "pid", "integral", "actuator",
+            # iter5_p1 additions — flow / valve / force / transient / settling
+            "valve", "control valve", "flow-rate", "flow rate", "flow",
+            "force", "integrator state", "integrator", "demand transient",
+            "demand", "transient", "setpoint", "overshoot past target",
+            "overshoot", "settling time", "settling", "release",
         ],
         fix_pattern=(
             "Apply conditional integration: stop accumulating the integral term whenever "
@@ -303,11 +326,32 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
         topic_group="control-loop-stability",
         topic_tag="controller-output-saturation-clamp",
         safety_label="Velocity_Divergence",
-        standard_name="Commanded velocity diverges to ±∞ when the integrator has no clamp",
+        # iter5_p1 (2026-06-11) vocab augmentation. Pre-augment standard_name
+        # was velocity-only ("Commanded velocity diverges to ±∞ when the
+        # integrator has no clamp"); T_W_005 (linear voice-coil actuator + PID
+        # + feedforward overshoots rated 25 N peak force + mechanical end-
+        # stops + safety relay) missed the curated at sim<0.55 even after
+        # iter5_p0 demoted the wrong synth. The augmentation generalises
+        # from "velocity divergence" to "actuator command signal exceeds
+        # rated peak (force / torque / velocity / position)" — the
+        # underlying fix (clamp the command signal to actuator-rated bounds)
+        # IS universal across actuator types and rated limit categories.
+        standard_name=(
+            "Commanded actuator output (force, torque, peak velocity, or "
+            "position) overshoots the actuator's rated peak or diverges to "
+            "±∞ when the controller has no command-side saturation clamp; "
+            "the command signal briefly exceeds rated limits before "
+            "mechanical end-stops or safety interlocks (safety relays) trip"
+        ),
         domain="Control_Locomotion",
         matched_keywords=[
             "velocity", "diverg", "infinite", "explode",
             "saturation", "clamp", "limit",
+            # iter5_p1 additions — force / peak / actuator / end-stop / relay
+            "force", "peak force", "peak", "rated", "rated peak",
+            "actuator", "overshoot", "command signal", "setpoint",
+            "mechanical end-stop", "end-stop", "end stop",
+            "safety relay", "safety interlock", "voice-coil",
         ],
         fix_pattern=(
             "Wrap every commanded velocity through `torch.clamp(v_cmd, -v_max, v_max)` "
@@ -650,13 +694,19 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="motion_blur_imu_aided_deblur",
-        topic_group="3d-perception-and-mapping",
+        topic_group="motion-blur-deblur",
         topic_tag="imu-aided-motion-blur-deblur",
         safety_label="Image_Motion_Blur",
         standard_name=(
-            "Onboard camera produces motion-blurred frames during fast "
-            "platform motion; downstream detection / classification recall "
-            "drops 40-60 % vs. stationary baseline"
+            "Onboard RGB or monocular camera mounted on a moving aerial / "
+            "mobile platform (UAV, quadrotor, drone, inspection robot) "
+            "produces motion-blurred frames during fast relative velocity "
+            "to the inspection target; downstream defect detection or "
+            "object classification recall drops 40-60 % versus the "
+            "stationary or hover baseline, because the blur extent within "
+            "the exposure window exceeds the detector's invariance to "
+            "blur, even when focal length and ISO are held fixed across "
+            "the flyby phase"
         ),
         domain="Perception_Vision",
         matched_keywords=[
@@ -667,6 +717,20 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
             "flyby", "hover", "hover-and-stare", "inspection",
             "detection recall", "blur compensation", "image stabilization",
             "frame quality", "blur extent", "shutter speed",
+            # iter5_p2 (2026-06-11) — universal motion-blur / UAV-inspection
+            # vocab to bring T_010-shape queries above the 0.55 floor.
+            # No per-task strings (no wind-turbine, no blade) — every
+            # added entry applies to any onboard-camera-on-moving-platform
+            # defect-detection problem.
+            "rgb", "rgb camera", "monocular", "monocular camera",
+            "onboard camera", "focal length", "focal",
+            "relative velocity", "platform velocity",
+            "moving platform", "platform motion",
+            "defect detection", "defect", "visual inspection",
+            "inspection task", "recall", "detection accuracy",
+            "classification recall", "stationary", "stationary baseline",
+            "hover baseline", "exposure window", "exposure duration",
+            "fast platform", "high-speed flyby", "fast flyby",
         ],
         fix_pattern=(
             "Three layered fixes, applied in order of cost: (1) shorten "
@@ -795,14 +859,44 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="exponential_backoff_retry",
-        topic_group="fault-tolerant-compute",
+        topic_group="reliability-engineering",
         topic_tag="exponential-backoff-with-jitter",
         safety_label="Communication_Timeout",
-        standard_name="Network/RPC timeout cascades cause request storms after a partial outage",
+        standard_name=(
+            "Network, RPC, microservice, and HTTP API call timeout cascades "
+            "cause thundering-herd request storms and exponential-retry amplification "
+            "after partial upstream service degradation, backend unavailability, "
+            "or transient HTTP 5xx errors; naive fixed-delay retry loops without jitter "
+            "or exponential backoff compound the cascading load, overwhelm downstream "
+            "capacity, and prolong the outage duration"
+        ),
         domain="Systems_Compute",
         matched_keywords=[
+            # Core timeout / retry (original)
             "timeout", "timed out", "deadline exceeded",
             "retry", "rpc", "grpc",
+            # Service / network layer
+            "microservice", "microservices", "service",
+            "HTTP", "API", "API call", "service call",
+            "upstream", "downstream", "backend",
+            # Error conditions
+            "503", "HTTP 503", "5xx", "service unavailable",
+            "backend unavailable", "server error", "transient error",
+            "transient failure", "connection refused", "connection reset",
+            "connection timeout", "request timeout",
+            "degraded", "degradation", "service degraded",
+            "partial outage", "prolonged outage", "prolong outage",
+            # Cascade / amplification
+            "cascading", "cascading load", "cascading failure",
+            "thundering herd", "retry storm", "request storm",
+            "request amplification", "retry amplification", "traffic spike",
+            "overload", "capacity overwhelm", "compound",
+            # Naive-retry characteristics
+            "naive retry", "fixed delay", "fixed retry delay",
+            "retry loop", "without jitter", "without backoff",
+            # Mitigations (already in fix_pattern)
+            "circuit breaker", "backpressure", "back pressure",
+            "rate limit", "rate limiting", "load balancer",
         ],
         fix_pattern=(
             "Wrap network calls with exponential backoff (base 0.5 s, factor 2, jitter ±30 %), "

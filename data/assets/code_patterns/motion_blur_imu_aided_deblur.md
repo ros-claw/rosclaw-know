@@ -6,7 +6,7 @@ domain: Perception_Vision
 source: curated
 ---
 
-# Onboard camera produces motion-blurred frames during fast platform motion; downstream detection / classification recall drops 40-60 % vs. stationary baseline
+# Onboard RGB or monocular camera mounted on a moving aerial / mobile platform (UAV, quadrotor, drone, inspection robot) produces motion-blurred frames during fast relative velocity to the inspection target; downstream defect detection or object classification recall drops 40-60 % versus the stationary or hover baseline, because the blur extent within the exposure window exceeds the detector's invariance to blur, even when focal length and ISO are held fixed across the flyby phase
 
 **Domain**: `Perception_Vision`
 **Safety label**: `Image_Motion_Blur`

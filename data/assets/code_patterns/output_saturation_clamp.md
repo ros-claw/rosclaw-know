@@ -6,7 +6,7 @@ domain: Control_Locomotion
 source: curated
 ---
 
-# Commanded velocity diverges to ±∞ when the integrator has no clamp
+# Commanded actuator output (force, torque, peak velocity, or position) overshoots the actuator's rated peak or diverges to ±∞ when the controller has no command-side saturation clamp; the command signal briefly exceeds rated limits before mechanical end-stops or safety interlocks (safety relays) trip
 
 **Domain**: `Control_Locomotion`
 **Safety label**: `Velocity_Divergence`

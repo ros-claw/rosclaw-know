@@ -1,0 +1,8 @@
+{
+  "deepseek_base_url": "https://api.deepseek.com",
+  "deepseek_extractor_model": "deepseek-chat",
+  "deepseek_muse_model": "deepseek-chat",
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "mock_llm": false,
+  "seekdb_host_set": false
+}

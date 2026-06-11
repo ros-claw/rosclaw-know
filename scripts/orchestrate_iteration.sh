@@ -19,6 +19,14 @@ fi
 ROSCLAW_KNOW="/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know"
 cd "$ROSCLAW_KNOW"
 
+# 302.ai credentials: read from env / .env; never hardcode secrets in tracked scripts.
+set -a
+[ -f .env ] && . .env
+set +a
+: "${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY must be set in env or .env}"
+export DEEPSEEK_BASE_URL="${DEEPSEEK_BASE_URL:-https://api.302.ai}"
+export DEEPSEEK_MUSE_MODEL="${DEEPSEEK_MUSE_MODEL:-step-3.7-flash}"
+
 if [ ! -d "$REPORT_DIR" ]; then
   echo "ERROR: $REPORT_DIR not found"
   exit 1
@@ -35,9 +43,6 @@ echo "All 10 summary.json present"
 
 echo "=== Step 2: Spawn 10 parallel judges (5-concurrent) ==="
 seq 1 10 | xargs -P 5 -I {} bash -c "
-  export DEEPSEEK_API_KEY=sk-2sXFHpM70jnSQOctr0ckiJsw0xWHfAbnw07FDCHepi8Uhhhf
-  export DEEPSEEK_BASE_URL=https://api.302.ai
-  export DEEPSEEK_MUSE_MODEL=deepseek-chat
   .venv/bin/python scripts/judge_frontier_eng.py \
     --report-dir $REPORT_DIR/seed_{} --seed {} \
     > $REPORT_DIR/seed_{}.judge.log 2>&1 && echo \"judge seed_{} done\"

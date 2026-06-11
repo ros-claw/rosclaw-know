@@ -62,6 +62,30 @@ SYNTH_DEMOTIONS: Final[dict[str, str]] = {
         "fighting for. (alt mitigation: HOW's "
         "ROSCLAW_HOW_TIER_AWARE_RANKING flag — keep both for defense-in-depth.)"
     ),
+    "reflections_of_a_process_control_practitioner": (
+        "iter5_p0 (2026-06-11). Wrong-domain synth from a process-control "
+        "practitioner's reflective essay; standard_name is generic 'PID "
+        "controller tuning is inconsistent or suboptimal due to process "
+        "dead time, inverse response, or slow response'. matched_keywords "
+        "are all 8 high-frequency generic terms (controller, tuning, "
+        "process, control, locomotion, ...). Lives in topic_group "
+        "control-loop-stability — the SAME group as the three curated "
+        "anti_windup_pid / output_saturation_clamp / pid_joint_latency_"
+        "oscillation — so HOW's topic-filter doesn't exclude it. "
+        "routing_panel live-probe 2026-06-11 (verify_frontier_eng symptoms "
+        "verbatim @ HOW :8088): "
+        "- T_W_005 ActuatorOvershoot: this synth wins sim=0.6554, "
+        "  output_saturation_clamp absent from top-1 "
+        "- T_W_007 IntegrationWindup: this synth wins sim=0.6316, "
+        "  anti_windup_pid absent from top-1 "
+        "The synth's content is a generic essay, not a canonical mapping. "
+        "The three curated cover the actual fix families (back-calculation, "
+        "output clamp, joint-deadtime) more precisely. iter4_p9 fixed T_001 "
+        "by adding pid_joint_latency_oscillation but did NOT address the "
+        "synth's ongoing domination of T_W_005 / T_W_007 — that was a "
+        "narrow surgical fix. This demotion is the structural fix for the "
+        "broader PID-domain synth-vs-curated competition."
+    ),
 }
 
 

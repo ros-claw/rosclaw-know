@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "panel_name": "frontier_eng_18",
+  "frozen_at": "2026-06-10T13:44:38Z",
+  "home_turf_count": 10,
+  "wild_count": 8,
+  "home_turf": [
+    "TASK_001_PIDTuning",
+    "TASK_002_QuadrupedGait",
+    "TASK_003_RobotArmCycleTime",
+    "TASK_004_HighReliableSimulation",
+    "TASK_005_AES128_Throughput",
+    "TASK_006_FlashAttention",
+    "TASK_007_BatteryFastCharging",
+    "TASK_008_JobShop_abz",
+    "TASK_009_TopologyOptimization",
+    "TASK_010_UAVInspection"
+  ],
+  "wild": [
+    "TASK_W_001_KVCacheLongContext",
+    "TASK_W_002_GradExplosionRL",
+    "TASK_W_003_NetRetryStorm",
+    "TASK_W_004_EntropyCollapsePPO",
+    "TASK_W_005_ActuatorOvershoot",
+    "TASK_W_006_PlanningDivergence",
+    "TASK_W_007_IntegrationWindup",
+    "TASK_W_008_AttentionMemoryOOM"
+  ],
+  "source_of_truth": "scripts/verify_frontier_eng.py @ rosclaw-know"
+}

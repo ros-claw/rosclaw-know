@@ -6,7 +6,7 @@ domain: Systems_Compute
 source: curated
 ---
 
-# Network/RPC timeout cascades cause request storms after a partial outage
+# Network, RPC, microservice, and HTTP API call timeout cascades cause thundering-herd request storms and exponential-retry amplification after partial upstream service degradation, backend unavailability, or transient HTTP 5xx errors; naive fixed-delay retry loops without jitter or exponential backoff compound the cascading load, overwhelm downstream capacity, and prolong the outage duration
 
 **Domain**: `Systems_Compute`
 **Safety label**: `Communication_Timeout`

@@ -67,6 +67,32 @@ KNOWN_TOPIC_GROUPS = frozenset(
         # how Muse autodrafts new groups too. See
         # project_iter4_p4_simd_aes_ni_topic_group_move.md.
         "hardware-accelerated-cryptography",
+        # iter5_p2 (2026-06-11) — single-cluster group for
+        # motion_blur_imu_aided_deblur. Was in 3d-perception-and-mapping
+        # but that group's 53-cluster fingerprint is dominated by 52
+        # SLAM / 3D-mapping / scene-reconstruction synths whose vocab
+        # has little overlap with platform-motion-blur queries. Live
+        # probe (2026-06-11) on T_010 UAV inspection: query landed on
+        # rl-training-stability (0.38) + control-loop-stability (0.34)
+        # at top-2, with 3d-perception-and-mapping not in top-5.
+        # motion_blur_imu_aided_deblur was filtered out of CATALYST's
+        # candidate pool entirely (sim 0.7180 against the cluster
+        # itself, but topic_group admission rejected it). New dedicated
+        # group lifts T_010's cluster admission. See
+        # project_iter5_p2_motion_blur_topic_group_move.md.
+        "motion-blur-deblur",
+        # iter5_p3 (2026-06-11) — single-cluster group for
+        # exponential_backoff_retry. Was in fault-tolerant-compute, but that
+        # group's 7-cluster fingerprint is dominated by 6 checkpointing /
+        # HPC fault-tolerance synths whose vocab has little overlap with
+        # microservice / API / retry-storm queries. Live probe on T_W_003:
+        # query admitted to [scheduling-optimization, software-engineering-and-tooling]
+        # while exponential_backoff_retry (sim 0.7240) was filtered out of
+        # CATALYST's candidate pool entirely. New dedicated group lifts
+        # T_W_003's cluster admission. General name hosts future retry /
+        # circuit-breaker / backpressure curated clusters. See
+        # project_iter5_p3_exponential_backoff_topic_group_move.md.
+        "reliability-engineering",
     }
 )
 
