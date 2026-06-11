@@ -129,6 +129,96 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
             },
         ],
     ),
+    # ── iter4_p9 (2026-06-10): new curated targeting T_001 specifically ──
+    # Authored to win T_001's cluster cosine over the SYNTH
+    # `pattern_reflections_of_a_process_control_practitioner` (sim 0.6419 in
+    # iter4_p5/p6/p7/p8 — wrong domain for T_001 which is anti-windup +
+    # latency, not process dead-time tuning). Anti_windup_pid's standard_name
+    # is too short (9 words) to win T_001 cluster cosine; this cluster adds
+    # T_001-specific vocab (robotic-arm joint, sensor-to-actuator latency,
+    # sustained oscillation) without colliding with T_W_005 (voice-coil
+    # actuator) or T_W_007 (flow-rate valve). See project_iter4_p9 memory.
+    CuratedPattern(
+        pattern_id="pid_joint_latency_oscillation",
+        topic_group="control-loop-stability",
+        topic_tag="pid-joint-loop-latency-anti-windup",
+        safety_label="PID_Joint_Latency_Oscillation",
+        standard_name=(
+            "Robotic-arm joint feedback control diverges into sustained "
+            "oscillation when sensor-to-actuator loop deadtime around 30 ms "
+            "exceeds the inverse of the joint's mechanical bandwidth, with "
+            "stale measurements compounding the tracking-error response each "
+            "control cycle"
+        ),
+        domain="Control_Locomotion",
+        matched_keywords=[
+            "robotic arm", "robotic-arm", "manipulator", "joint", "PID",
+            "loop latency", "sensor-to-actuator", "sensor to actuator",
+            "deadtime", "integral saturation", "sustained oscillation",
+            "joint trajectory", "tracking", "30 ms",
+        ],
+        fix_pattern=(
+            "Combine three remedies for latency-induced PID oscillation: "
+            "(a) SMITH PREDICTOR — explicitly compensate the deadtime by feeding "
+            "the controller a predicted-future plant output instead of the raw "
+            "measurement; (b) ANTI-WINDUP — conditional integration that stops "
+            "accumulating when the actuator is saturated AND the error direction "
+            "would push further into saturation; (c) GAIN MARGIN BUDGET — "
+            "reduce Kp until the loop's gain at the deadtime frequency "
+            "1/(2*tau_d) is below 0 dB, sacrificing bandwidth for stability."
+        ),
+        failed_attempt=(
+            "Increasing Kp alone to chase the oscillation — under 30 ms loop "
+            "latency the additional gain crosses 0 dB at a higher frequency, "
+            "moving the resonance INTO the closed-loop bandwidth and amplifying "
+            "the oscillation instead of damping it."
+        ),
+        before_code=(
+            "def pid_step(setpoint, measurement, dt, integ):\n"
+            "    err = setpoint - measurement       # measurement is 30ms stale\n"
+            "    integ += err * dt                  # keeps accumulating during deadtime\n"
+            "    tau = Kp*err + Ki*integ + Kd*derr\n"
+            "    return tau\n"
+        ),
+        after_code=(
+            "def pid_step(setpoint, measurement, dt, integ, deadtime_s):\n"
+            "    predicted = smith_predict(measurement, deadtime_s)  # advance past loop delay\n"
+            "    err = setpoint - predicted\n"
+            "    tau_uncl = Kp*err + Ki*integ + Kd*derr\n"
+            "    tau = torch.clamp(tau_uncl, -tau_max, tau_max)\n"
+            "    saturated = tau != tau_uncl\n"
+            "    if not (saturated and same_sign(err, tau_uncl)):\n"
+            "        integ += err * dt              # conditional integration\n"
+            "    return tau\n"
+        ),
+        cross_domain_hints=[
+            {
+                "source_domain": "Memory_Reasoning",
+                "insight": (
+                    "Loop latency in physical control is the same problem as "
+                    "KV-cache staleness in long-context attention: by the time "
+                    "you act on old state, the world has moved on."
+                ),
+                "action_suggestion": (
+                    "Always model the action delay explicitly when designing a "
+                    "feedback loop — Smith predictors are the controller-side "
+                    "analogue of speculative decoding's draft model."
+                ),
+            },
+            {
+                "source_domain": "Learning_Training",
+                "insight": (
+                    "Gradient clipping under unbounded loss is the SGD analogue "
+                    "of clamping a PID output: both bound the per-step delta to "
+                    "prevent unbounded integration."
+                ),
+                "action_suggestion": (
+                    "If your PID needs anti-windup, your training loop probably "
+                    "needs gradient clipping for the same structural reason."
+                ),
+            },
+        ],
+    ),
     CuratedPattern(
         pattern_id="sliding_window_kv_cache",
         topic_group="llm-inference-efficiency",

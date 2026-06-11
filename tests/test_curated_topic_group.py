@@ -411,6 +411,66 @@ class TestCuratedPublisherEmitsTopicGroup:
             "future curated additions must declare topic_tag too."
         )
 
+    def test_iter4_p9_pid_joint_latency_oscillation_present(self):
+        """iter4_p9 invariant: pid_joint_latency_oscillation MUST be present.
+
+        Authored as a NEW curated (not augment) to win T_001 PIDTuning's
+        cluster cosine over the synth `reflections_of_a_process_control_practitioner`
+        (sim 0.6419 — wrong domain, process-dead-time vs T_001's anti-windup+latency).
+
+        standard_name engineered to:
+          (a) WIN T_001: vocab "robotic-arm joint" + "sensor-to-actuator loop
+              latency" + "sustained oscillation" + "integral term accumulating"
+              matches T_001 symptom directly.
+          (b) NOT WIN T_W_005: T_W_005's "voice-coil actuator" + "force overshoot"
+              + "rated peak" vocab is absent from this standard_name.
+          (c) NOT WIN T_W_007: T_W_007's "flow-rate" + "control valve" + "demand
+              transient" vocab is absent from this standard_name.
+
+        Per iter5 lesson [[project-iter5-anti-windup-pid-augment-reverted]],
+        augmenting anti_windup_pid's standard_name is risky (preference swaps
+        on T_W_005/T_W_007 with home-turf noise dominating paired_ab).
+        A NEW cluster bypasses this risk: T_001 gets its own cluster cosine
+        winner without anti_windup_pid changing at all, so T_W_005/T_W_007
+        routing stays anchored.
+
+        Verified safe-to-ship via offline what-if probe before live publish
+        (see iter4_p9 memory for forensic).
+        """
+        from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS
+        p = next(
+            (p for p in CURATED_SAFETY_PATTERNS if p.pattern_id == "pid_joint_latency_oscillation"),
+            None,
+        )
+        assert p is not None, (
+            "pid_joint_latency_oscillation missing from curated registry. "
+            "This is the iter4_p9 ship targeting T_001 — removing it reverts "
+            "T_001 routing back to the wrong synth."
+        )
+        assert p.topic_group == "control-loop-stability", (
+            f"pid_joint_latency_oscillation must be in control-loop-stability, "
+            f"got {p.topic_group!r}"
+        )
+        assert p.topic_tag is not None
+        # Standard_name MUST include T_001-distinctive vocab; if these tokens
+        # are removed the cluster won't win T_001 cluster cosine.
+        sn = p.standard_name.lower()
+        for token in ["robotic-arm", "joint", "deadtime", "oscillation", "30 ms"]:
+            assert token in sn, (
+                f"pid_joint_latency_oscillation standard_name missing required "
+                f"T_001-distinctive token: {token!r}. Full: {p.standard_name!r}"
+            )
+        # Anti-collision: standard_name should NOT include T_W_005's "voice-coil"
+        # or T_W_007's "flow-rate" / "control valve". If those appear, the new
+        # cluster may steal routing from anti_windup_pid on those tasks.
+        for forbidden in ["voice-coil", "voice coil", "flow-rate", "flow rate", "control valve"]:
+            assert forbidden not in sn, (
+                f"pid_joint_latency_oscillation standard_name contains "
+                f"T_W_005/T_W_007 collision token: {forbidden!r}. Removing "
+                f"these prevents preference swap on anti_windup_pid's current "
+                f"home tasks."
+            )
+
 
 class TestLiveBridgeReflectsTopicGroup:
     """Post-republish smoke: the actual bridge file MUST carry topic_group.

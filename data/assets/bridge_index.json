@@ -23426,11 +23426,59 @@
       "topic_group": "llm-inference-efficiency",
       "topic_tag": "flash-attention-tiled-softmax",
       "content_hash": "9d54dfcdfcaacca7627064113c2bb27f65d4eb10808f49484bd6ead099fcbeed"
+    },
+    "pid_joint_latency_oscillation": {
+      "standard_name": "Robotic-arm joint feedback control diverges into sustained oscillation when sensor-to-actuator loop deadtime around 30 ms exceeds the inverse of the joint's mechanical bandwidth, with stale measurements compounding the tracking-error response each control cycle",
+      "domain": "Control_Locomotion",
+      "safety_label": "PID_Joint_Latency_Oscillation",
+      "source": "curated",
+      "source_tier": "S_CURATED_VERIFIED",
+      "matched_keywords": [
+        "30 ms",
+        "deadtime",
+        "integral saturation",
+        "joint",
+        "joint trajectory",
+        "loop latency",
+        "manipulator",
+        "pid",
+        "pid joint latency oscillation",
+        "pid_joint_latency_oscillation",
+        "robotic arm",
+        "robotic-arm",
+        "sensor to actuator",
+        "sensor-to-actuator",
+        "sustained oscillation",
+        "tracking"
+      ],
+      "cross_domain_analogies": [
+        {
+          "source_domain": "Memory_Reasoning",
+          "insight": "Loop latency in physical control is the same problem as KV-cache staleness in long-context attention: by the time you act on old state, the world has moved on.",
+          "action_suggestion": "Always model the action delay explicitly when designing a feedback loop — Smith predictors are the controller-side analogue of speculative decoding's draft model.",
+          "neighbor_id": "curated"
+        },
+        {
+          "source_domain": "Learning_Training",
+          "insight": "Gradient clipping under unbounded loss is the SGD analogue of clamping a PID output: both bound the per-step delta to prevent unbounded integration.",
+          "action_suggestion": "If your PID needs anti-windup, your training loop probably needs gradient clipping for the same structural reason.",
+          "neighbor_id": "curated"
+        }
+      ],
+      "associated_patterns": [
+        "pid_joint_latency_oscillation"
+      ],
+      "topic_group": "control-loop-stability",
+      "topic_tag": "pid-joint-loop-latency-anti-windup",
+      "content_hash": "4c82bb0a0c85c08e05d19b35107e835262470944972248b774951ce305fb7c07"
     }
   },
   "safety_label_index": {
     "Torque_Overflow": [
       "anti_windup_pid"
+    ],
+    "PID_Joint_Latency_Oscillation": [
+      "pid_joint_latency_oscillation"
     ],
     "Memory_Exhaustion": [
       "sliding_window_kv_cache",
