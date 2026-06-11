@@ -6,7 +6,7 @@ domain: Planning_Decision
 source: curated
 ---
 
-# Open-loop plan tracks ground truth poorly when latency exceeds 50 ms
+# Model-predictive control (MPC) and receding-horizon planning drift away from ground truth when the internal dynamics model mismatches real-world friction, terrain, or disturbance; the predicted state diverges from the measured state over the planning horizon, causing unbounded tracking error unless the plan is replanned in closed loop with online state feedback and shorter replan intervals
 
 **Domain**: `Planning_Decision`
 **Safety label**: `Oscillation_Divergence`

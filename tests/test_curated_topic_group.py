@@ -93,6 +93,17 @@ KNOWN_TOPIC_GROUPS = frozenset(
         # circuit-breaker / backpressure curated clusters. See
         # project_iter5_p3_exponential_backoff_topic_group_move.md.
         "reliability-engineering",
+        # iter5_p4 (2026-06-11) — single-cluster group for
+        # closed_loop_replanning. Was in llm-planning-and-reasoning, but that
+        # group's fingerprint is dominated by LLM chain-of-thought / planner
+        # synths whose vocab has little overlap with MPC / friction / horizon-
+        # drift queries. Live probe on T_W_006: query admitted to
+        # [Learning_Training, Planning_Decision, Control_Locomotion] while
+        # closed_loop_replanning (in llm-planning-and-reasoning) was filtered
+        # out of CATALYST's candidate pool entirely. New dedicated group lifts
+        # T_W_006's cluster admission. General name hosts future MPC /
+        # receding-horizon / closed-loop planning curated clusters.
+        "closed-loop-replanning",
     }
 )
 

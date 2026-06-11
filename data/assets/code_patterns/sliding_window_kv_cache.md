@@ -6,7 +6,7 @@ domain: Memory_Reasoning
 source: curated
 ---
 
-# Unbounded KV-cache growth during long-horizon LLM rollouts causes CUDA OOM
+# Unbounded KV-cache growth during long-horizon LLM rollouts, multi-turn conversation history, and fixed context-window deployments causes CUDA OOM and rising per-turn latency; bounded accumulation is restored by sliding-window truncation of the oldest key/value rows, recent-turns retention policies, and summarization of older context instead of retaining every token
 
 **Domain**: `Memory_Reasoning`
 **Safety label**: `Memory_Exhaustion`

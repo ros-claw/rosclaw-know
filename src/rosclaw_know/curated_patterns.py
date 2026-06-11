@@ -247,11 +247,31 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
         topic_group="llm-inference-efficiency",
         topic_tag="sliding-window-kv-cache-rollouts",
         safety_label="Memory_Exhaustion",
-        standard_name="Unbounded KV-cache growth during long-horizon LLM rollouts causes CUDA OOM",
+        standard_name=(
+            "Unbounded KV-cache growth during long-horizon LLM rollouts, multi-turn "
+            "conversation history, and fixed context-window deployments causes CUDA OOM "
+            "and rising per-turn latency; bounded accumulation is restored by sliding-window "
+            "truncation of the oldest key/value rows, recent-turns retention policies, "
+            "and summarization of older context instead of retaining every token"
+        ),
         domain="Memory_Reasoning",
         matched_keywords=[
-            "memory", "exhaustion", "oom", "out of memory", "cuda",
-            "kv-cache", "kv cache", "sequence", "long horizon",
+            # Core mechanism
+            "kv-cache", "kv cache", "key value cache", "unbounded cache", "cache growth",
+            "cache eviction", "sliding window", "rolling window", "fixed window",
+            "sliding-window attention", "windowed attention",
+            # Context / history
+            "context window", "context length", "context limit", "token budget",
+            "token accumulation", "token history", "conversation history", "chat history",
+            "multi-turn", "long horizon", "long-horizon rollout", "running state",
+            "oldest tokens", "old turns",
+            # Retention / truncation policy
+            "retention policy", "retain recent turns", "truncate old turns", "truncation",
+            "summarization of older turns", "summary of older context", "attention sink",
+            "global attention sink", "recent-turns retention", "forget old context",
+            # Symptoms
+            "memory", "exhaustion", "oom", "out of memory", "cuda", "sequence",
+            "per-turn latency", "latency growth", "inference slowdown",
         ],
         fix_pattern=(
             "Cap the per-layer KV tensor at a fixed window N (e.g. 256–512 tokens). "
@@ -379,14 +399,35 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     ),
     CuratedPattern(
         pattern_id="closed_loop_replanning",
-        topic_group="llm-planning-and-reasoning",
+        topic_group="closed-loop-replanning",
         topic_tag="closed-loop-mpc-replanning",
         safety_label="Oscillation_Divergence",
-        standard_name="Open-loop plan tracks ground truth poorly when latency exceeds 50 ms",
+        standard_name=(
+            "Model-predictive control (MPC) and receding-horizon planning drift away from "
+            "ground truth when the internal dynamics model mismatches real-world friction, "
+            "terrain, or disturbance; the predicted state diverges from the measured state "
+            "over the planning horizon, causing unbounded tracking error unless the plan is "
+            "replanned in closed loop with online state feedback and shorter replan intervals"
+        ),
         domain="Planning_Decision",
         matched_keywords=[
-            "oscillat", "diverg", "tracking", "drift", "latency",
+            # MPC / horizon
+            "model predictive control", "mpc", "receding horizon", "planning horizon",
+            "trajectory horizon", "horizon length", "look-ahead horizon",
+            # Dynamics mismatch
+            "nominal dynamics", "dynamics model mismatch", "real-world friction",
+            "ground friction", "terrain variation", "disturbance", "unmodeled dynamics",
+            "parameter uncertainty", "environmental variation",
+            # Predicted-vs-measured divergence
+            "predicted state", "measured state", "predicted vs measured", "state divergence",
+            "tracking error accumulates", "unbounded tracking error", "drift", "diverge",
             "open-loop", "open loop",
+            # Closed-loop replanning
+            "closed-loop replanning", "closed loop replan", "replan interval",
+            "online replan", "frequent replan", "plan refresh", "state feedback",
+            "receding-horizon replan",
+            # Robust / adaptive variants
+            "robust mpc", "tube mpc", "online adaptation", "disturbance rejection",
         ],
         fix_pattern=(
             "Replace the open-loop planner with a Model-Predictive Control loop: "

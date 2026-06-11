@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-11T21:52:29Z",
+  "generated_at": "2026-06-11T22:51:28Z",
   "curated_count": 15,
   "default_min_similarity": 0.55,
   "canaries": [
@@ -27,7 +27,7 @@
     },
     {
       "name": "sliding_window_kv_cache",
-      "query": "memory exhaustion memory exhaustion oom out of memory cuda kv-cache kv cache sequence long horizon",
+      "query": "memory exhaustion kv-cache kv cache key value cache unbounded cache cache growth cache eviction sliding window rolling window fixed window sliding-window attention windowed attention context window context length context limit token budget token accumulation token history conversation history chat history multi-turn long horizon long-horizon rollout running state oldest tokens",
       "expected_top1_any": [
         "sliding_window_kv_cache"
       ],
@@ -58,7 +58,7 @@
     },
     {
       "name": "closed_loop_replanning",
-      "query": "oscillation divergence oscillat diverg tracking drift latency open-loop open loop",
+      "query": "oscillation divergence model predictive control mpc receding horizon planning horizon trajectory horizon horizon length look-ahead horizon nominal dynamics dynamics model mismatch real-world friction ground friction terrain variation disturbance unmodeled dynamics parameter uncertainty environmental variation predicted state measured state predicted vs measured state divergence tracking error accumulates unbounded tracking error drift diverge",
       "expected_top1_any": [
         "closed_loop_replanning"
       ],
