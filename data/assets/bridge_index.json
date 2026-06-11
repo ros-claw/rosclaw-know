@@ -5101,7 +5101,8 @@
         "output_saturation_clamp"
       ],
       "topic_group": "control-loop-stability",
-      "content_hash": "2efc736a7dcc14414f022c96d03505fdd6b2332899d9a69fd43485dfab3173f4"
+      "topic_tag": "controller-output-saturation-clamp",
+      "content_hash": "ade328a18d2116fae0789a8a36f3fe4809a86429061b85a5cf44759db9340f80"
     },
     "closed_loop_replanning": {
       "standard_name": "Open-loop plan tracks ground truth poorly when latency exceeds 50 ms",
@@ -23214,7 +23215,8 @@
         "time_optimal_path_blending"
       ],
       "topic_group": "locomotion-and-manipulation",
-      "content_hash": "e1450d803c2a60e58f8ce11c81499f4a044e8285d974d545a79185c24061d50a"
+      "topic_tag": "time-optimal-path-parameterization",
+      "content_hash": "c945cad5fd833b5796cbd1b1df4ccfded2d25d20ce8d5ef656b81b365f9cb9ff"
     },
     "motion_blur_imu_aided_deblur": {
       "standard_name": "Onboard camera produces motion-blurred frames during fast platform motion; downstream detection / classification recall drops 40-60 % vs. stationary baseline",
@@ -23319,7 +23321,8 @@
         "metaheuristic_combinatorial_escape"
       ],
       "topic_group": "scheduling-optimization",
-      "content_hash": "5d5829af16a6ea49fce948519510504034acc85fca05c078823442b41797e15b"
+      "topic_tag": "metaheuristic-combinatorial-local-optimum-escape",
+      "content_hash": "8b90cb9de91949db77dc325090d4dd641bc0166d79c12563e493e550f013fbc9"
     },
     "terrain_aware_locomotion": {
       "standard_name": "Legged-robot trot gait diverges on uneven or slippery terrain — foot-slip events compound center-of-mass tracking error each cycle until the robot falls",
@@ -23369,7 +23372,8 @@
         "terrain_aware_locomotion"
       ],
       "topic_group": "locomotion-and-manipulation",
-      "content_hash": "4f43f7bc6bf7b26b372ee7ce9468c99c902405e879cefe08ec875baae0af7055"
+      "topic_tag": "terrain-aware-legged-locomotion",
+      "content_hash": "529ac89d93008b4709f80682f826510e83526be148ab8dfb82441f36934d5c1e"
     },
     "flash_attention_tiled_softmax": {
       "standard_name": "Transformer self-attention layer materializes the full NxN matrix in HBM at long context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference throughput",

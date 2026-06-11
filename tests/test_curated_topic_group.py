@@ -346,6 +346,71 @@ class TestCuratedPublisherEmitsTopicGroup:
         )
         assert gc.topic_group == "rl-training-stability"
 
+    def test_iter4_p8_final_holdouts_have_topic_tag(self):
+        """iter4_p8 invariant: the final 4 holdout curated MUST keep their tags.
+
+        Batch ship completing 14/14 curated tagged. Per-cluster + batch what-if
+        probe on iter4_p7 baseline (/tmp/probe_iter4_p8_holdouts_onp7.py):
+
+          output_saturation_clamp:               2 admit changes (T_003, T_010)
+          terrain_aware_locomotion:              2 admit changes (T_002, T_003)
+          time_optimal_path_blending:            2 admit changes (T_002, T_003)
+          metaheuristic_combinatorial_escape:    3 admit changes (T_004, T_008, T_W_003)
+          BATCH (all 4):                         6 unique tasks affected
+                                                  (T_002, T_003, T_004, T_008, T_010, T_W_003)
+
+        ALL 6 affected tasks are SKIP_CURATED per 2026-06-09 headroom probe
+        (T_002 is AUTHOR_CURATED h=2.60 but already saturated 10/10 via existing
+        terrain_aware_locomotion routing). No measurable paired_ab lift expected.
+
+        This completes the iter4 routing-tag arc. All 14 curated now declare
+        topic_tag in their canonical KNOW representation, regardless of whether
+        HOW also infers via autodraft (the 4 holdouts here all show topic_tag=None
+        in autodraft --dry-run --force output, confirming KNOW publisher is the
+        only canonical source).
+
+        Dropping any of these tags re-opens the silent-fingerprint-drop failure
+        mode the iter4_p4 memory documented.
+        """
+        from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS
+        iter4_p8_tagged = {
+            "output_saturation_clamp",
+            "terrain_aware_locomotion",
+            "time_optimal_path_blending",
+            "metaheuristic_combinatorial_escape",
+        }
+        by_id = {p.pattern_id: p for p in CURATED_SAFETY_PATTERNS}
+        missing = []
+        for cid in iter4_p8_tagged:
+            p = by_id.get(cid)
+            assert p is not None, f"{cid} missing from curated registry"
+            if p.topic_tag is None:
+                missing.append(cid)
+        assert not missing, (
+            f"iter4_p8 cluster(s) lost topic_tag: {missing}. "
+            "These were tagged in iter4_p8 (commit after iter4_p7 43787ce) to "
+            "complete the 14/14 curated tag coverage. Dropping the tag drops "
+            "the cluster from its group's fingerprint."
+        )
+
+    def test_all_curated_have_topic_tag(self):
+        """Post-iter4_p8 invariant: ALL 14 curated declare topic_tag.
+
+        The iter4_p3 invariant required topic_group. iter4_p8 closes the loop
+        by requiring topic_tag on every curated. With both invariants, the
+        publisher emits complete fingerprint data for every curated cluster,
+        and HOW's _build_group_to_fingerprint_text picks them all up.
+        """
+        from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS
+        missing_tag = [
+            p.pattern_id for p in CURATED_SAFETY_PATTERNS if p.topic_tag is None
+        ]
+        assert not missing_tag, (
+            f"{len(missing_tag)} curated pattern(s) without topic_tag: "
+            f"{missing_tag}. iter4_p8 completed the 14/14 tag coverage; any "
+            "future curated additions must declare topic_tag too."
+        )
+
 
 class TestLiveBridgeReflectsTopicGroup:
     """Post-republish smoke: the actual bridge file MUST carry topic_group.

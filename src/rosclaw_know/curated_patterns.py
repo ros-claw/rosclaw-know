@@ -211,6 +211,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="output_saturation_clamp",
         topic_group="control-loop-stability",
+        topic_tag="controller-output-saturation-clamp",
         safety_label="Velocity_Divergence",
         standard_name="Commanded velocity diverges to ±∞ when the integrator has no clamp",
         domain="Control_Locomotion",
@@ -489,6 +490,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="time_optimal_path_blending",
         topic_group="locomotion-and-manipulation",
+        topic_tag="time-optimal-path-parameterization",
         safety_label="Robot_Cycle_Time_Inflation",
         standard_name=(
             "Joint-space trajectories that decelerate to zero at every via-point "
@@ -628,6 +630,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="metaheuristic_combinatorial_escape",
         topic_group="scheduling-optimization",
+        topic_tag="metaheuristic-combinatorial-local-optimum-escape",
         safety_label="Combinatorial_Local_Optimum",
         standard_name=(
             "Greedy / local-search on combinatorial scheduling (job-shop, "
@@ -747,6 +750,7 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
     CuratedPattern(
         pattern_id="terrain_aware_locomotion",
         topic_group="locomotion-and-manipulation",
+        topic_tag="terrain-aware-legged-locomotion",
         safety_label="Tracking_Error",
         standard_name=(
             "Legged-robot trot gait diverges on uneven or slippery terrain — "
