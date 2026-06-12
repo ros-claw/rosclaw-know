@@ -1,0 +1,8 @@
+{
+  "repo": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-how",
+  "sha": "59fb094179310e7314eba55eb2dbd72f5e921bf4",
+  "short_sha": "59fb0941",
+  "branch": "main",
+  "dirty": true,
+  "porcelain": "?? data/outcomes_pending.jsonl"
+}

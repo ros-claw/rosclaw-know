@@ -32,8 +32,11 @@ set -euo pipefail
 
 # 302.ai / z.ai credentials are read from environment or the repo's .env file.
 # Do NOT hardcode secrets in this tracked launcher — .env is gitignored.
+# .env.local (also gitignored) is sourced after .env so operators can override
+# without editing the canonical .env file.
 set -a
 [ -f .env ] && . .env
+[ -f .env.local ] && . .env.local
 set +a
 
 # step-3.7-flash is the FREE 302.ai model. Deepseek-chat is paid and the

@@ -387,6 +387,97 @@ def _build_treatment_via_how(
     }
 
 
+def _call_glm_agent(
+    symptom: str,
+    treatment_context: str = "",
+    *,
+    temperature: float = 0.0,
+    seed: int | None = None,
+) -> str | None:
+    """Synchronous GLM-4.7-Flash fallback for agent generation.
+
+    Used when the primary 302.ai / DeepSeek provider returns a balance /
+    account-level failure (HTTP 402) so the paired_ab run doesn't silently
+    lose all agent responses.
+    """
+    api_key = os.environ.get("ROSCLAW_GLM_API_KEY")
+    base_url = os.environ.get(
+        "ROSCLAW_GLM_BASE_URL",
+        "https://api.z.ai/api/paas/v4",
+    )
+    model = os.environ.get("ROSCLAW_GLM_MODEL", "GLM-4.7-Flash")
+    if not api_key:
+        return None
+
+    import urllib.error
+    import urllib.request
+
+    system_prompt = (
+        "You are a code-optimisation and debug agent for embodied-AI engineering. "
+        "Given an engineering symptom, propose a concrete, code-level fix with safety constraints."
+    )
+    user_content = f"Engineering symptom:\n{symptom}\n"
+    if treatment_context:
+        user_content += (
+            "\n\nThe ROSCLAW heuristic index has matched the following "
+            "cross-domain analogies. Use them when relevant.\n"
+            + treatment_context
+            + "\n\nReturn a fix plan with: (1) immediate code change, (2) physical/safety "
+              "constraints to enforce, (3) verification step."
+        )
+
+    payload_dict: dict[str, object] = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ],
+        "temperature": temperature,
+        "max_tokens": 2000,
+        "seed": int(seed) if seed is not None else 0,
+        "stream": False,
+    }
+    payload = json.dumps(payload_dict).encode("utf-8")
+    req = urllib.request.Request(
+        f"{base_url.rstrip('/')}/chat/completions",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    import time as _time
+    import urllib.error
+
+    last_err: str | None = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode()[:200]
+            last_err = f"[GLM fallback HTTP {exc.code}: {body}]"
+            if exc.code == 429 or exc.code >= 500:
+                if attempt < 2:
+                    _time.sleep(2.0 * (2 ** attempt))
+                    continue
+            return last_err
+        except Exception as exc:  # noqa: BLE001
+            last_err = f"[GLM fallback failed: {exc}]"
+            if attempt < 2:
+                _time.sleep(2.0 * (2 ** attempt))
+                continue
+            return last_err
+        else:
+            choices = data.get("choices") or []
+            if choices:
+                content = (choices[0].get("message") or {}).get("content")
+                if content:
+                    return content
+            return None
+    return last_err
+
 def _call_agent(
     symptom: str,
     treatment_context: str = "",
@@ -523,6 +614,17 @@ def _call_agent(
 
         if not empty_content_signal:
             # Either non-transient failure or exhausted transient retries.
+            # If the primary provider hit an account/balance failure, try the
+            # GLM-4.7-Flash fallback so a single dead key doesn't void the run.
+            if "Insufficient Balance" in last_err or "HTTP 402" in last_err:
+                glm_reply = _call_glm_agent(
+                    symptom,
+                    treatment_context,
+                    temperature=temperature,
+                    seed=seed,
+                )
+                if glm_reply and not glm_reply.startswith("["):
+                    return glm_reply
             return last_err
     return last_err
 

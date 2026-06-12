@@ -49,10 +49,20 @@ class CuratedPattern:
 
     Each value MUST be one of the existing topic_groups in HOW's bridge
     (e.g. control-loop-stability, llm-inference-efficiency,
-    rl-training-stability, ...). Never invent new groups here — that
-    fragments the routing pool. If a curated truly doesn't fit any existing
-    group, leave None and accept reduced topic-filter reach (it can still
-    win via safety_label exact match or rescue ≥ 0.60 sim).
+    rl-training-stability, ...) **or** a new single-cluster group created
+    explicitly to prevent the curated entry from being drowned by a large
+    synth-heavy group. The single-cluster pattern (see
+    ``hardware-accelerated-cryptography`` for simd_aes_ni,
+    ``motion-blur-deblur`` for motion_blur_imu_aided_deblur,
+    ``closed-loop-replanning`` for closed_loop_replanning) is now an
+    accepted general mechanism: when a curated cluster's query keeps being
+    misrouted because the parent group's fingerprint is dominated by
+    unrelated synth clusters, move it to its own group so its own
+    standard_name becomes the group fingerprint.
+
+    If a curated truly doesn't fit any existing group AND doesn't need a
+    dedicated singleton, leave None and accept reduced topic-filter reach
+    (it can still win via safety_label exact match or rescue ≥ 0.60 sim).
     """
     topic_tag: str | None = None
     """The topic_tag — a finer-grained label within topic_group. iter4_p4

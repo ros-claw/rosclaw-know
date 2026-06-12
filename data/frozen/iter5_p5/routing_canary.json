@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-11T22:51:28Z",
+  "curated_count": 15,
+  "default_min_similarity": 0.55,
+  "canaries": [
+    {
+      "name": "anti_windup_pid",
+      "query": "torque overflow torque overflow saturation wind-up windup anti-windup pid integral actuator valve control valve flow-rate flow rate flow force integrator state integrator demand transient demand transient setpoint overshoot past target overshoot settling time",
+      "expected_top1_any": [
+        "anti_windup_pid",
+        "output_saturation_clamp"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Torque_Overflow"
+    },
+    {
+      "name": "pid_joint_latency_oscillation",
+      "query": "pid joint latency oscillation robotic arm robotic-arm manipulator joint pid loop latency sensor-to-actuator sensor to actuator deadtime integral saturation sustained oscillation joint trajectory tracking 30 ms",
+      "expected_top1_any": [
+        "pid_joint_latency_oscillation"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "PID_Joint_Latency_Oscillation"
+    },
+    {
+      "name": "sliding_window_kv_cache",
+      "query": "memory exhaustion kv-cache kv cache key value cache unbounded cache cache growth cache eviction sliding window rolling window fixed window sliding-window attention windowed attention context window context length context limit token budget token accumulation token history conversation history chat history multi-turn long horizon long-horizon rollout running state oldest tokens",
+      "expected_top1_any": [
+        "sliding_window_kv_cache"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Memory_Reasoning",
+      "safety_label": "Memory_Exhaustion"
+    },
+    {
+      "name": "gradient_clipping",
+      "query": "numerical instability nan inf numerical instability loss explod gradient explod gradient clip learning rate",
+      "expected_top1_any": [
+        "gradient_clipping"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Learning_Training",
+      "safety_label": "Numerical_Instability"
+    },
+    {
+      "name": "output_saturation_clamp",
+      "query": "velocity divergence velocity diverg infinite explode saturation clamp limit force peak force peak rated rated peak actuator overshoot command signal setpoint mechanical end-stop end-stop end stop safety relay safety interlock voice-coil",
+      "expected_top1_any": [
+        "anti_windup_pid",
+        "output_saturation_clamp"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Velocity_Divergence"
+    },
+    {
+      "name": "closed_loop_replanning",
+      "query": "oscillation divergence model predictive control mpc receding horizon planning horizon trajectory horizon horizon length look-ahead horizon nominal dynamics dynamics model mismatch real-world friction ground friction terrain variation disturbance unmodeled dynamics parameter uncertainty environmental variation predicted state measured state predicted vs measured state divergence tracking error accumulates unbounded tracking error drift diverge",
+      "expected_top1_any": [
+        "closed_loop_replanning"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Planning_Decision",
+      "safety_label": "Oscillation_Divergence"
+    },
+    {
+      "name": "ppo_entropy_collapse_guard",
+      "query": "entropy collapse ppo entropy collapse policy value loss degenerate episodes kl exploration",
+      "expected_top1_any": [
+        "ppo_entropy_collapse_guard"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Learning_Training",
+      "safety_label": "Entropy_Collapse"
+    },
+    {
+      "name": "multi_stage_cc_cv_fast_charging",
+      "query": "battery capacity fade lithium plating li-ion battery capacity fade fast charging fast charge soc state of charge anode graphite cc constant current cc-cv current taper pulse charging charging protocol c rate 4c thermal calendar aging cycle aging",
+      "expected_top1_any": [
+        "multi_stage_cc_cv_fast_charging"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Battery_Capacity_Fade"
+    },
+    {
+      "name": "simd_aes_ni_hardware_crypto",
+      "query": "crypto throughput bottleneck aes aes-ni aes128 aes256 throughput mb/s gb/s crypto cipher encryption decryption subbytes mixcolumns sbox round function intrinsics _mm_aesenc_si128 vectorize simd avx sse pclmulqdq bitslice bitslicing",
+      "expected_top1_any": [
+        "simd_aes_ni_hardware_crypto"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Crypto_Throughput_Bottleneck"
+    },
+    {
+      "name": "time_optimal_path_blending",
+      "query": "robot cycle time inflation trajectory cycle time via-point via point waypoint joint space joint-space pick and place pick-and-place robot arm manipulator deceleration topp time-optimal time optimal path parameterization trajectory blending via-point blending blend radius s-curve jerk limited jerk-limited trapezoidal motion planning",
+      "expected_top1_any": [
+        "time_optimal_path_blending"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Robot_Cycle_Time_Inflation"
+    },
+    {
+      "name": "motion_blur_imu_aided_deblur",
+      "query": "image motion blur motion blur blur kernel exposure time exposure shutter rolling shutter global shutter iso imu imu-aided imu aided deblur deblurring wiener richardson lucy uav drone quadrotor flyby hover hover-and-stare inspection detection recall blur compensation",
+      "expected_top1_any": [
+        "motion_blur_decomposition_with_cross-shutter_guidance",
+        "motion_blur_imu_aided_deblur"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Perception_Vision",
+      "safety_label": "Image_Motion_Blur"
+    },
+    {
+      "name": "metaheuristic_combinatorial_escape",
+      "query": "combinatorial local optimum job-shop job shop jsp scheduling makespan dispatch rule tabu search simulated annealing genetic algorithm ga metaheuristic neighborhood local optimum local minimum plateau stagnation shift move swap move critical path disjunctive graph tsp vrp vehicle routing permutation",
+      "expected_top1_any": [
+        "metaheuristic_combinatorial_escape"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Planning_Decision",
+      "safety_label": "Combinatorial_Local_Optimum"
+    },
+    {
+      "name": "exponential_backoff_retry",
+      "query": "communication timeout timeout timed out deadline exceeded retry rpc grpc microservice microservices service http api api call service call upstream downstream backend 503 http 503 5xx service unavailable backend unavailable server error transient error transient failure",
+      "expected_top1_any": [
+        "exponential_backoff_retry"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Communication_Timeout"
+    },
+    {
+      "name": "terrain_aware_locomotion",
+      "query": "tracking error quadruped legged trot gait terrain uneven slippery gravel foot slip swing foot contact phase stance locomotion fall trotting step robot ground compliance",
+      "expected_top1_any": [
+        "terrain_aware_locomotion"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Control_Locomotion",
+      "safety_label": "Tracking_Error"
+    },
+    {
+      "name": "flash_attention_tiled_softmax",
+      "query": "memory exhaustion self-attention attention transformer hbm memory bandwidth long context 8k 16k context length tiled online softmax flashattention sram block compute-bound bandwidth-bound q k v nxn matrix softmax oom",
+      "expected_top1_any": [
+        "flash_attention_tiled_softmax"
+      ],
+      "min_similarity": 0.55,
+      "domain": "Systems_Compute",
+      "safety_label": "Memory_Exhaustion"
+    }
+  ]
+}
