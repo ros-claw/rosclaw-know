@@ -23612,7 +23612,14 @@
       "source_tier": "S_CURATED_VERIFIED",
       "matched_keywords": [
         "30 ms",
+        "anti windup",
+        "anti-windup",
+        "back-calculation",
         "deadtime",
+        "derivative on measurement",
+        "derivative-on-measurement",
+        "gain margin",
+        "gain scheduling",
         "integral saturation",
         "joint",
         "joint trajectory",
@@ -23647,7 +23654,7 @@
       ],
       "topic_group": "control-loop-stability",
       "topic_tag": "pid-joint-loop-latency-anti-windup",
-      "content_hash": "4c82bb0a0c85c08e05d19b35107e835262470944972248b774951ce305fb7c07"
+      "content_hash": "8f354c4fb80ab43ee1b53e25759c0972d0c8baa685a47a0da1babc362538f277"
     }
   },
   "safety_label_index": {

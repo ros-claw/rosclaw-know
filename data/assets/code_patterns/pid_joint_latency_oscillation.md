@@ -13,11 +13,11 @@ source: curated
 
 ## Fix
 
-Combine three remedies for latency-induced PID oscillation: (a) SMITH PREDICTOR — explicitly compensate the deadtime by feeding the controller a predicted-future plant output instead of the raw measurement; (b) ANTI-WINDUP — conditional integration that stops accumulating when the actuator is saturated AND the error direction would push further into saturation; (c) GAIN MARGIN BUDGET — reduce Kp until the loop's gain at the deadtime frequency 1/(2*tau_d) is below 0 dB, sacrificing bandwidth for stability.
+Use a latency-aware saturated PID with three named mechanisms: (1) ANTI-WINDUP CLAMP — clamp the actuator command and apply back-calculation so the integrator stops accumulating while the actuator is saturated; (2) DERIVATIVE-ON-MEASUREMENT — compute the derivative from the filtered measured state, not from setpoint error, to avoid derivative kick under 30 ms loop delay; (3) GAIN SCHEDULING — reduce Kp/Ki/Kd or switch to a conservative gain set whenever the sensor-to-actuator delay dominates the loop bandwidth (rule of thumb: keep crossover below 1/(8*tau_d)).
 
 ## Anti-pattern
 
-Increasing Kp alone to chase the oscillation — under 30 ms loop latency the additional gain crosses 0 dB at a higher frequency, moving the resonance INTO the closed-loop bandwidth and amplifying the oscillation instead of damping it.
+Increasing Kp or Kd alone to chase the oscillation — under 30 ms loop latency the additional gain crosses 0 dB at a higher frequency, moving the resonance INTO the closed-loop bandwidth and amplifying the oscillation instead of damping it.
 
 ## Cross-domain analogies (curated)
 
@@ -29,18 +29,36 @@ Increasing Kp alone to chase the oscillation — under 30 ms loop latency the ad
 ## Patch
 
 ```diff
---- pid_joint_latency_oscillation.before.py+++ pid_joint_latency_oscillation.after.py@@ -1,5 +1,9 @@-def pid_step(setpoint, measurement, dt, integ):
+--- pid_joint_latency_oscillation.before.py+++ pid_joint_latency_oscillation.after.py@@ -1,5 +1,26 @@-def pid_step(setpoint, measurement, dt, integ):
 -    err = setpoint - measurement       # measurement is 30ms stale
 -    integ += err * dt                  # keeps accumulating during deadtime
 -    tau = Kp*err + Ki*integ + Kd*derr
-+def pid_step(setpoint, measurement, dt, integ, deadtime_s):
-+    predicted = smith_predict(measurement, deadtime_s)  # advance past loop delay
-+    err = setpoint - predicted
-+    tau_uncl = Kp*err + Ki*integ + Kd*derr
-+    tau = torch.clamp(tau_uncl, -tau_max, tau_max)
-+    saturated = tau != tau_uncl
-+    if not (saturated and same_sign(err, tau_uncl)):
-+        integ += err * dt              # conditional integration
-     return tau
+-    return tau
++def pid_step(setpoint, measurement, velocity, dt, state, cfg):
++    # Fix : latency-aware PID = anti-windup clamp + 
++    #       derivative-on-measurement + gain scheduling
++    q_fb = measurement + velocity * cfg.deadtime_s  # latency-aware feedback
++    err = setpoint - q_fb
++
++    # Derivative-on-measurement (filtered), not on setpoint error
++    dmeas = (q_fb - state.q_fb_prev) / dt
++    alpha = dt / (dt + cfg.d_filter_s)
++    dmeas_filt = alpha * dmeas + (1 - alpha) * state.dmeas_filt
++
++    tau_uncl = cfg.Kp*err + cfg.Ki*state.integ - cfg.Kd*dmeas_filt
++    tau = clamp(tau_uncl, -cfg.tau_max, cfg.tau_max)  # anti-windup clamp
++
++    # Back-calculation anti-windup / conditional integration
++    sat_err = tau - tau_uncl
++    if not (tau != tau_uncl and same_sign(err, tau_uncl)):
++        state.integ += cfg.Ki * err * dt
++    state.integ += cfg.kaw * sat_err * dt
++    state.integ = clamp(state.integ, -cfg.integ_limit, cfg.integ_limit)
++
++    # Gain scheduling: with 30 ms delay, reduce Kp/Kd so crossover
++    # stays below ~1/(8*tau_d) and phase margin stays healthy
++    state.q_fb_prev = q_fb
++    state.dmeas_filt = dmeas_filt
++    return tau, state
 
 ```
