@@ -1,9 +1,12 @@
 # Sprint 0.5 Report: Stop-the-Bleed + Experiment Guardrails
 
-**Status**: COMPLETE (uncommitted changes in working tree)  
-**Scope**: `rosclaw-how` + `rosclaw-know` Sprint 0.5 from `know-how下一步建议06-13.md`  
-**Know SHA (baseline)**: `a4953c46bed3b19e892d599c51cb3283b27db7e8`  
+**Status**: COMPLETE — committed and server restarted
+**Scope**: `rosclaw-how` + `rosclaw-know` Sprint 0.5 from `know-how下一步建议06-13.md`
+**Know SHA (baseline)**: `a4953c46bed3b19e892d599c51cb3283b27db7e8`
 **How SHA (baseline)**: `2a531f17ab693390566a3c29009603cc87e881f9`
+**Know commit**: `56b1c50`
+**How commit**: `9f977b1`
+**HOW server**: PID `3730753` on `http://127.0.0.1:8088`, `router_backend=seekdb`, `status=ok`
 
 ---
 
@@ -150,6 +153,30 @@ Mocked unit tests confirm:
 - `router_backend != seekdb` → `RuntimeError`.
 - `topic_filter.enabled == false` → `RuntimeError`.
 - missing assets → `RuntimeError`.
+
+### 5.4 Live restart + routing panel smoke
+
+After committing, the old HOW server (PID `408103`) was stopped and a new server was started with:
+
+```bash
+env ROSCLAW_HOW_SKIP_ASSET_LOAD=0 ROSCLAW_HOW_ROUTER_BACKEND=seekdb \
+  .venv/bin/python -m scripts.run_server
+```
+
+`/healthz` confirms:
+
+- `status`: `ok`
+- `router_backend`: `seekdb`
+- `topic_filter.enabled`: `true`
+- `topic_filter.curated_topic_coverage`: `15/15`
+- `outcomes_write_failures.count`: `0`
+
+`verify_routing_panel.py --strict` against the restarted server:
+
+```text
+PASS=18   FAIL=0   UNREACHABLE=0   total=18
+ALL PASS — routing panel cleared, paired_ab may launch.
+```
 
 ---
 
