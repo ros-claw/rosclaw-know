@@ -1,0 +1,103 @@
+id: closed_loop_replanning
+title: Closed Loop Replanning
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Planning_Decision
+robot_type: mobile_robot
+topic_group: closed-loop-replanning
+topic_tag: closed-loop-mpc-replanning
+safety_label: Oscillation_Divergence
+standard_name: Model-predictive control (MPC) and receding-horizon planning drift away from
+  ground truth when the internal dynamics model mismatches real-world friction, terrain, or
+  disturbance; the predicted state diverges from the measured state over the planning horizon,
+  causing unbounded tracking error unless the plan is replanned in closed loop with online
+  state feedback and shorter replan intervals
+matched_keywords:
+  include:
+  - model predictive control
+  - mpc
+  - receding horizon
+  - planning horizon
+  - trajectory horizon
+  - horizon length
+  - look-ahead horizon
+  - nominal dynamics
+  - dynamics model mismatch
+  - real-world friction
+  - ground friction
+  - terrain variation
+  - disturbance
+  - unmodeled dynamics
+  - parameter uncertainty
+  - environmental variation
+  - predicted state
+  - measured state
+  - predicted vs measured
+  - state divergence
+  - tracking error accumulates
+  - unbounded tracking error
+  - drift
+  - diverge
+  - open-loop
+  - open loop
+  - closed-loop replanning
+  - closed loop replan
+  - replan interval
+  - online replan
+  - frequent replan
+  - plan refresh
+  - state feedback
+  - receding-horizon replan
+  - robust mpc
+  - tube mpc
+  - online adaptation
+  - disturbance rejection
+  exclude: []
+log_signatures:
+- (model\s+predictive\s+control)
+- (receding\s+horizon)
+- (planning\s+horizon)
+routing_guard:
+  positive_queries:
+  - TASK_W_006_PlanningDivergence
+  collateral_queries:
+  - TASK_008_JobShop_abz
+  - TASK_001_PIDTuning
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Oscillation_Divergence).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Model-predictive control (MPC) and receding-horizon planning drift away from ground
+    truth when the internal dynamics model mismatches real-world friction, terrain, or disturbance;
+    the predicted state diverges from the measured state over the planning horizon, causing
+    unbounded tracking error unless the plan is replanned in closed loop with online state
+    feedback and shorter replan intervals
+  diagnosis: 'The root cause is captured by the ''closed_loop_replanning'' fix family: oscillation
+    divergence.'
+  fix: 'Replace the open-loop planner with a Model-Predictive Control loop: re-solve a horizon-H
+    optimization every dt using the latest measurement, execute only the first action, then
+    re-solve. Keep dt ≤ system latency.'
+  anti_pattern: Compensating for tracking error by adding feed-forward terms tuned offline
+    — the offline tuning never anticipates the actual disturbance profile.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "plan = solve_once(initial_state)   # open loop\nfor u in plan:\n    execute(u)\n"
+  after_code: "while not done:\n    state = sense()                # close the loop\n    plan\
+    \  = solve_horizon(state, H)\n    execute(plan[0])               # discard the rest, re-solve\n"
+  cross_domain_hints:
+  - source_domain: Learning_Training
+    insight: 'Same closed-loop principle as supervised → RL fine-tuning: don''t trust your
+      offline model, re-measure under the deployment distribution.'
+    action_suggestion: Treat each MPC step as a one-step on-policy correction, the way RL
+      fine-tuning corrects a supervised base.

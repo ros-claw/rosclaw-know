@@ -19,6 +19,7 @@ data/source_manifest.json
 data/benchmarks/
 data/reports/
 data/stats_history/
+data/assets_curated_from_registry/
 data/exports/*
 !data/exports/.gitkeep
 # Commit the Sprint-6 deterministic seed JSONL so CI has data to chew on.

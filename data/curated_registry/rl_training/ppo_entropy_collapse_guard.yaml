@@ -1,0 +1,82 @@
+id: ppo_entropy_collapse_guard
+title: Ppo Entropy Collapse Guard
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Learning_Training
+robot_type: null
+topic_group: rl-training-stability
+topic_tag: ppo-entropy-collapse-guard
+safety_label: Entropy_Collapse
+standard_name: PPO entropy crashes to zero and the policy fixates on a degenerate action
+matched_keywords:
+  include:
+  - ppo
+  - entropy
+  - collapse
+  - policy
+  - value loss
+  - degenerate
+  - episodes
+  - kl
+  - exploration
+  exclude: []
+log_signatures:
+- (entropy)
+- (collapse)
+- (policy)
+routing_guard:
+  positive_queries:
+  - TASK_W_004_EntropyCollapsePPO
+  collateral_queries:
+  - TASK_W_002_GradExplosionRL
+  - TASK_001_PIDTuning
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Entropy_Collapse).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: PPO entropy crashes to zero and the policy fixates on a degenerate action
+  diagnosis: 'The root cause is captured by the ''ppo_entropy_collapse_guard'' fix family:
+    entropy collapse.'
+  fix: Hold a minimum entropy bonus (coefficient ≥ 0.01) throughout training; add a target-KL
+    trust region (early-stop the inner update when `mean_kl > 1.5 * target_kl`); and decay
+    the learning rate (linear or cosine) so late-stage updates can't overrun the cliff. Reset
+    the advantage running mean every N epochs to avoid frozen normalisation.
+  anti_pattern: Cranking the policy LR or removing the entropy bonus to 'commit' to the current
+    winner — accelerates the collapse and corrupts the value-function moments so even a restart
+    shows the same degenerate basin.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: 'loss = policy_loss + 0.5 * value_loss   # no entropy bonus
+
+    loss.backward()
+
+    optimizer.step()                          # no KL early-stop, no LR decay
+
+    '
+  after_code: "ent_coef = max(0.01, 0.02 - 1e-6 * step)\nloss = policy_loss + 0.5 * value_loss\
+    \ - ent_coef * entropy\nloss.backward()\nif mean_kl > 1.5 * target_kl:             # target-KL\
+    \ trust region\n    break                                  # early-stop the inner PPO\
+    \ epoch\nfor g in optimizer.param_groups:           # linear LR decay\n    g['lr'] = lr0\
+    \ * (1 - step / total_steps)\noptimizer.step()\n"
+  cross_domain_hints:
+  - source_domain: Control_Locomotion
+    insight: 'Same family as anti-windup: bound the magnitude of the update step the way you
+      bound the actuator — KL = LR-equivalent for policies.'
+    action_suggestion: Treat target-KL as the policy's `tau_max`; stop the inner loop the
+      moment KL exceeds it.
+  - source_domain: Memory_Reasoning
+    insight: 'Entropy bonus plays the role of an attention sink: a tiny always-on term that
+      prevents the distribution from collapsing onto one mode.'
+    action_suggestion: Keep a floor on the entropy coefficient the way KV-cache keeps `sink_tokens`
+      — never decay it to zero.

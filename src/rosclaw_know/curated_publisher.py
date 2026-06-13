@@ -7,6 +7,7 @@ neighbours for a given safety label — rosclaw-how's runtime depends on the
 named patterns (``anti_windup_pid``, ``sliding_window_kv_cache``, …)
 existing for exact-match safety routing.
 """
+
 from __future__ import annotations
 
 import difflib
@@ -19,8 +20,8 @@ from typing import Any
 
 from . import config
 from .curated_conflict_detector import detect_conflicts, format_report
-from .curated_patterns import CURATED_SAFETY_PATTERNS, CuratedPattern
-from .source_tier import infer_source_tier
+from .curated_patterns import CuratedPattern
+from .curated_registry import load_curated_patterns
 from .synth_overrides import infer_source_tier_with_overrides
 
 log = logging.getLogger("rosclaw_know.curated_publisher")
@@ -71,9 +72,7 @@ def compute_cluster_content_hash(cluster: dict[str, Any]) -> str:
     hash should be byte-equivalent from the runtime router's perspective.
     """
     payload = {
-        f: _normalize_for_hash(cluster.get(f))
-        for f in ROUTING_CRITICAL_FIELDS
-        if f in cluster
+        f: _normalize_for_hash(cluster.get(f)) for f in ROUTING_CRITICAL_FIELDS if f in cluster
     }
     blob = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(blob).hexdigest()
@@ -148,8 +147,8 @@ def _build_cluster_entry(p: CuratedPattern) -> dict[str, Any]:
     entry: dict[str, Any] = {
         "standard_name": p.standard_name,
         "domain": p.domain,
-        "safety_label": p.safety_label,            # used by rosclaw-how for exact match
-        "source": "curated",                       # so the runtime can prefer these
+        "safety_label": p.safety_label,  # used by rosclaw-how for exact match
+        "source": "curated",  # so the runtime can prefer these
         # P0 Bridge-Schema v2 docs §5.3 — all 14 hand-curated patterns have
         # passed n=30 paired A/B vs no-injection (see docs/REPORT_2026-06-09.md);
         # they ship as S_CURATED_VERIFIED. Future drafts not yet validated
@@ -197,6 +196,7 @@ def publish_curated_assets() -> dict[str, int]:
     Idempotent. Overwrites any existing entries whose key matches a curated
     ``pattern_id``. Returns counts for the run log.
     """
+    patterns = load_curated_patterns()
     config.ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     config.CODE_PATTERNS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -205,7 +205,7 @@ def publish_curated_assets() -> dict[str, int]:
     # surprise. Doesn't block; just logs. The unit test
     # test_known_safety_label_collisions_documented is the gate that
     # FAILS when a new (un-acknowledged) collision appears.
-    conflicts = detect_conflicts(CURATED_SAFETY_PATTERNS)
+    conflicts = detect_conflicts(patterns)
     if conflicts:
         log.warning("Curated publisher: %s", format_report(conflicts))
 
@@ -230,7 +230,7 @@ def publish_curated_assets() -> dict[str, int]:
     safety_lookup: dict[str, list[str]] = {}
 
     written_pattern_files: list[str] = []
-    for p in CURATED_SAFETY_PATTERNS:
+    for p in patterns:
         data["symptom_clusters"][p.pattern_id] = _build_cluster_entry(p)
         written_pattern_files.append(str(_write_pattern_md(p)))
         safety_lookup.setdefault(p.safety_label, []).append(p.pattern_id)
@@ -273,7 +273,7 @@ def publish_curated_assets() -> dict[str, int]:
         tier_stamped,
     )
     return {
-        "curated_clusters": len(CURATED_SAFETY_PATTERNS),
+        "curated_clusters": len(patterns),
         "curated_patterns": len(written_pattern_files),
         "safety_label_entries": len(safety_lookup),
         "content_hash_backfilled": backfilled,

@@ -1,0 +1,125 @@
+id: exponential_backoff_retry
+title: Exponential Backoff Retry
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Systems_Compute
+robot_type: null
+topic_group: reliability-engineering
+topic_tag: exponential-backoff-with-jitter
+safety_label: Communication_Timeout
+standard_name: Network, RPC, microservice, and HTTP API call timeout cascades cause thundering-herd
+  request storms and exponential-retry amplification after partial upstream service degradation,
+  backend unavailability, or transient HTTP 5xx errors; naive fixed-delay retry loops without
+  jitter or exponential backoff compound the cascading load, overwhelm downstream capacity,
+  and prolong the outage duration
+matched_keywords:
+  include:
+  - timeout
+  - timed out
+  - deadline exceeded
+  - retry
+  - rpc
+  - grpc
+  - microservice
+  - microservices
+  - service
+  - HTTP
+  - API
+  - API call
+  - service call
+  - upstream
+  - downstream
+  - backend
+  - '503'
+  - HTTP 503
+  - 5xx
+  - service unavailable
+  - backend unavailable
+  - server error
+  - transient error
+  - transient failure
+  - connection refused
+  - connection reset
+  - connection timeout
+  - request timeout
+  - degraded
+  - degradation
+  - service degraded
+  - partial outage
+  - prolonged outage
+  - prolong outage
+  - cascading
+  - cascading load
+  - cascading failure
+  - thundering herd
+  - retry storm
+  - request storm
+  - request amplification
+  - retry amplification
+  - traffic spike
+  - overload
+  - capacity overwhelm
+  - compound
+  - naive retry
+  - fixed delay
+  - fixed retry delay
+  - retry loop
+  - without jitter
+  - without backoff
+  - circuit breaker
+  - backpressure
+  - back pressure
+  - rate limit
+  - rate limiting
+  - load balancer
+  exclude: []
+log_signatures:
+- (timeout)
+- (timed\s+out)
+- (deadline\s+exceeded)
+routing_guard:
+  positive_queries:
+  - TASK_W_003_NetRetryStorm
+  collateral_queries:
+  - TASK_005_AES128_Throughput
+  - TASK_006_FlashAttention
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Communication_Timeout).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Network, RPC, microservice, and HTTP API call timeout cascades cause thundering-herd
+    request storms and exponential-retry amplification after partial upstream service degradation,
+    backend unavailability, or transient HTTP 5xx errors; naive fixed-delay retry loops without
+    jitter or exponential backoff compound the cascading load, overwhelm downstream capacity,
+    and prolong the outage duration
+  diagnosis: 'The root cause is captured by the ''exponential_backoff_retry'' fix family:
+    communication timeout.'
+  fix: Wrap network calls with exponential backoff (base 0.5 s, factor 2, jitter ±30 %), cap
+    retries at 5, and add a circuit-breaker that opens when error rate > 50 % over the last
+    20 calls.
+  anti_pattern: 'Tight `while True: retry()` loops — these turn a transient blip into a thundering
+    herd.'
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "while True:\n    try:\n        return rpc.call()\n    except Timeout:\n  \
+    \      continue                    # tight retry\n"
+  after_code: "for attempt in range(MAX_ATTEMPTS):\n    try:\n        return rpc.call()\n\
+    \    except Timeout:\n        delay = BASE * (2 ** attempt) * random.uniform(0.7, 1.3)\n\
+    \        time.sleep(min(delay, MAX_BACKOFF))\nraise RpcUnreachable()\n"
+  cross_domain_hints:
+  - source_domain: Control_Locomotion
+    insight: 'Same idea as PID gain scheduling: tighten effort when the system responds, back
+      off when it stalls.'
+    action_suggestion: Lower the retry rate when failure rate climbs, just as a controller
+      lowers gain in unstable regions.

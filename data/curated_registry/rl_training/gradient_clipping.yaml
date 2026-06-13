@@ -1,0 +1,74 @@
+id: gradient_clipping
+title: Gradient Clipping
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Learning_Training
+robot_type: null
+topic_group: rl-training-stability
+topic_tag: gradient-clipping-explosion-guard
+safety_label: Numerical_Instability
+standard_name: NaN/Inf in loss or weights after a step explodes the gradient
+matched_keywords:
+  include:
+  - nan
+  - inf
+  - numerical instability
+  - loss explod
+  - gradient explod
+  - gradient clip
+  - learning rate
+  exclude: []
+log_signatures:
+- (numerical\s+instability)
+- (loss\s+explod)
+- (gradient\s+explod)
+routing_guard:
+  positive_queries:
+  - TASK_W_002_GradExplosionRL
+  collateral_queries:
+  - TASK_W_004_EntropyCollapsePPO
+  - TASK_001_PIDTuning
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Numerical_Instability).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: NaN/Inf in loss or weights after a step explodes the gradient
+  diagnosis: 'The root cause is captured by the ''gradient_clipping'' fix family: numerical
+    instability.'
+  fix: Apply `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` before `optimizer.step()`.
+    If NaN still appears, halve the learning rate and verify the loss does not feed `log(<=0)`
+    or divide by zero.
+  anti_pattern: Catching the NaN after it surfaces and zeroing it out — the bad direction
+    has already corrupted the optimizer's moment buffers (Adam's m and v). Restart training
+    instead of patching.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: 'loss.backward()
+
+    optimizer.step()                # no clipping
+
+    '
+  after_code: 'loss.backward()
+
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+    optimizer.step()
+
+    '
+  cross_domain_hints:
+  - source_domain: Control_Locomotion
+    insight: Gradient clipping is the SGD analogue of an output limiter on a controller —
+      bound the magnitude of every actuation.
+    action_suggestion: 'Set `max_norm` analogous to `tau_max`: derived from a physical/training-stability
+      limit, not guessed.'

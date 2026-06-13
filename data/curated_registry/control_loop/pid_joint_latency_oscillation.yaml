@@ -1,0 +1,113 @@
+id: pid_joint_latency_oscillation
+title: Pid Joint Latency Oscillation
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Control_Locomotion
+robot_type: manipulator
+topic_group: control-loop-stability
+topic_tag: pid-joint-loop-latency-anti-windup
+safety_label: PID_Joint_Latency_Oscillation
+standard_name: Robotic-arm joint feedback control diverges into sustained oscillation when
+  sensor-to-actuator loop deadtime around 30 ms exceeds the inverse of the joint's mechanical
+  bandwidth, with stale measurements compounding the tracking-error response each control
+  cycle
+matched_keywords:
+  include:
+  - robotic arm
+  - robotic-arm
+  - manipulator
+  - joint
+  - PID
+  - loop latency
+  - sensor-to-actuator
+  - sensor to actuator
+  - deadtime
+  - integral saturation
+  - sustained oscillation
+  - joint trajectory
+  - tracking
+  - 30 ms
+  - anti-windup
+  - anti windup
+  - back-calculation
+  - derivative-on-measurement
+  - derivative on measurement
+  - gain scheduling
+  - gain margin
+  exclude:
+  - voice-coil
+  - feedforward
+  - flow-rate
+  - valve
+log_signatures:
+- (robotic\s+arm)
+- (robotic\-arm)
+- (manipulator)
+routing_guard:
+  positive_queries:
+  - TASK_001_PIDTuning
+  collateral_queries:
+  - TASK_002_QuadrupedGait
+  - TASK_003_RobotArmCycleTime
+  adversarial_queries:
+  - UAV_motion_blur_latency_noise
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p9
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (PID_Joint_Latency_Oscillation).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Robotic-arm joint feedback control diverges into sustained oscillation when sensor-to-actuator
+    loop deadtime around 30 ms exceeds the inverse of the joint's mechanical bandwidth, with
+    stale measurements compounding the tracking-error response each control cycle
+  diagnosis: 'The root cause is captured by the ''pid_joint_latency_oscillation'' fix family:
+    pid joint latency oscillation.'
+  fix: 'Use a latency-aware saturated PID with three named mechanisms: (1) ANTI-WINDUP CLAMP
+    — clamp the actuator command and apply back-calculation so the integrator stops accumulating
+    while the actuator is saturated; (2) DERIVATIVE-ON-MEASUREMENT — compute the derivative
+    from the filtered measured state, not from setpoint error, to avoid derivative kick under
+    30 ms loop delay; (3) GAIN SCHEDULING — reduce Kp/Ki/Kd or switch to a conservative gain
+    set whenever the sensor-to-actuator delay dominates the loop bandwidth (rule of thumb:
+    keep crossover below 1/(8*tau_d)).'
+  anti_pattern: Increasing Kp or Kd alone to chase the oscillation — under 30 ms loop latency
+    the additional gain crosses 0 dB at a higher frequency, moving the resonance INTO the
+    closed-loop bandwidth and amplifying the oscillation instead of damping it.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "def pid_step(setpoint, measurement, dt, integ):\n    err = setpoint - measurement\
+    \       # measurement is 30ms stale\n    integ += err * dt                  # keeps accumulating\
+    \ during deadtime\n    tau = Kp*err + Ki*integ + Kd*derr\n    return tau\n"
+  after_code: "def pid_step(setpoint, measurement, velocity, dt, state, cfg):\n    # Fix :\
+    \ latency-aware PID = anti-windup clamp + \n    #       derivative-on-measurement + gain\
+    \ scheduling\n    q_fb = measurement + velocity * cfg.deadtime_s  # latency-aware feedback\n\
+    \    err = setpoint - q_fb\n\n    # Derivative-on-measurement (filtered), not on setpoint\
+    \ error\n    dmeas = (q_fb - state.q_fb_prev) / dt\n    alpha = dt / (dt + cfg.d_filter_s)\n\
+    \    dmeas_filt = alpha * dmeas + (1 - alpha) * state.dmeas_filt\n\n    tau_uncl = cfg.Kp*err\
+    \ + cfg.Ki*state.integ - cfg.Kd*dmeas_filt\n    tau = clamp(tau_uncl, -cfg.tau_max, cfg.tau_max)\
+    \  # anti-windup clamp\n\n    # Back-calculation anti-windup / conditional integration\n\
+    \    sat_err = tau - tau_uncl\n    if not (tau != tau_uncl and same_sign(err, tau_uncl)):\n\
+    \        state.integ += cfg.Ki * err * dt\n    state.integ += cfg.kaw * sat_err * dt\n\
+    \    state.integ = clamp(state.integ, -cfg.integ_limit, cfg.integ_limit)\n\n    # Gain\
+    \ scheduling: with 30 ms delay, reduce Kp/Kd so crossover\n    # stays below ~1/(8*tau_d)\
+    \ and phase margin stays healthy\n    state.q_fb_prev = q_fb\n    state.dmeas_filt = dmeas_filt\n\
+    \    return tau, state\n"
+  cross_domain_hints:
+  - source_domain: Memory_Reasoning
+    insight: 'Loop latency in physical control is the same problem as KV-cache staleness in
+      long-context attention: by the time you act on old state, the world has moved on.'
+    action_suggestion: Always model the action delay explicitly when designing a feedback
+      loop — Smith predictors are the controller-side analogue of speculative decoding's draft
+      model.
+  - source_domain: Learning_Training
+    insight: 'Gradient clipping under unbounded loss is the SGD analogue of clamping a PID
+      output: both bound the per-step delta to prevent unbounded integration.'
+    action_suggestion: If your PID needs anti-windup, your training loop probably needs gradient
+      clipping for the same structural reason.

@@ -1,0 +1,135 @@
+id: motion_blur_imu_aided_deblur
+title: Motion Blur Imu Aided Deblur
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Perception_Vision
+robot_type: uav
+topic_group: motion-blur-deblur
+topic_tag: imu-aided-motion-blur-deblur
+safety_label: Image_Motion_Blur
+standard_name: Onboard RGB or monocular camera mounted on a moving aerial / mobile platform
+  (UAV, quadrotor, drone, inspection robot) produces motion-blurred frames during fast relative
+  velocity to the inspection target; downstream defect detection or object classification
+  recall drops 40-60 % versus the stationary or hover baseline, because the blur extent within
+  the exposure window exceeds the detector's invariance to blur, even when focal length and
+  ISO are held fixed across the flyby phase
+matched_keywords:
+  include:
+  - motion blur
+  - blur kernel
+  - exposure time
+  - exposure
+  - shutter
+  - rolling shutter
+  - global shutter
+  - iso
+  - imu
+  - imu-aided
+  - imu aided
+  - deblur
+  - deblurring
+  - wiener
+  - richardson lucy
+  - uav
+  - drone
+  - quadrotor
+  - flyby
+  - hover
+  - hover-and-stare
+  - inspection
+  - detection recall
+  - blur compensation
+  - image stabilization
+  - frame quality
+  - blur extent
+  - shutter speed
+  - rgb
+  - rgb camera
+  - monocular
+  - monocular camera
+  - onboard camera
+  - focal length
+  - focal
+  - relative velocity
+  - platform velocity
+  - moving platform
+  - platform motion
+  - defect detection
+  - defect
+  - visual inspection
+  - inspection task
+  - recall
+  - detection accuracy
+  - classification recall
+  - stationary
+  - stationary baseline
+  - hover baseline
+  - exposure window
+  - exposure duration
+  - fast platform
+  - high-speed flyby
+  - fast flyby
+  exclude: []
+log_signatures:
+- (motion\s+blur)
+- (blur\s+kernel)
+- (exposure\s+time)
+routing_guard:
+  positive_queries:
+  - TASK_010_UAVInspection
+  collateral_queries:
+  - TASK_001_PIDTuning
+  - TASK_002_QuadrupedGait
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Image_Motion_Blur).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Onboard RGB or monocular camera mounted on a moving aerial / mobile platform (UAV,
+    quadrotor, drone, inspection robot) produces motion-blurred frames during fast relative
+    velocity to the inspection target; downstream defect detection or object classification
+    recall drops 40-60 % versus the stationary or hover baseline, because the blur extent
+    within the exposure window exceeds the detector's invariance to blur, even when focal
+    length and ISO are held fixed across the flyby phase
+  diagnosis: 'The root cause is captured by the ''motion_blur_imu_aided_deblur'' fix family:
+    image motion blur.'
+  fix: 'Three layered fixes, applied in order of cost: (1) shorten shutter (e.g. 1/500 s)
+    and bump ISO + denoise — eliminates blur at the source for fast platforms with adequate
+    light. (2) Replace continuous flybys with hover-and-stare waypoints near the inspection
+    target — at v≈0 the blur extent is zero. (3) When neither is feasible (low light, fixed
+    mission profile), estimate a per-frame blur kernel from the IMU-predicted camera motion
+    during the exposure window and Wiener-deconvolve or feed the predicted kernel to a learned
+    deblur network (e.g. DeblurGAN, NAFNet).'
+  anti_pattern: Naively bumping ISO without shortening exposure — blur stays the same but
+    noise grows, and the detection network is now robust to neither. Or training only on stationary
+    images and hoping the network generalizes to blur.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: '# fixed exposure regardless of platform velocity → blur scales with v
+
+    frame = camera.capture(exposure_s=1.0/120, iso=400)
+
+    boxes = detector.predict(frame)
+
+    '
+  after_code: "# adapt exposure to platform velocity AND deconvolve IMU-predicted blur\nv_rel\
+    \ = imu.estimate_rel_velocity(target_pose)\nexpo_s = min(0.5 / (v_rel + 1e-3), 1.0/500)\
+    \   # cap blur extent\nframe = camera.capture(exposure_s=expo_s, iso=auto)\nif v_rel >\
+    \ BLUR_THRESHOLD:\n    kernel = imu.predict_blur_kernel(camera, expo_s)\n    frame = wiener_deconvolve(frame,\
+    \ kernel)\nboxes = detector.predict(frame)\n"
+  cross_domain_hints:
+  - source_domain: Systems_Compute
+    insight: 'Same shape as adaptive batch sizing under variable load: set the exposure (batch)
+      based on the live state of the system (platform velocity), not a fixed default.'
+    action_suggestion: Bind capture parameters to the IMU-estimated motion rather than mission-time
+      constants — the right exposure for the hover phase is wrong for the flyby phase.

@@ -1,0 +1,100 @@
+id: metaheuristic_combinatorial_escape
+title: Metaheuristic Combinatorial Escape
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Planning_Decision
+robot_type: null
+topic_group: scheduling-optimization
+topic_tag: metaheuristic-combinatorial-local-optimum-escape
+safety_label: Combinatorial_Local_Optimum
+standard_name: Greedy / local-search on combinatorial scheduling (job-shop, TSP, VRP) stagnates
+  after the descent phase; objective plateaus well above the known optimum
+matched_keywords:
+  include:
+  - job-shop
+  - job shop
+  - jsp
+  - scheduling
+  - makespan
+  - dispatch rule
+  - tabu search
+  - simulated annealing
+  - genetic algorithm
+  - ga
+  - metaheuristic
+  - neighborhood
+  - local optimum
+  - local minimum
+  - plateau
+  - stagnation
+  - shift move
+  - swap move
+  - critical path
+  - disjunctive graph
+  - tsp
+  - vrp
+  - vehicle routing
+  - permutation
+  - abz5
+  - ft10
+  - la01
+  - combinatorial
+  exclude: []
+log_signatures:
+- (job\-shop)
+- (job\s+shop)
+- (scheduling)
+routing_guard:
+  positive_queries:
+  - TASK_008_JobShop_abz
+  collateral_queries:
+  - TASK_W_006_PlanningDivergence
+  - TASK_001_PIDTuning
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Combinatorial_Local_Optimum).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Greedy / local-search on combinatorial scheduling (job-shop, TSP, VRP) stagnates
+    after the descent phase; objective plateaus well above the known optimum
+  diagnosis: 'The root cause is captured by the ''metaheuristic_combinatorial_escape'' fix
+    family: combinatorial local optimum.'
+  fix: 'Replace pure greedy descent with a neighborhood-escape metaheuristic. For job-shop
+    specifically: tabu search with critical-path moves (swap two consecutive operations on
+    the critical path) — the tabu list of size ~7-10 prevents reversal cycles, and the critical-path
+    restriction means every move directly attacks the bottleneck. Alternatives that also work:
+    GA with operation-based or precedence-preserving crossover, OR simulated annealing with
+    shift moves (insert an operation at a different position in the sequence). The deciding
+    choice between them is implementation effort, not solution quality at the abz5 / ft10
+    / la0X benchmark scale.'
+  anti_pattern: Running the same greedy dispatch rule longer, or restarting it from a different
+    seed — the rule converges to the same family of local optima because the move set never
+    crosses the basin boundary.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "# greedy first-available — saturates around 1400 on abz5 (opt=1234)\nschedule\
+    \ = []\nfor op in operations:\n    earliest = max(machine_avail[op.machine], job_avail[op.job])\n\
+    \    schedule.append((op, earliest))\n    machine_avail[op.machine] = job_avail[op.job]\
+    \ = earliest + op.dur\n"
+  after_code: "# tabu search with critical-path moves — reaches 1234-1260 on abz5\nbest =\
+    \ greedy_initial_schedule(operations)\ntabu = deque(maxlen=10)\nfor _ in range(MAX_ITERS):\n\
+    \    cp = critical_path(best)                       # bottleneck ops\n    moves = [(i,\
+    \ i+1) for i in range(len(cp)-1)\n             if (cp[i].job, cp[i+1].job) not in tabu]\n\
+    \    cand = min((apply_move(best, m) for m in moves), key=makespan)\n    if makespan(cand)\
+    \ < makespan(best):\n        best = cand\n        tabu.append((cand.swapped_jobs))\n"
+  cross_domain_hints:
+  - source_domain: Learning_Training
+    insight: 'Tabu / SA / GA are to combinatorial search what exploration noise + replay are
+      to reinforcement learning: structured escape from local optima.'
+    action_suggestion: Don't tune the greedy heuristic further; switch the outer-loop algorithm
+      to one with a non-trivial neighborhood and a memory of where it's been.

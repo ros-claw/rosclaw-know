@@ -1,0 +1,117 @@
+id: sliding_window_kv_cache
+title: Sliding Window Kv Cache
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Memory_Reasoning
+robot_type: null
+topic_group: llm-inference-efficiency
+topic_tag: sliding-window-kv-cache-rollouts
+safety_label: Memory_Exhaustion
+standard_name: Unbounded KV-cache growth during long-horizon LLM rollouts, multi-turn conversation
+  history, and fixed context-window deployments causes CUDA OOM and rising per-turn latency;
+  bounded accumulation is restored by sliding-window truncation of the oldest key/value rows,
+  recent-turns retention policies, and summarization of older context instead of retaining
+  every token
+matched_keywords:
+  include:
+  - kv-cache
+  - kv cache
+  - key value cache
+  - unbounded cache
+  - cache growth
+  - cache eviction
+  - sliding window
+  - rolling window
+  - fixed window
+  - sliding-window attention
+  - windowed attention
+  - context window
+  - context length
+  - context limit
+  - token budget
+  - token accumulation
+  - token history
+  - conversation history
+  - chat history
+  - multi-turn
+  - long horizon
+  - long-horizon rollout
+  - running state
+  - oldest tokens
+  - old turns
+  - retention policy
+  - retain recent turns
+  - truncate old turns
+  - truncation
+  - summarization of older turns
+  - summary of older context
+  - attention sink
+  - global attention sink
+  - recent-turns retention
+  - forget old context
+  - memory
+  - exhaustion
+  - oom
+  - out of memory
+  - cuda
+  - sequence
+  - per-turn latency
+  - latency growth
+  - inference slowdown
+  exclude: []
+log_signatures:
+- (kv\-cache)
+- (kv\s+cache)
+- (key\s+value\s+cache)
+routing_guard:
+  positive_queries:
+  - TASK_W_001_KVCacheLongContext
+  collateral_queries:
+  - TASK_001_PIDTuning
+  - TASK_002_QuadrupedGait
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Memory_Exhaustion).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Unbounded KV-cache growth during long-horizon LLM rollouts, multi-turn conversation
+    history, and fixed context-window deployments causes CUDA OOM and rising per-turn latency;
+    bounded accumulation is restored by sliding-window truncation of the oldest key/value
+    rows, recent-turns retention policies, and summarization of older context instead of retaining
+    every token
+  diagnosis: 'The root cause is captured by the ''sliding_window_kv_cache'' fix family: memory
+    exhaustion.'
+  fix: Cap the per-layer KV tensor at a fixed window N (e.g. 256–512 tokens). On each forward,
+    evict the oldest key/value rows. Keep an optional global-attention sink (the first M tokens)
+    to preserve task context.
+  anti_pattern: Increasing `--gpu-memory-utilization` or moving to a larger GPU — this only
+    buys one more batch before the same overflow returns at a longer trajectory.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: 'k_cache.append(k_new)            # grows forever
+
+    v_cache.append(v_new)
+
+    attn = compute_attention(q, k_cache, v_cache)
+
+    '
+  after_code: "k_cache = (k_cache + [k_new])[-W:]   # sliding window of size W\nv_cache =\
+    \ (v_cache + [v_new])[-W:]\nif attention_sink_tokens:\n    k_cache = sink_keys + k_cache\
+    \    # keep the global sink\n    v_cache = sink_vals + v_cache\nattn = compute_attention(q,\
+    \ k_cache, v_cache)\n"
+  cross_domain_hints:
+  - source_domain: Control_Locomotion
+    insight: 'Like an anti-windup clamp on an integrator: keep the size of the accumulating
+      state finite, however long the run.'
+    action_suggestion: Treat the KV-cache as the integral term of attention; bound it the
+      same way a PID bounds the integrator.

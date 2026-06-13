@@ -1,0 +1,94 @@
+id: time_optimal_path_blending
+title: Time Optimal Path Blending
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Control_Locomotion
+robot_type: manipulator
+topic_group: locomotion-and-manipulation
+topic_tag: time-optimal-path-parameterization
+safety_label: Robot_Cycle_Time_Inflation
+standard_name: Joint-space trajectories that decelerate to zero at every via-point inflate
+  cycle time by 40-60 % even when via-points are colinear
+matched_keywords:
+  include:
+  - trajectory
+  - cycle time
+  - via-point
+  - via point
+  - waypoint
+  - joint space
+  - joint-space
+  - pick and place
+  - pick-and-place
+  - robot arm
+  - manipulator
+  - deceleration
+  - topp
+  - time-optimal
+  - time optimal
+  - path parameterization
+  - trajectory blending
+  - via-point blending
+  - blend radius
+  - s-curve
+  - jerk limited
+  - jerk-limited
+  - trapezoidal
+  - motion planning
+  - dof
+  - throughput
+  exclude: []
+log_signatures:
+- (trajectory)
+- (cycle\s+time)
+- (via\-point)
+routing_guard:
+  positive_queries:
+  - TASK_003_RobotArmCycleTime
+  collateral_queries:
+  - TASK_001_PIDTuning
+  - TASK_002_QuadrupedGait
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Robot_Cycle_Time_Inflation).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Joint-space trajectories that decelerate to zero at every via-point inflate cycle
+    time by 40-60 % even when via-points are colinear
+  diagnosis: 'The root cause is captured by the ''time_optimal_path_blending'' fix family:
+    robot cycle time inflation.'
+  fix: Use Time-Optimal Path Parameterization (TOPP-RA or equivalent) over the full multi-via-point
+    path so the velocity profile is computed against joint torque/velocity/acceleration limits
+    globally, not per-segment. For colinear via-points let the blender preserve a non-zero
+    pass velocity (blend_radius > 0). Where TOPP is unavailable, fall back to jerk-limited
+    S-curve profiles per segment with explicit blend-velocity continuity at via-points — the
+    arm never stops at intermediate poses.
+  anti_pattern: Calling MoveIt's joint_trajectory_controller with each via-point as a separate
+    goal — the controller decelerates to zero at every intermediate pose because each goal
+    is a stop-condition, even though the geometric path could be traversed at constant speed.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "for via in via_points:\n    # each call decelerates to zero at `via` — wastes\
+    \ 60% of cycle\n    arm.move_to(via, velocity_scale=1.0)\n"
+  after_code: "from toppra import TOPPRA\n# Compute a single time-optimal velocity profile\
+    \ across ALL via-points,\n# preserving non-zero pass velocity at colinear segments.\n\
+    profile = TOPPRA(\n    path=via_points,\n    vlim=arm.joint_velocity_limits,\n    alim=arm.joint_acceleration_limits,\n\
+    \    blend_radius=0.05,                  # meters of blend overlap\n).compute_trajectory()\n\
+    arm.follow_trajectory(profile)         # never stops mid-path\n"
+  cross_domain_hints:
+  - source_domain: Planning_Decision
+    insight: Solving each via-point in isolation is the same anti-pattern as greedy local
+      search on a global schedule — the local optimum (full deceleration at each goal) is
+      far from the global one (constant speed through colinear segments).
+    action_suggestion: Plan the velocity profile over the FULL multi-via-point path, not segment-by-segment.
+      Hand the planner the joint-level kinematic limits, not just the geometric waypoints.

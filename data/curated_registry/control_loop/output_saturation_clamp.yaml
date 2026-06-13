@@ -1,0 +1,90 @@
+id: output_saturation_clamp
+title: Output Saturation Clamp
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Control_Locomotion
+robot_type: actuator
+topic_group: control-loop-stability
+topic_tag: controller-output-saturation-clamp
+safety_label: Velocity_Divergence
+standard_name: Commanded actuator output (force, torque, peak velocity, or position) overshoots
+  the actuator's rated peak or diverges to ±∞ when the controller has no command-side saturation
+  clamp; the command signal briefly exceeds rated limits before mechanical end-stops or safety
+  interlocks (safety relays) trip
+matched_keywords:
+  include:
+  - velocity
+  - diverg
+  - infinite
+  - explode
+  - saturation
+  - clamp
+  - limit
+  - force
+  - peak force
+  - peak
+  - rated
+  - rated peak
+  - actuator
+  - overshoot
+  - command signal
+  - setpoint
+  - mechanical end-stop
+  - end-stop
+  - end stop
+  - safety relay
+  - safety interlock
+  - voice-coil
+  exclude: []
+log_signatures:
+- (velocity)
+- (diverg)
+- (infinite)
+routing_guard:
+  positive_queries:
+  - TASK_W_005_ActuatorOvershoot
+  collateral_queries:
+  - TASK_W_007_IntegrationWindup
+  - TASK_001_PIDTuning
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter5_p1
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Velocity_Divergence).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Commanded actuator output (force, torque, peak velocity, or position) overshoots
+    the actuator's rated peak or diverges to ±∞ when the controller has no command-side saturation
+    clamp; the command signal briefly exceeds rated limits before mechanical end-stops or
+    safety interlocks (safety relays) trip
+  diagnosis: 'The root cause is captured by the ''output_saturation_clamp'' fix family: velocity
+    divergence.'
+  fix: Wrap every commanded velocity through `torch.clamp(v_cmd, -v_max, v_max)` where `v_max`
+    is read from the platform's robot_specifications YAML. Add an integral-leak term (`integ
+    *= 0.99` per step) when in steady state.
+  anti_pattern: Adding only a soft-start ramp on the user-side command — once internal feedback
+    diverges, the ramp can't stop the integrator alone.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: 'v_cmd = pid_step(error, dt)     # unbounded output
+
+    '
+  after_code: 'v_cmd_raw = pid_step(error, dt)
+
+    v_cmd = torch.clamp(v_cmd_raw, -V_MAX, V_MAX)
+
+    '
+  cross_domain_hints:
+  - source_domain: Memory_Reasoning
+    insight: 'Same as the sliding-window KV-cache: cap the magnitude of the running state,
+      not just the input.'
+    action_suggestion: Bound the integrator state itself (`integ = clamp(integ, -I_MAX, I_MAX)`),
+      mirroring the KV sliding window.

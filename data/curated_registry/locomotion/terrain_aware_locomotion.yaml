@@ -1,0 +1,92 @@
+id: terrain_aware_locomotion
+title: Terrain Aware Locomotion
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Control_Locomotion
+robot_type: quadruped
+topic_group: locomotion-and-manipulation
+topic_tag: terrain-aware-legged-locomotion
+safety_label: Tracking_Error
+standard_name: Legged-robot trot gait diverges on uneven or slippery terrain — foot-slip events
+  compound center-of-mass tracking error each cycle until the robot falls
+matched_keywords:
+  include:
+  - quadruped
+  - legged
+  - trot
+  - gait
+  - terrain
+  - uneven
+  - slippery
+  - gravel
+  - foot slip
+  - swing foot
+  - contact
+  - phase
+  - stance
+  - locomotion
+  - fall
+  - trotting
+  - step
+  - robot
+  - ground
+  - compliance
+  exclude: []
+log_signatures:
+- (quadruped)
+- (legged)
+- (trot)
+routing_guard:
+  positive_queries:
+  - TASK_002_QuadrupedGait
+  collateral_queries:
+  - TASK_001_PIDTuning
+  - TASK_003_RobotArmCycleTime
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Tracking_Error).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Legged-robot trot gait diverges on uneven or slippery terrain — foot-slip events
+    compound center-of-mass tracking error each cycle until the robot falls
+  diagnosis: 'The root cause is captured by the ''terrain_aware_locomotion'' fix family: tracking
+    error.'
+  fix: 'Pick one of three orthogonal mitigations matched to the failure mode: (a) FOOT-CONTACT-AWARE
+    MPC — predict contact events 1-2 stance phases ahead and constrain swing-foot placement
+    to minimize estimated slip; (b) DOMAIN-RANDOMIZED RL — re-train the policy with friction-coefficient
+    and terrain-height perturbations so it doesn''t overfit a clean ground model; (c) SLIP-DETECTION
+    REFLEX — monitor IMU + leg-encoder residuals during each stance; on detected slip, preempt
+    the planned swing foot trajectory and replan toward a stable footstep within the support
+    polygon.'
+  anti_pattern: Cranking up joint-PD gains to chase the tracking error — this amplifies slip-induced
+    impulses and accelerates fall, because the underlying issue is contact uncertainty, not
+    actuator compliance.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "def step(obs):\n    foot_target = mpc_solve(obs.com_state)  # assumes flat\
+    \ ground\n    return foot_target\n"
+  after_code: "def step(obs):\n    foot_target = mpc_solve(obs.com_state,\n              \
+    \              contact_pred=predict_contacts(obs))\n    if detect_slip(obs.imu_residual,\
+    \ obs.encoder_residual):\n        foot_target = replan_for_stable_footstep(obs.support_polygon)\n\
+    \    return foot_target\n"
+  cross_domain_hints:
+  - source_domain: Learning_Training
+    insight: 'Domain randomization in RL training is the same idea as model-mismatch robustification
+      in classical MPC: don''t overfit one operating model.'
+    action_suggestion: If the controller assumes friction=0.7 and the test surface is friction=0.3,
+      augment training distributions accordingly.
+  - source_domain: Memory_Reasoning
+    insight: Slip detection via residual monitoring is analogous to anomaly detection in time-series
+      data — both watch for deviation from expected dynamics.
+    action_suggestion: Use the same threshold + windowing logic that you'd apply to a Kalman
+      innovation sequence.

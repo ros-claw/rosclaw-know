@@ -1,0 +1,95 @@
+id: flash_attention_tiled_softmax
+title: Flash Attention Tiled Softmax
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Systems_Compute
+robot_type: null
+topic_group: llm-inference-efficiency
+topic_tag: flash-attention-tiled-softmax
+safety_label: Memory_Exhaustion
+standard_name: Transformer self-attention layer materializes the full NxN matrix in HBM at
+  long context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference
+  throughput
+matched_keywords:
+  include:
+  - self-attention
+  - attention
+  - transformer
+  - HBM
+  - memory bandwidth
+  - long context
+  - 8k
+  - 16k
+  - context length
+  - tiled
+  - online softmax
+  - FlashAttention
+  - SRAM
+  - block
+  - compute-bound
+  - bandwidth-bound
+  - Q K V
+  - NxN
+  - matrix
+  - softmax
+  - OOM
+  exclude: []
+log_signatures:
+- (self\-attention)
+- (attention)
+- (transformer)
+routing_guard:
+  positive_queries:
+  - TASK_006_FlashAttention
+  - TASK_W_008_AttentionMemoryOOM
+  collateral_queries:
+  - TASK_005_AES128_Throughput
+  - TASK_007_BatteryFastCharging
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Memory_Exhaustion).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Transformer self-attention layer materializes the full NxN matrix in HBM at long
+    context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference
+    throughput
+  diagnosis: 'The root cause is captured by the ''flash_attention_tiled_softmax'' fix family:
+    memory exhaustion.'
+  fix: 'Adopt FlashAttention-style TILED ONLINE-SOFTMAX attention: split Q and K/V into blocks
+    that fit in SRAM, compute partial softmax incrementally with rescaling, and never materialize
+    the full attention matrix in HBM. As a SECONDARY win, the SRAM-resident softmax becomes
+    compute-bound (good for arithmetic intensity). Fallback when tiled attention is unavailable:
+    SLIDING-WINDOW attention or circular-buffer KV-cache truncation to cap the effective sequence
+    length seen by the softmax.'
+  anti_pattern: 'Casting QK to fp16 to halve memory — saves only 2x and degrades accuracy;
+    the real problem is the N^2 materialization, not precision. Also: bumping GPU memory limit
+    is a non-fix that just delays the OOM.'
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "def attention(Q, K, V):\n    scores = Q @ K.transpose(-2,-1) / sqrt(dim) \
+    \ # NxN materialized\n    return softmax(scores) @ V  # OOM at large N\n"
+  after_code: "def flash_attention(Q, K, V, block_size=128):\n    out = zeros_like(V)\n  \
+    \  for j in range(0, K.shape[-2], block_size):\n        Kj = K[..., j:j+block_size, :]\n\
+    \        Vj = V[..., j:j+block_size, :]\n        out = online_softmax_update(out, Q, Kj,\
+    \ Vj)\n    return out\n"
+  cross_domain_hints:
+  - source_domain: Memory_Reasoning
+    insight: 'Online softmax is mathematically a streaming reduction: maintain (max, sum)
+      statistics and rescale partials. Same pattern as streaming variance (Welford''s algorithm).'
+    action_suggestion: Treat the softmax denominator as a running statistic updated incrementally
+      rather than recomputed.
+  - source_domain: Systems_Compute
+    insight: HBM-bandwidth-bound becomes compute-bound when working set fits in SRAM. Same
+      trade-off as cache-blocking in dense linear algebra.
+    action_suggestion: Size block_size to match L2/SRAM capacity divided by matrix-element
+      bytes.

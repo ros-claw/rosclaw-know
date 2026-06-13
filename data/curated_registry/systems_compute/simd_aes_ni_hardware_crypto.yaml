@@ -1,0 +1,97 @@
+id: simd_aes_ni_hardware_crypto
+title: Simd Aes Ni Hardware Crypto
+status: active
+runtime_eligible: true
+source_tier: A_CURATED_REVIEWED
+domain: Systems_Compute
+robot_type: null
+topic_group: hardware-accelerated-cryptography
+topic_tag: aes-ni-hardware-acceleration
+safety_label: Crypto_Throughput_Bottleneck
+standard_name: Pure-software block-cipher round functions saturate CPU on SubBytes/MixColumns;
+  throughput plateaus at <100 MB/s on x86_64
+matched_keywords:
+  include:
+  - aes
+  - aes-ni
+  - aes128
+  - aes256
+  - throughput
+  - mb/s
+  - gb/s
+  - crypto
+  - cipher
+  - encryption
+  - decryption
+  - subbytes
+  - mixcolumns
+  - sbox
+  - round function
+  - intrinsics
+  - _mm_aesenc_si128
+  - vectorize
+  - simd
+  - avx
+  - sse
+  - pclmulqdq
+  - bitslice
+  - bitslicing
+  - hardware acceleration
+  - gcm
+  - ctr mode
+  exclude: []
+log_signatures:
+- (aes\-ni)
+- (aes128)
+- (aes256)
+routing_guard:
+  positive_queries:
+  - TASK_005_AES128_Throughput
+  collateral_queries:
+  - TASK_006_FlashAttention
+  - TASK_007_BatteryFastCharging
+  adversarial_queries: []
+  negative_signatures: []
+  saturation_signatures: []
+evidence:
+  retrieval_status: passed
+  llm_judge_status: unstable
+  official_verifier_status: not_started
+  last_verified_panel: iter4_p8
+  notes:
+  - Migrated from legacy CURATED_SAFETY_PATTERNS (Crypto_Throughput_Bottleneck).
+demotion:
+  demote_reason: null
+  confidence_score: null
+body:
+  symptom: Pure-software block-cipher round functions saturate CPU on SubBytes/MixColumns;
+    throughput plateaus at <100 MB/s on x86_64
+  diagnosis: 'The root cause is captured by the ''simd_aes_ni_hardware_crypto'' fix family:
+    crypto throughput bottleneck.'
+  fix: Replace the SBOX-table + ShiftRows + MixColumns inner loop with x86 AES-NI intrinsics
+    (`_mm_aesenc_si128`, `_mm_aesenclast_si128`) — one AESENC instruction per round retires
+    in ~3 cycles, delivering 1-2 GB/s per core. Use `_mm_clmulepi64_si128` (PCLMULQDQ) for
+    the GHASH multiply in GCM mode. For platforms without AES-NI, fall back to a bitsliced
+    implementation (parallel 8-block lanes) rather than the scalar SBOX-table loop.
+  anti_pattern: Hand-rolled SBOX lookup tables in C with `unsigned char state[16]` — even
+    with `-O3` the compiler can't vectorize the 16-byte SBOX indirection, so the loop bottlenecks
+    on L1 latency at ~80 MB/s.
+  expected_signal: The agent response names the canonical fix, avoids the anti-pattern, and
+    remains valid across the task's rubric.
+  before_code: "// scalar AES round — SBOX lookup serialises on L1 latency\nstatic void aes_round(uint8_t\
+    \ s[16], const uint8_t k[16]) {\n    for (int i = 0; i < 16; ++i) s[i] = SBOX[s[i]];\n\
+    \    shift_rows(s);\n    mix_columns(s);\n    for (int i = 0; i < 16; ++i) s[i] ^= k[i];\n\
+    }\n"
+  after_code: "// AES-NI round — single instruction, ~3 cycle latency, ~1.5 GB/s\n#include\
+    \ <wmmintrin.h>\nstatic __m128i aes_round_ni(__m128i state, __m128i round_key) {\n   \
+    \ return _mm_aesenc_si128(state, round_key);\n}\n// GCM multiply: use PCLMULQDQ\nstatic\
+    \ __m128i ghash_mul(__m128i a, __m128i b) {\n    return _mm_clmulepi64_si128(a, b, 0x00);\n\
+    }\n"
+  cross_domain_hints:
+  - source_domain: Learning_Training
+    insight: 'Same insight as moving a softmax from Python to fused CUDA kernels: when the
+      hot path is a tight 16-byte loop, the fix is hardware-specific intrinsics, not a smarter
+      algorithm.'
+    action_suggestion: Profile to confirm the bottleneck is the round function, then drop
+      to platform intrinsics. Keep a portable fallback (bitsliced) for non-x86 / unprivileged
+      targets.
