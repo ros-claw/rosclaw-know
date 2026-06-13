@@ -23658,48 +23658,48 @@
     }
   },
   "safety_label_index": {
+    "Battery_Capacity_Fade": [
+      "multi_stage_cc_cv_fast_charging"
+    ],
     "Torque_Overflow": [
       "anti_windup_pid"
-    ],
-    "PID_Joint_Latency_Oscillation": [
-      "pid_joint_latency_oscillation"
-    ],
-    "Memory_Exhaustion": [
-      "sliding_window_kv_cache",
-      "flash_attention_tiled_softmax"
-    ],
-    "Numerical_Instability": [
-      "gradient_clipping"
     ],
     "Velocity_Divergence": [
       "output_saturation_clamp"
     ],
-    "Oscillation_Divergence": [
-      "closed_loop_replanning"
+    "PID_Joint_Latency_Oscillation": [
+      "pid_joint_latency_oscillation"
     ],
-    "Entropy_Collapse": [
-      "ppo_entropy_collapse_guard"
-    ],
-    "Battery_Capacity_Fade": [
-      "multi_stage_cc_cv_fast_charging"
-    ],
-    "Crypto_Throughput_Bottleneck": [
-      "simd_aes_ni_hardware_crypto"
+    "Tracking_Error": [
+      "terrain_aware_locomotion"
     ],
     "Robot_Cycle_Time_Inflation": [
       "time_optimal_path_blending"
     ],
-    "Image_Motion_Blur": [
-      "motion_blur_imu_aided_deblur"
-    ],
-    "Combinatorial_Local_Optimum": [
-      "metaheuristic_combinatorial_escape"
+    "Oscillation_Divergence": [
+      "closed_loop_replanning"
     ],
     "Communication_Timeout": [
       "exponential_backoff_retry"
     ],
-    "Tracking_Error": [
-      "terrain_aware_locomotion"
+    "Numerical_Instability": [
+      "gradient_clipping"
+    ],
+    "Entropy_Collapse": [
+      "ppo_entropy_collapse_guard"
+    ],
+    "Combinatorial_Local_Optimum": [
+      "metaheuristic_combinatorial_escape"
+    ],
+    "Memory_Exhaustion": [
+      "flash_attention_tiled_softmax",
+      "sliding_window_kv_cache"
+    ],
+    "Crypto_Throughput_Bottleneck": [
+      "simd_aes_ni_hardware_crypto"
+    ],
+    "Image_Motion_Blur": [
+      "motion_blur_imu_aided_deblur"
     ]
   },
   "schema_version": "2.0"
