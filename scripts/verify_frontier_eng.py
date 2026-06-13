@@ -17,9 +17,12 @@ import sys
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parent.parent / "src"
+SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC))
+sys.path.insert(0, str(SCRIPTS))
 
 from rosclaw_know.config import ASSETS_DIR, BENCHMARKS_DIR, ensure_dirs  # noqa: E402
+from how_health import assert_how_healthy  # noqa: E402
 
 # Frontier-Eng smoke suite — 10 tasks chosen to span the categories in
 # the test outline §5.2 (control, sim, systems-perf, high-reliability,
@@ -704,6 +707,13 @@ def main() -> int:
         ),
     )
     args = ap.parse_args()
+
+    if args.via_how:
+        try:
+            assert_how_healthy(args.how_base, args.how_api_key)
+        except RuntimeError as exc:
+            print(f"[verify-frontier] {exc}", file=sys.stderr)
+            return 2
 
     ensure_dirs()
     args.out_dir.mkdir(parents=True, exist_ok=True)

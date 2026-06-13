@@ -124,6 +124,9 @@ def test_main_end_to_end_skip_judge(rpa, tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(rpa.subprocess, "call", fake_call)
 
+    # The health gate requires a live HOW server; mock it for the smoke test.
+    monkeypatch.setattr(rpa, "assert_how_healthy", lambda *_a, **_k: {"status": "ok"})
+
     monkeypatch.setattr(
         sys, "argv",
         ["run_paired_ab.py", "--label", fake_label,

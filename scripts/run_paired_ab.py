@@ -41,9 +41,13 @@ from pathlib import Path
 from typing import Any
 
 SRC = Path(__file__).resolve().parent.parent / "src"
+SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC))
+sys.path.insert(0, str(SCRIPTS))
 
 from rosclaw_know import config  # noqa: E402
+
+from how_health import assert_how_healthy  # noqa: E402
 
 FROZEN_ROOT = config.DATA_DIR / "frozen"
 HARNESS_ROOT = config.BENCHMARKS_DIR / "paired_ab"
@@ -191,6 +195,14 @@ def main() -> int:
         raise SystemExit(
             f"[paired-ab] {run_root} already exists. Delete it or use a unique --label."
         )
+
+    # Formal experiments require a healthy HOW backend.
+    try:
+        assert_how_healthy(args.how_base, args.how_api_key)
+        print(f"[paired-ab] HOW health check passed: {args.how_base}")
+    except RuntimeError as exc:
+        raise SystemExit(f"[paired-ab] {exc}")
+
     run_root.mkdir(parents=True)
 
     start_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

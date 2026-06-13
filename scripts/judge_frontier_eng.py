@@ -42,10 +42,13 @@ from pathlib import Path
 import aiohttp
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+sys.path.insert(0, str(SCRIPTS))
 
 from rosclaw_know.config import BENCHMARKS_DIR  # noqa: E402
 from rosclaw_know.llm import chat  # noqa: E402
+from how_health import assert_how_healthy  # noqa: E402
 
 logger = logging.getLogger("rosclaw_know.judge_frontier_eng")
 

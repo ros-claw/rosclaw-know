@@ -32,7 +32,7 @@ def brc():
 
 
 class TestQueryConstruction:
-    def test_query_uses_safety_label_and_first_6_keywords(self, brc):
+    def test_query_uses_safety_label_and_first_24_keywords(self, brc):
         p = SimpleNamespace(
             pattern_id="x",
             standard_name="Some Standard Name",
@@ -46,11 +46,10 @@ class TestQueryConstruction:
         q = brc._make_query(p)
         # safety label tokens lowered + underscore→space
         assert "memory exhaustion" in q
-        # first 6 keywords only
+        # first 8 keywords all included (less than 24)
         assert "kv cache" in q and "long context" in q and "sliding" in q
-        # 7th+ keywords excluded
-        assert "window" not in q
-        assert "buffer" not in q
+        assert "window" in q
+        assert "buffer" in q
 
     def test_query_no_standard_name_leakage(self, brc):
         """Querying the standard_name would round-trip the embedding to sim≈1
