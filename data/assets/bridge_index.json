@@ -4970,9 +4970,13 @@
     "anti_windup_pid": {
       "standard_name": "PID integral wind-up drives the actuator (torque, force, valve position, or flow rate) into prolonged saturation; after the demand transient ends, the integrator retains accumulated state and the controller takes a settling time to release it, causing overshoot past target as the actuator slowly retracts from saturation",
       "domain": "Control_Locomotion",
+      "robot_type": "actuator",
       "safety_label": "Torque_Overflow",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "actuator",
         "anti-windup",
@@ -5022,14 +5026,44 @@
       ],
       "topic_group": "control-loop-stability",
       "topic_tag": "pid-integral-windup-anti-saturation",
-      "content_hash": "ccb62dcbaa171c50309aad57c1fa4ece75b11aea742f996b5062b20eefb35fbb"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_W_007_IntegrationWindup"
+        ],
+        "collateral_queries": [
+          "TASK_001_PIDTuning",
+          "TASK_W_005_ActuatorOvershoot"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter5_p1",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Torque_Overflow)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "f9bdc95de8672d2a9041a6e599213d90b52f283c8811c33acd12074dc06f8667",
+      "metadata_hash": "f61be00b43fb4706c5a2ca865fd0add1050024f7e2a4b7a3021cd22f5e1203d4"
     },
     "sliding_window_kv_cache": {
       "standard_name": "Unbounded KV-cache growth during long-horizon LLM rollouts, multi-turn conversation history, and fixed context-window deployments causes CUDA OOM and rising per-turn latency; bounded accumulation is restored by sliding-window truncation of the oldest key/value rows, recent-turns retention policies, and summarization of older context instead of retaining every token",
       "domain": "Memory_Reasoning",
+      "robot_type": null,
       "safety_label": "Memory_Exhaustion",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "attention sink",
         "cache eviction",
@@ -5091,14 +5125,44 @@
       ],
       "topic_group": "llm-inference-efficiency",
       "topic_tag": "sliding-window-kv-cache-rollouts",
-      "content_hash": "448e50b76e062fb1fc79c7d5b55c7ec0acb02fa34c98e349681f680000180d0c"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_W_001_KVCacheLongContext"
+        ],
+        "collateral_queries": [
+          "TASK_001_PIDTuning",
+          "TASK_002_QuadrupedGait"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Memory_Exhaustion)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "747edd05a9ae7a3551b9ffb52374dbb9ad3f995a0920fe2cf32aed1101906fd1",
+      "metadata_hash": "57a02849db713ee0063490a37ee40f2bf97d1dc7803a1366b68ae5d4a0711ac6"
     },
     "gradient_clipping": {
       "standard_name": "NaN/Inf in loss or weights after a step explodes the gradient",
       "domain": "Learning_Training",
+      "robot_type": null,
       "safety_label": "Numerical_Instability",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "gradient clip",
         "gradient explod",
@@ -5122,14 +5186,44 @@
       ],
       "topic_group": "rl-training-stability",
       "topic_tag": "gradient-clipping-explosion-guard",
-      "content_hash": "db7d57e7e5fd971d5da90421a8ff5b42218feadbca936e64b922383638e4e261"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_W_002_GradExplosionRL"
+        ],
+        "collateral_queries": [
+          "TASK_W_004_EntropyCollapsePPO",
+          "TASK_001_PIDTuning"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Numerical_Instability)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "291427fee7fb0c369aa225f42be978639db94aa7fd54f54f0d0ede41a1669771",
+      "metadata_hash": "daea2409b1aaa2f1b961fd6cd0008052b4ad65faa2debac0f9e7758b61cc22af"
     },
     "output_saturation_clamp": {
       "standard_name": "Commanded actuator output (force, torque, peak velocity, or position) overshoots the actuator's rated peak or diverges to ±∞ when the controller has no command-side saturation clamp; the command signal briefly exceeds rated limits before mechanical end-stops or safety interlocks (safety relays) trip",
       "domain": "Control_Locomotion",
+      "robot_type": "actuator",
       "safety_label": "Velocity_Divergence",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "actuator",
         "clamp",
@@ -5169,14 +5263,44 @@
       ],
       "topic_group": "control-loop-stability",
       "topic_tag": "controller-output-saturation-clamp",
-      "content_hash": "8c47975d1bef04cc9c23c751a626d02097bb9f6ed72a1b39c35a5addade836b1"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_W_005_ActuatorOvershoot"
+        ],
+        "collateral_queries": [
+          "TASK_W_007_IntegrationWindup",
+          "TASK_001_PIDTuning"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter5_p1",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Velocity_Divergence)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "37f77b512f1526ae1a7a5852b25ef6d52e5dc940f39be99f2ff41db1792bcfcc",
+      "metadata_hash": "279aaaff1e96a61e19651a53077020ae261e532aef4526f9d924d761709f5d10"
     },
     "closed_loop_replanning": {
       "standard_name": "Model-predictive control (MPC) and receding-horizon planning drift away from ground truth when the internal dynamics model mismatches real-world friction, terrain, or disturbance; the predicted state diverges from the measured state over the planning horizon, causing unbounded tracking error unless the plan is replanned in closed loop with online state feedback and shorter replan intervals",
       "domain": "Planning_Decision",
+      "robot_type": "mobile_robot",
       "safety_label": "Oscillation_Divergence",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "closed loop replan",
         "closed-loop replanning",
@@ -5232,14 +5356,44 @@
       ],
       "topic_group": "closed-loop-replanning",
       "topic_tag": "closed-loop-mpc-replanning",
-      "content_hash": "b10817953659ab98adc53487db1cc6f3192669506d7e77b1aedffee68abc2966"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_W_006_PlanningDivergence"
+        ],
+        "collateral_queries": [
+          "TASK_008_JobShop_abz",
+          "TASK_001_PIDTuning"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Oscillation_Divergence)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "4a84d99809d3ac25ba1271e4f0b70129db7c4f54be55e8fc2cb026056a2edcb8",
+      "metadata_hash": "39e66bbb163646238f34b3e1dd2f9847509d92f60b4e598ad092d6c2a6b12297"
     },
     "exponential_backoff_retry": {
       "standard_name": "Network, RPC, microservice, and HTTP API call timeout cascades cause thundering-herd request storms and exponential-retry amplification after partial upstream service degradation, backend unavailability, or transient HTTP 5xx errors; naive fixed-delay retry loops without jitter or exponential backoff compound the cascading load, overwhelm downstream capacity, and prolong the outage duration",
       "domain": "Systems_Compute",
+      "robot_type": null,
       "safety_label": "Communication_Timeout",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "503",
         "5xx",
@@ -5315,14 +5469,44 @@
       ],
       "topic_group": "reliability-engineering",
       "topic_tag": "exponential-backoff-with-jitter",
-      "content_hash": "8ebb3cd72bd1da0a2d21443c9f491b4f1dae3ddb090919f6d28728f495b49768"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_W_003_NetRetryStorm"
+        ],
+        "collateral_queries": [
+          "TASK_005_AES128_Throughput",
+          "TASK_006_FlashAttention"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Communication_Timeout)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "023c488a051ba8fbe7e7b71dc2c2dd104a15d7cfbb357bf115df23beb86c7922",
+      "metadata_hash": "c3f5ed9e39e36f24c7e01f82c5f1f62a6156551608336a485e80d46d4203f28e"
     },
     "ppo_entropy_collapse_guard": {
       "standard_name": "PPO entropy crashes to zero and the policy fixates on a degenerate action",
       "domain": "Learning_Training",
+      "robot_type": null,
       "safety_label": "Entropy_Collapse",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "collapse",
         "degenerate",
@@ -5355,7 +5539,33 @@
       ],
       "topic_group": "rl-training-stability",
       "topic_tag": "ppo-entropy-collapse-guard",
-      "content_hash": "db0ec818915ff3c10dec8b192f8d7ef01d45e728208ad3b456eacb89df577a02"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_W_004_EntropyCollapsePPO"
+        ],
+        "collateral_queries": [
+          "TASK_W_002_GradExplosionRL",
+          "TASK_001_PIDTuning"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Entropy_Collapse)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "4a75b8172068f891abc55cdc66a1bd127028827018a4e84ddd99d8feb669fb4c",
+      "metadata_hash": "2d675e06deee66760260d6c20f023417f81dbcc23acbdb0f47bc618b13322532"
     },
     "ground_slow_move_fast_a_dual_system_foundation_model_for_generalizable_vision_an": {
       "standard_name": "VLN agents struggle with real-time obstacle avoidance and smooth trajectory generation under high-frequency control loops when using large VLMs end-to-end.",
@@ -23223,9 +23433,13 @@
     "multi_stage_cc_cv_fast_charging": {
       "standard_name": "Aggressive constant-current fast-charging accelerates capacity fade via lithium plating at high SOC on graphite or silicon anodes",
       "domain": "Systems_Compute",
+      "robot_type": null,
       "safety_label": "Battery_Capacity_Fade",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "4c",
         "anode",
@@ -23264,14 +23478,44 @@
       ],
       "topic_group": "battery-and-energy-management",
       "topic_tag": "constant-current-constant-voltage-charging",
-      "content_hash": "1450bf27443ee9708c3ff9b806d64ae90394e81f46355e5457b77a28fab1e323"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_007_BatteryFastCharging"
+        ],
+        "collateral_queries": [
+          "TASK_005_AES128_Throughput",
+          "TASK_006_FlashAttention"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Battery_Capacity_Fade)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "e6d71d6197b128e8fa8523de8089409ffa72dddae383f9aac74c391ad43a0f09",
+      "metadata_hash": "005331f1360a5840d882826d55c06f42b6f3711da9f3250d1fe7b621dcbb36e5"
     },
     "simd_aes_ni_hardware_crypto": {
       "standard_name": "Pure-software block-cipher round functions saturate CPU on SubBytes/MixColumns; throughput plateaus at <100 MB/s on x86_64",
       "domain": "Systems_Compute",
+      "robot_type": null,
       "safety_label": "Crypto_Throughput_Bottleneck",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "_mm_aesenc_si128",
         "aes",
@@ -23316,14 +23560,44 @@
       ],
       "topic_group": "hardware-accelerated-cryptography",
       "topic_tag": "aes-ni-hardware-acceleration",
-      "content_hash": "edeb6ccc8ecdda8e62dde70144179af58bda529eea90fcf77ecc4929c7041ef5"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_005_AES128_Throughput"
+        ],
+        "collateral_queries": [
+          "TASK_006_FlashAttention",
+          "TASK_007_BatteryFastCharging"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Crypto_Throughput_Bottleneck)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "7fade7b7c9d264266a4ae25370e0b8e254997f68b2157715b7ec47bf0bbe2381",
+      "metadata_hash": "a38649218cd689d1debc7ed767b961fd2e0f47bf11b75a406bd067047f40f827"
     },
     "time_optimal_path_blending": {
       "standard_name": "Joint-space trajectories that decelerate to zero at every via-point inflate cycle time by 40-60 % even when via-points are colinear",
       "domain": "Control_Locomotion",
+      "robot_type": "manipulator",
       "safety_label": "Robot_Cycle_Time_Inflation",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "blend radius",
         "cycle time",
@@ -23367,14 +23641,44 @@
       ],
       "topic_group": "locomotion-and-manipulation",
       "topic_tag": "time-optimal-path-parameterization",
-      "content_hash": "c945cad5fd833b5796cbd1b1df4ccfded2d25d20ce8d5ef656b81b365f9cb9ff"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_003_RobotArmCycleTime"
+        ],
+        "collateral_queries": [
+          "TASK_001_PIDTuning",
+          "TASK_002_QuadrupedGait"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Robot_Cycle_Time_Inflation)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "059efff588435194022031b0b05fb8451503a396ab677942a49db84bbe37aa94",
+      "metadata_hash": "249e3653f3663b3ab5c71b60ba8579509ec5b3f962654db0b8fd8e100bb312bc"
     },
     "motion_blur_imu_aided_deblur": {
       "standard_name": "Onboard RGB or monocular camera mounted on a moving aerial / mobile platform (UAV, quadrotor, drone, inspection robot) produces motion-blurred frames during fast relative velocity to the inspection target; downstream defect detection or object classification recall drops 40-60 % versus the stationary or hover baseline, because the blur extent within the exposure window exceeds the detector's invariance to blur, even when focal length and ISO are held fixed across the flyby phase",
       "domain": "Perception_Vision",
+      "robot_type": "uav",
       "safety_label": "Image_Motion_Blur",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "blur compensation",
         "blur extent",
@@ -23446,14 +23750,44 @@
       ],
       "topic_group": "motion-blur-deblur",
       "topic_tag": "imu-aided-motion-blur-deblur",
-      "content_hash": "f9c0923ea0b23bdb2ce82d76d31b2f4e59205ce7db85dda2e71688af7f7c2cc5"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_010_UAVInspection"
+        ],
+        "collateral_queries": [
+          "TASK_001_PIDTuning",
+          "TASK_002_QuadrupedGait"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Image_Motion_Blur)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "9c8e6fb739467cfba400ad9220d2f57d2812983bbf9f4fdbdfb429484e890f86",
+      "metadata_hash": "71532151ba0a34e8affe80e9b3a0a3ab95fb5c7e236863045214430884e9cd5b"
     },
     "metaheuristic_combinatorial_escape": {
       "standard_name": "Greedy / local-search on combinatorial scheduling (job-shop, TSP, VRP) stagnates after the descent phase; objective plateaus well above the known optimum",
       "domain": "Planning_Decision",
+      "robot_type": null,
       "safety_label": "Combinatorial_Local_Optimum",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "abz5",
         "combinatorial",
@@ -23499,14 +23833,44 @@
       ],
       "topic_group": "scheduling-optimization",
       "topic_tag": "metaheuristic-combinatorial-local-optimum-escape",
-      "content_hash": "8b90cb9de91949db77dc325090d4dd641bc0166d79c12563e493e550f013fbc9"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_008_JobShop_abz"
+        ],
+        "collateral_queries": [
+          "TASK_W_006_PlanningDivergence",
+          "TASK_001_PIDTuning"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Combinatorial_Local_Optimum)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "f72b0544d23fc09760a358fb1ba64af94d31ec3821257ccfca4db676eec1ee86",
+      "metadata_hash": "13a7cd7ea7ef34681335939cc0a83705548ae18451eaced4a46b6d4b774ad1b8"
     },
     "terrain_aware_locomotion": {
       "standard_name": "Legged-robot trot gait diverges on uneven or slippery terrain — foot-slip events compound center-of-mass tracking error each cycle until the robot falls",
       "domain": "Control_Locomotion",
+      "robot_type": "quadruped",
       "safety_label": "Tracking_Error",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "compliance",
         "contact",
@@ -23550,14 +23914,44 @@
       ],
       "topic_group": "locomotion-and-manipulation",
       "topic_tag": "terrain-aware-legged-locomotion",
-      "content_hash": "529ac89d93008b4709f80682f826510e83526be148ab8dfb82441f36934d5c1e"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_002_QuadrupedGait"
+        ],
+        "collateral_queries": [
+          "TASK_001_PIDTuning",
+          "TASK_003_RobotArmCycleTime"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Tracking_Error)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "431aabae1eea88652fcc697beaf81a4ff39d4d44fa0f7a1c7aa89c28e5207580",
+      "metadata_hash": "22979f07e07bedde21b3e1096acc28a6ab24f621fd32870e73e7d719c91e4f84"
     },
     "flash_attention_tiled_softmax": {
       "standard_name": "Transformer self-attention layer materializes the full NxN matrix in HBM at long context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference throughput",
       "domain": "Systems_Compute",
+      "robot_type": null,
       "safety_label": "Memory_Exhaustion",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "16k",
         "8k",
@@ -23602,14 +23996,45 @@
       ],
       "topic_group": "llm-inference-efficiency",
       "topic_tag": "flash-attention-tiled-softmax",
-      "content_hash": "9d54dfcdfcaacca7627064113c2bb27f65d4eb10808f49484bd6ead099fcbeed"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_006_FlashAttention",
+          "TASK_W_008_AttentionMemoryOOM"
+        ],
+        "collateral_queries": [
+          "TASK_005_AES128_Throughput",
+          "TASK_007_BatteryFastCharging"
+        ],
+        "adversarial_queries": [],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p8",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (Memory_Exhaustion)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "84765f918f9ff829daed87dfb79c6e6e0ca37b2b08f4f015b0bc561049e632b0",
+      "metadata_hash": "8164fd9a57f8d494e86675ab25523eac4f0d578c168e9b29ebda8985377b2eba"
     },
     "pid_joint_latency_oscillation": {
       "standard_name": "Robotic-arm joint feedback control diverges into sustained oscillation when sensor-to-actuator loop deadtime around 30 ms exceeds the inverse of the joint's mechanical bandwidth, with stale measurements compounding the tracking-error response each control cycle",
       "domain": "Control_Locomotion",
+      "robot_type": "manipulator",
       "safety_label": "PID_Joint_Latency_Oscillation",
       "source": "curated",
-      "source_tier": "S_CURATED_VERIFIED",
+      "source_tier": "A_CURATED_REVIEWED",
+      "status": "active",
+      "runtime_eligible": true,
+      "priority": 1,
       "matched_keywords": [
         "30 ms",
         "anti windup",
@@ -23654,7 +24079,35 @@
       ],
       "topic_group": "control-loop-stability",
       "topic_tag": "pid-joint-loop-latency-anti-windup",
-      "content_hash": "8f354c4fb80ab43ee1b53e25759c0972d0c8baa685a47a0da1babc362538f277"
+      "routing_guard": {
+        "positive_queries": [
+          "TASK_001_PIDTuning"
+        ],
+        "collateral_queries": [
+          "TASK_002_QuadrupedGait",
+          "TASK_003_RobotArmCycleTime"
+        ],
+        "adversarial_queries": [
+          "UAV_motion_blur_latency_noise"
+        ],
+        "negative_signatures": [],
+        "saturation_signatures": []
+      },
+      "evidence": {
+        "retrieval_status": "passed",
+        "llm_judge_status": "unstable",
+        "official_verifier_status": "not_started",
+        "last_verified_panel": "iter4_p9",
+        "notes": [
+          "Migrated from legacy CURATED_SAFETY_PATTERNS (PID_Joint_Latency_Oscillation)."
+        ]
+      },
+      "demotion": {
+        "demote_reason": null,
+        "confidence_score": null
+      },
+      "content_hash": "29a912bd814f96c84d62aa8930617025260a4cb9057b03160b1874ecfd36a316",
+      "metadata_hash": "6ac2a84156300ec0a6842465fc304a737ea9884bf42d8830e12173a1b0734eac"
     }
   },
   "safety_label_index": {
@@ -23702,5 +24155,5 @@
       "motion_blur_imu_aided_deblur"
     ]
   },
-  "schema_version": "2.0"
+  "schema_version": 2
 }
