@@ -1,0 +1,28 @@
+task_id: quadrotor_altitude
+description: |
+  Implement an altitude-hold controller for a quadrotor.
+
+  State: (altitude, velocity).
+  Define:
+      def control(state, t, params) -> float
+  returning the thrust (N). The quadrotor has mass 1.0 kg, gravity 9.81 m/s^2,
+  and must hold altitude 10.0 m in the presence of wind.
+entrypoint: control
+scoring_fn_name: score_quadrotor_altitude
+objective_direction: maximize
+metric_name: tracking_accuracy
+max_iters: 20
+params:
+  mass: 1.0
+  gravity: 9.81
+  target_altitude: 10.0
+  wind_sigma: 0.5
+  dt: 0.05
+  total_time: 5.0
+  timeout: 5.0
+canonical_hint: |
+  Use PD control with gravity feedforward. The quadrotor mass is 1.0 kg, gravity
+  is 9.81 m/s^2, and the target altitude is 10.0 m. Use Kp=4.0 and Kd=4.0:
+      thrust = mass*gravity + Kp*(target_altitude - altitude) - Kd*velocity
+task_pack_hint: |
+  Anti-windup and saturation-aware PID design.

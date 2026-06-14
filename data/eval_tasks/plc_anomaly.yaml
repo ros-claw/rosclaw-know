@@ -1,0 +1,25 @@
+task_id: plc_anomaly
+description: |
+  Detect anomalies in a synthetic PLC sensor log.
+
+  Input: a list of float sensor readings (120 points).
+  Define:
+      def detect(log_lines) -> list[int]
+  returning the indices of anomalous readings. The normal signal is roughly
+  sinusoidal plus noise; anomalies include spikes, flatlines, and pattern breaks.
+entrypoint: detect
+scoring_fn_name: score_plc_anomaly
+objective_direction: maximize
+metric_name: f1_score
+max_iters: 20
+params:
+  n_lines: 120
+  n_anomalies: 5
+  spike_magnitude: 8.0
+  noise_sigma: 0.3
+  timeout: 5.0
+canonical_hint: |
+  The normal signal is 10.0 + 5.0*math.sin(i/10.0). Flag index i as anomalous
+  when abs(log_lines[i] - expected) > 3.0.
+task_pack_hint: |
+  Statistical anomaly detection over time-series telemetry.

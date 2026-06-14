@@ -4,6 +4,7 @@ Wraps the OpenAI-compatible /v1/chat/completions endpoint so the rest of the
 pipeline can call a single ``chat()`` helper. Honors a mock mode for tests
 and includes simple retry + error-classification logic.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -51,6 +52,7 @@ async def chat(
     max_tokens: int = 500,
     temperature: float = 0.2,
     max_attempts: int = 3,
+    timeout: float = 90,
 ) -> str | None:
     """Call DeepSeek-style chat-completions; return raw assistant content.
 
@@ -86,10 +88,17 @@ async def chat(
     delay = 1.0
     for attempt in range(1, max_attempts + 1):
         try:
-            async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=90)) as resp:
+            async with session.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=timeout),
+            ) as resp:
                 if resp.status == 429 or resp.status >= 500:
                     body = await resp.text()
-                    log.warning("LLM transient %s on attempt %s: %s", resp.status, attempt, body[:200])
+                    log.warning(
+                        "LLM transient %s on attempt %s: %s", resp.status, attempt, body[:200]
+                    )
                     if attempt == max_attempts:
                         return None
                     await asyncio.sleep(delay + random.uniform(0, 0.5))
@@ -152,15 +161,42 @@ def _mock_response(system: str, user: str, want_json: bool) -> str:
             domain = "Control_Locomotion"
         elif "cuda" in u or "kernel" in u or "gpu" in u or "latency" in u or "throughput" in u:
             domain = "Systems_Compute"
-        elif "memory" in u or "kv-cache" in u or "context" in u or "reasoning" in u or "recall" in u:
+        elif (
+            "memory" in u or "kv-cache" in u or "context" in u or "reasoning" in u or "recall" in u
+        ):
             domain = "Memory_Reasoning"
-        elif "signal" in u or "channel" in u or "fiber" in u or "depth" in u or "segmentation" in u or "image" in u or "vision" in u:
+        elif (
+            "signal" in u
+            or "channel" in u
+            or "fiber" in u
+            or "depth" in u
+            or "segmentation" in u
+            or "image" in u
+            or "vision" in u
+        ):
             domain = "Perception_Vision"
-        elif "fluid" in u or "material" in u or "thermal" in u or "physical" in u or "simulation" in u or "dynamics" in u or "mesh" in u:
+        elif (
+            "fluid" in u
+            or "material" in u
+            or "thermal" in u
+            or "physical" in u
+            or "simulation" in u
+            or "dynamics" in u
+            or "mesh" in u
+        ):
             domain = "World_Physics"
-        elif "schedul" in u or "battery" in u or "optim" in u or "planning" in u or "navigation" in u:
+        elif (
+            "schedul" in u or "battery" in u or "optim" in u or "planning" in u or "navigation" in u
+        ):
             domain = "Planning_Decision"
-        elif "rl" in u or "policy" in u or "training" in u or "learn" in u or "augment" in u or "sim-to-real" in u:
+        elif (
+            "rl" in u
+            or "policy" in u
+            or "training" in u
+            or "learn" in u
+            or "augment" in u
+            or "sim-to-real" in u
+        ):
             domain = "Learning_Training"
         else:
             domain = "Control_Locomotion"

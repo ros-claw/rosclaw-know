@@ -1,0 +1,29 @@
+task_id: cartpole_pid
+description: |
+  Balance a cartpole by applying horizontal force to the cart.
+
+  State: (x, x_dot, theta, theta_dot).
+  Define:
+      def control(state, t, params) -> float
+  returning force (N) on the cart. Keep the pole near upright and the cart
+  within the track bounds.
+entrypoint: control
+scoring_fn_name: score_cartpole_pid
+objective_direction: maximize
+metric_name: upright_fraction
+max_iters: 20
+params:
+  mass_cart: 1.0
+  mass_pole: 0.1
+  length: 0.5
+  gravity: 9.81
+  dt: 0.02
+  total_time: 4.0
+  angle_limit: 0.2
+  position_limit: 2.4
+  timeout: 5.0
+canonical_hint: |
+  Use linear state feedback with these tuned gains:
+      force = 1.0*x + 1.0*x_dot + 20.0*theta + 3.0*theta_dot
+task_pack_hint: |
+  Pole-balancing via PD and state-feedback gains.

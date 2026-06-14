@@ -1,0 +1,27 @@
+task_id: pendulum_swingup
+description: |
+  Swing up and balance a simple pendulum.
+
+  State: (theta, omega) where theta=0 is upright and theta=pi is hanging down.
+  Define:
+      def control(state, t, params) -> float
+  returning torque (N*m). Torque is saturated at +/- max_torque.
+entrypoint: control
+scoring_fn_name: score_pendulum_swingup
+objective_direction: maximize
+metric_name: upright_stability
+max_iters: 20
+params:
+  gravity: 9.81
+  length: 1.0
+  mass: 1.0
+  max_torque: 2.0
+  dt: 0.05
+  total_time: 5.0
+  timeout: 5.0
+canonical_hint: |
+  Use energy shaping. E = 0.5*omega*omega + gravity/length*(math.cos(theta) - 1.0).
+  If |theta| < 0.3 and |omega| < 0.5, balance with torque = -2.0*theta - 0.5*omega.
+  Otherwise add energy: torque = 1.0 if E < 0 else -1.0. gravity=9.81, length=1.0, max_torque=2.0.
+task_pack_hint: |
+  Under-actuated swing-up and balance control.

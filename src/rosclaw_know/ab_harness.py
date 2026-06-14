@@ -21,6 +21,7 @@ mixed by raw score — every metric here is rank-based or
 ratio-of-best (performance-profile style).  See plan §Sprint 8
 ("Frontier-Eng 官方也强调异构任务不能直接混原始分数").
 """
+
 from __future__ import annotations
 
 import logging
@@ -141,17 +142,10 @@ def _aggregate_cells(
     for key, rs in bucket.items():
         valid_scores = [r.score for r in rs if r.valid and r.score is not None]
         n_valid = len(valid_scores)
-        mean = (
-            round(statistics.fmean(valid_scores), 6) if n_valid else None
-        )
-        std = (
-            round(statistics.stdev(valid_scores), 6) if n_valid > 1 else None
-        )
+        mean = round(statistics.fmean(valid_scores), 6) if n_valid else None
+        std = round(statistics.stdev(valid_scores), 6) if n_valid > 1 else None
         validity_rate = sum(1 for r in rs if r.valid) / len(rs)
-        hint_use = (
-            round(statistics.fmean(r.hint_use_rate for r in rs), 4)
-            if rs else 0.0
-        )
+        hint_use = round(statistics.fmean(r.hint_use_rate for r in rs), 4) if rs else 0.0
         out[key] = TaskArmSummary(
             task_id=key[0],
             arm=key[1],
@@ -248,27 +242,21 @@ def compute_arm_summaries(
     """Top-level cross-task aggregates."""
     cells = _aggregate_cells(results)
     tasks = sorted({r.task_id for r in results})
-    direction_by_task = {
-        r.task_id: r.objective_direction for r in results
-    }
+    direction_by_task = {r.task_id: r.objective_direction for r in results}
 
     # Rank per task.
     per_task_ranks: dict[str, dict[ArmName, float]] = {
-        t: _rank_arms_within_task(cells, t, arms)
-        for t in tasks
+        t: _rank_arms_within_task(cells, t, arms) for t in tasks
     }
 
     out: dict[ArmName, ArmSummary] = {}
     for arm in arms:
-        ranks = [
-            per_task_ranks[t][arm] for t in tasks
-            if arm in per_task_ranks[t]
-        ]
+        ranks = [per_task_ranks[t][arm] for t in tasks if arm in per_task_ranks[t]]
         # Tasks with data on this arm
         with_data = [
-            t for t in tasks
-            if (cells.get((t, arm)) is not None
-                and cells[(t, arm)].mean_score is not None)
+            t
+            for t in tasks
+            if (cells.get((t, arm)) is not None and cells[(t, arm)].mean_score is not None)
         ]
         # Win rate vs baseline
         wins = 0
@@ -277,8 +265,10 @@ def compute_arm_summaries(
             arm_cell = cells.get((t, arm))
             base_cell = cells.get((t, "baseline"))
             if (
-                arm_cell is None or base_cell is None
-                or arm_cell.mean_score is None or base_cell.mean_score is None
+                arm_cell is None
+                or base_cell is None
+                or arm_cell.mean_score is None
+                or base_cell.mean_score is None
             ):
                 continue
             direction = direction_by_task[t]
@@ -297,14 +287,9 @@ def compute_arm_summaries(
         # Validity rate over all (task, seed) trials.
         arm_results = [r for r in results if r.arm == arm]
         valid_n = sum(1 for r in arm_results if r.valid)
-        validity_rate = (
-            valid_n / len(arm_results) if arm_results else 0.0
-        )
+        validity_rate = valid_n / len(arm_results) if arm_results else 0.0
         # Mean hint_use_rate
-        hint_use = (
-            statistics.fmean(r.hint_use_rate for r in arm_results)
-            if arm_results else 0.0
-        )
+        hint_use = statistics.fmean(r.hint_use_rate for r in arm_results) if arm_results else 0.0
         out[arm] = ArmSummary(
             arm=arm,
             avg_rank=round(statistics.fmean(ranks), 4) if ranks else float("inf"),
@@ -313,9 +298,9 @@ def compute_arm_summaries(
             validity_preservation_rate=round(validity_rate, 4),
             mean_hint_use_rate=round(hint_use, 4),
             win_rate_vs_baseline=round(wins / denom, 4),
-            avg_post_injection_delta_vs_baseline=round(
-                statistics.fmean(deltas), 6
-            ) if deltas else 0.0,
+            avg_post_injection_delta_vs_baseline=round(statistics.fmean(deltas), 6)
+            if deltas
+            else 0.0,
         )
     return out
 
@@ -336,18 +321,13 @@ def pairwise_win_rate(
     """
     cells = _aggregate_cells(results)
     tasks = sorted({r.task_id for r in results})
-    direction_by_task = {
-        r.task_id: r.objective_direction for r in results
-    }
+    direction_by_task = {r.task_id: r.objective_direction for r in results}
     n = 0
     wins = 0
     for t in tasks:
         a = cells.get((t, arm_a))
         b = cells.get((t, arm_b))
-        if (
-            a is None or b is None
-            or a.mean_score is None or b.mean_score is None
-        ):
+        if a is None or b is None or a.mean_score is None or b.mean_score is None:
             continue
         n += 1
         direction = direction_by_task[t]
@@ -364,7 +344,8 @@ def pairwise_win_rate(
 
 
 def post_injection_deltas(
-    results: Sequence[TaskRunResult], arm: ArmName,
+    results: Sequence[TaskRunResult],
+    arm: ArmName,
 ) -> dict[str, float | None]:
     """``{task_id → arm.mean − baseline.mean}`` signed by direction.
 
@@ -377,10 +358,7 @@ def post_injection_deltas(
     for t in tasks:
         a = cells.get((t, arm))
         b = cells.get((t, "baseline"))
-        if (
-            a is None or b is None
-            or a.mean_score is None or b.mean_score is None
-        ):
+        if a is None or b is None or a.mean_score is None or b.mean_score is None:
             out[t] = None
             continue
         if direction_by_task[t] == "maximize":
@@ -426,8 +404,9 @@ def paired_trend_p_value(
         mx, my = statistics.fmean(xs), statistics.fmean(ys)
         vx, vy = statistics.variance(xs), statistics.variance(ys)
         if vx == 0 and vy == 0:
-            # Identical samples — p = 1 (no evidence of trend).
-            out[t] = 1.0
+            # Both arms are deterministic. Same mean → no evidence of a trend.
+            # Different mean with zero variance is treated as a perfect separation.
+            out[t] = 1.0 if mx == my else 0.0
             continue
         denom = math.sqrt(vx / len(xs) + vy / len(ys))
         if denom == 0:
@@ -568,10 +547,7 @@ def acceptance_report(
         AcceptanceGate(
             name="true_know_beats_placebo",
             description="True_Know.avg_rank < Placebo_Know.avg_rank",
-            passed=bool(
-                tk and pk
-                and tk.avg_rank < pk.avg_rank
-            ),
+            passed=bool(tk and pk and tk.avg_rank < pk.avg_rank),
             detail=(
                 f"true_know.avg_rank={tk.avg_rank if tk else 'n/a'} "
                 f"vs placebo_know.avg_rank={pk.avg_rank if pk else 'n/a'}"
@@ -583,10 +559,7 @@ def acceptance_report(
         AcceptanceGate(
             name="true_know_beats_shuffled",
             description="True_Know.avg_rank < Shuffled_Know.avg_rank",
-            passed=bool(
-                tk and sk
-                and tk.avg_rank < sk.avg_rank
-            ),
+            passed=bool(tk and sk and tk.avg_rank < sk.avg_rank),
             detail=(
                 f"true_know.avg_rank={tk.avg_rank if tk else 'n/a'} "
                 f"vs shuffled_know.avg_rank={sk.avg_rank if sk else 'n/a'}"
@@ -598,10 +571,7 @@ def acceptance_report(
         AcceptanceGate(
             name="pack_plus_catalyst_beats_baseline",
             description="TaskPack+CATALYST.avg_rank < Baseline.avg_rank",
-            passed=bool(
-                pack_cat and base
-                and pack_cat.avg_rank < base.avg_rank
-            ),
+            passed=bool(pack_cat and base and pack_cat.avg_rank < base.avg_rank),
             detail=(
                 f"pack+catalyst.avg_rank={pack_cat.avg_rank if pack_cat else 'n/a'} "
                 f"vs baseline.avg_rank={base.avg_rank if base else 'n/a'}"
@@ -609,9 +579,7 @@ def acceptance_report(
         )
     )
 
-    n_positive = sum(
-        1 for d in deltas.values() if d is not None and d > 0
-    )
+    n_positive = sum(1 for d in deltas.values() if d is not None and d > 0)
     n_total_with_data = sum(1 for d in deltas.values() if d is not None)
     gates.append(
         AcceptanceGate(
@@ -626,7 +594,8 @@ def acceptance_report(
     )
 
     significant_tasks = [
-        t for t, p in pvals.items()
+        t
+        for t, p in pvals.items()
         if p is not None and p < sig_threshold and (deltas.get(t) or 0) > 0
     ]
     gates.append(
@@ -637,10 +606,7 @@ def acceptance_report(
                 f"reach p<{sig_threshold} with positive delta"
             ),
             passed=len(significant_tasks) >= min_significant_tasks,
-            detail=(
-                f"significant tasks: {significant_tasks}"
-                if significant_tasks else "none"
-            ),
+            detail=(f"significant tasks: {significant_tasks}" if significant_tasks else "none"),
         )
     )
 
@@ -672,12 +638,9 @@ def render_markdown(
     body.append("## Per-arm aggregates")
     body.append("")
     body.append(
-        "| arm | avg_rank ↓ | win_vs_baseline | "
-        "Δ_post_injection | validity | mean_hint_use |"
+        "| arm | avg_rank ↓ | win_vs_baseline | Δ_post_injection | validity | mean_hint_use |"
     )
-    body.append(
-        "|---|---:|---:|---:|---:|---:|"
-    )
+    body.append("|---|---:|---:|---:|---:|---:|")
     for a in arms:
         s = summaries.get(a)
         if s is None:
@@ -696,9 +659,7 @@ def render_markdown(
         mark = "✅" if g.passed else "❌"
         body.append(f"- {mark} **{g.name}** — {g.description}.  {g.detail}")
     body.append("")
-    body.append(
-        f"**Verdict**: {accept.n_passed}/{len(accept.gates)} gates passed"
-    )
+    body.append(f"**Verdict**: {accept.n_passed}/{len(accept.gates)} gates passed")
     body.append("")
     return "\n".join(body)
 
@@ -720,15 +681,10 @@ def to_jsonable(
         "seeds": sorted({r.seed for r in results}),
         "arm_summaries": {a: asdict(s) for a, s in summaries.items()},
         "performance_profile": {
-            a: {str(tau): v for tau, v in tau_map.items()}
-            for a, tau_map in profile.items()
+            a: {str(tau): v for tau, v in tau_map.items()} for a, tau_map in profile.items()
         },
-        "post_injection_deltas_true_know": post_injection_deltas(
-            results, "true_know"
-        ),
-        "paired_trend_p_values_true_know": paired_trend_p_value(
-            results, "true_know"
-        ),
+        "post_injection_deltas_true_know": post_injection_deltas(results, "true_know"),
+        "paired_trend_p_values_true_know": paired_trend_p_value(results, "true_know"),
         "acceptance": {
             "n_passed": accept.n_passed,
             "n_total": len(accept.gates),

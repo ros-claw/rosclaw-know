@@ -13,6 +13,7 @@ data/benchmarks/frontier_eng_ab/
 
 # Local IDE / plugin runtime state (leaks paths and other-project memory)
 .claude-flow/
+.claude/
 
 # Operational state — regeneratable, contains absolute paths
 data/source_manifest.json

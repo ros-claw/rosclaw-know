@@ -1,0 +1,32 @@
+task_id: lunar_lander
+description: |
+  Land a 1-D lunar lander softly despite an engine failure.
+
+  State: (altitude, velocity) with altitude decreasing from 100 m.
+  Define:
+      def control(state, t, params) -> float
+  returning thrust (N). At t >= 3.0 s the main thruster loses 70% authority.
+  Land with |velocity| < 2.0 m/s and minimal fuel use.
+entrypoint: control
+scoring_fn_name: score_lunar_lander
+objective_direction: maximize
+metric_name: soft_landing_efficiency
+max_iters: 20
+params:
+  gravity: 1.62
+  mass: 1.0
+  max_thrust: 20.0
+  engine_failure_t: 3.0
+  failure_factor: 0.3
+  dt: 0.05
+  total_time: 10.0
+  safe_vy: 2.0
+  initial_altitude: 100.0
+  initial_velocity: -5.0
+  timeout: 5.0
+canonical_hint: |
+  Before engine failure (t < 3.0 s), target vertical velocity -1.0 m/s;
+  below 20 m altitude, target -0.5 m/s. Mass is 1.0 kg and gravity is 1.62 m/s^2.
+  Use thrust = mass*gravity + 2.0*(target_velocity - velocity), clamped to [0, max_thrust].
+task_pack_hint: |
+  Constrained descent with actuator saturation and fault-tolerant control.
