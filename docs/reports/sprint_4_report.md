@@ -2,7 +2,7 @@
 
 **Status**: COMPLETE — committed, live HOW verified, frozen bundle produced  
 **Scope**: `rosclaw-know` Sprint 4 from `know-how下一步建议06-13.md` §8  
-**Know commit**: *pending*  
+**Know commit**: `d507b15`  
 **Frozen bundle**: `data/frozen/iter5_p0/`  
 **HOW server**: PID `1048400` on `http://127.0.0.1:8088`, `router_backend=seekdb`, `status=ok`
 
