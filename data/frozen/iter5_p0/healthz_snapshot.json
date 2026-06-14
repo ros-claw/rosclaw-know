@@ -1,0 +1,37 @@
+{
+  "status": "ok",
+  "version": "0.2.0",
+  "auth_enabled": true,
+  "seekdb_mode": "embedded",
+  "router_backend": "seekdb",
+  "cluster_count": 397,
+  "embedding_dim": 384,
+  "bridge_index_mtime": "2026-06-13T23:56:17.521610+00:00",
+  "last_reload_mtime": "2026-06-13T23:56:17.521610+00:00",
+  "reload_required": false,
+  "similarity_floor": 0.5,
+  "tier_aware_ranking": false,
+  "tier_tiebreak_eps": 0.005,
+  "blind_spot_count": 14,
+  "assets_loaded": true,
+  "missing_assets": [],
+  "outcomes_write_failures": {
+    "count": 19,
+    "last_ts": "2026-06-14T03:54:49+00:00",
+    "last_reason": "record_pending_injection: execute sql failed OB_ERR_PARSE_SQL(1064): %s near '%.*s' at line %d"
+  },
+  "topic_filter": {
+    "enabled": true,
+    "topic_group_count": 24,
+    "curated_total": 15,
+    "curated_covered": 15,
+    "curated_topic_coverage": "15/15",
+    "clusters_missing_topic_tag": 0,
+    "clusters_missing_topic_group": 0
+  },
+  "degraded_reasons": [],
+  "asset_load_stats": {
+    "demoted_skipped": 3,
+    "runtime_ineligible_skipped": 0
+  }
+}

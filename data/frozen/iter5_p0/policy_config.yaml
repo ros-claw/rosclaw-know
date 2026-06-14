@@ -1,0 +1,13 @@
+label: iter5_p0
+frozen_at: '2026-06-14T03:57:46.956536+00:00'
+runtime:
+  router_backend: seekdb
+  similarity_floor: 0.5
+  tier_aware_ranking: false
+  tier_tiebreak_eps: 0.005
+assets:
+  bridge_index: bridge_index.json
+  code_patterns_dir: code_patterns
+panel:
+  routing_panel: routing_panel.yaml
+  routing_panel_result: routing_panel_result.json

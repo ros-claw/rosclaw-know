@@ -1,14 +1,14 @@
 """Tests for the frozen-bundle freezer (scripts/freeze_bundle.py).
 
-Bundle layout per docs/know-how下一步建议.md §4.2:
-  bridge_index.json + code_patterns/ + routing_canary.json
-  + know_commit.txt + how_commit.txt + eval_panel.yaml
-  + model_config.yaml + bundle_manifest.json + sha256sum.txt
+Sprint 4 bundle layout per know-how下一步建议06-13.md §8:
+  bridge_index.json + code_patterns/
+  + routing_panel.yaml + routing_panel_result.json + routing_panel_result.md
+  + healthz_snapshot.json + policy_config.yaml
+  + know_sha.txt + how_sha.txt
+  + bundle_manifest.json + sha256sum.txt
 
-Tests cover: git head capture, frontier panel regex (case where task IDs
-have lowercase suffixes), model config redaction, sha256 stability,
-deterministic file ordering in _walk_bundle, end-to-end freeze on a
-fake assets/ tree.
+Tests cover: git head capture, sha256 stability, deterministic file ordering
+in _walk_bundle, health gating, and end-to-end freeze on a fake assets/ tree.
 """
 from __future__ import annotations
 
@@ -36,9 +36,32 @@ def fb():
     return _load_module()
 
 
+def _fake_health():
+    return {
+        "status": "ok",
+        "router_backend": "seekdb",
+        "assets_loaded": True,
+        "similarity_floor": 0.5,
+        "tier_aware_ranking": False,
+        "tier_tiebreak_eps": 0.005,
+    }
+
+
+def _fake_panel(tmp_path: Path) -> Path:
+    panel = tmp_path / "routing_panel.yaml"
+    panel.write_text(
+        "schema_version: 2\npanel_id: test\ntasks:\n"
+        "  - task_id: TASK_001\n"
+        "    type: positive\n"
+        "    query: test query one\n"
+        "    expected_pattern_any: [p1]\n",
+        encoding="utf-8",
+    )
+    return panel
+
+
 class TestGitHead:
     def test_captures_sha_and_branch(self, fb, tmp_path):
-        # Build a fake git repo with one commit
         repo = tmp_path / "fake_repo"
         repo.mkdir()
         subprocess.check_call(["git", "-C", str(repo), "init", "-q", "-b", "main"])
@@ -70,7 +93,6 @@ class TestGitHead:
         (repo / "a.txt").write_text("a", encoding="utf-8")
         subprocess.check_call(["git", "-C", str(repo), "add", "a.txt"])
         subprocess.check_call(["git", "-C", str(repo), "commit", "-qm", "x"])
-        # Now leave an unstaged change
         (repo / "a.txt").write_text("a-changed", encoding="utf-8")
 
         head = fb._git_head(repo)
@@ -80,51 +102,6 @@ class TestGitHead:
     def test_non_git_path_returns_error(self, fb, tmp_path):
         head = fb._git_head(tmp_path / "no_repo_here")
         assert "error" in head
-
-
-class TestFrontierPanel:
-    def test_extracts_home_and_wild_task_ids(self, fb, tmp_path):
-        # Fake verify_frontier_eng.py with the exact regex shape we use
-        fake_verify = tmp_path / "scripts" / "verify_frontier_eng.py"
-        fake_verify.parent.mkdir()
-        fake_verify.write_text(
-            'tasks = [\n'
-            '    {"task_id": "TASK_001_PIDTuning"},\n'
-            '    {"task_id": "TASK_W_002_GradExplosionRL"},\n'
-            '    {"task_id": "TASK_006_FlashAttention"},\n'
-            '    {"task_id": "TASK_W_008_AttentionMemoryOOM"},\n'
-            ']',
-            encoding="utf-8",
-        )
-        ids = fb._snapshot_frontier_panel(tmp_path)
-        assert "TASK_001_PIDTuning" in ids
-        assert "TASK_W_002_GradExplosionRL" in ids
-        assert "TASK_006_FlashAttention" in ids
-        assert "TASK_W_008_AttentionMemoryOOM" in ids
-
-    def test_lowercase_suffix_captured(self, fb, tmp_path):
-        # Original regex was [A-Z0-9_]+ which dropped lowercase tails — verify
-        # the fix [A-Za-z0-9_]+ catches them.
-        fake_verify = tmp_path / "scripts" / "verify_frontier_eng.py"
-        fake_verify.parent.mkdir()
-        fake_verify.write_text(
-            '[{"task_id": "TASK_007_idTuning"}]', encoding="utf-8"
-        )
-        assert "TASK_007_idTuning" in fb._snapshot_frontier_panel(tmp_path)
-
-    def test_missing_verify_returns_empty(self, fb, tmp_path):
-        assert fb._snapshot_frontier_panel(tmp_path) == []
-
-
-class TestModelConfig:
-    def test_no_api_key_leaked(self, fb):
-        cfg = fb._model_config()
-        # Just an absolute structural assertion — no API key, just metadata.
-        s = json.dumps(cfg)
-        assert "DEEPSEEK_API_KEY" not in s
-        assert "api_key" not in s.lower()
-        assert "deepseek_base_url" in cfg
-        assert "deepseek_muse_model" in cfg
 
 
 class TestSha256:
@@ -137,12 +114,10 @@ class TestSha256:
         assert fb._sha256_file(a) != fb._sha256_file(b)
 
     def test_large_file_chunked(self, fb, tmp_path):
-        # _sha256_file reads in 64KB chunks; pump a file > 1 chunk.
         f = tmp_path / "big.bin"
         f.write_bytes(b"A" * (65536 * 3 + 17))
         h = fb._sha256_file(f)
         assert len(h) == 64
-        # Identical content elsewhere → identical hash
         g = tmp_path / "big2.bin"
         g.write_bytes(b"A" * (65536 * 3 + 17))
         assert fb._sha256_file(g) == h
@@ -168,7 +143,6 @@ class TestWalkBundle:
     def test_deterministic_order(self, fb, tmp_path):
         bundle = tmp_path / "b"
         bundle.mkdir()
-        # Create files in non-alphabetical order
         for name in ["z.txt", "a.txt", "m.txt"]:
             (bundle / name).write_text("x", encoding="utf-8")
 
@@ -178,13 +152,24 @@ class TestWalkBundle:
         assert order_1 == sorted(order_1)
 
 
+def _fake_git_head(repo: Path) -> dict:
+    return {
+        "repo": str(repo),
+        "sha": "a" * 40,
+        "short_sha": "a" * 8,
+        "branch": "main",
+        "dirty": False,
+        "porcelain": "",
+    }
+
+
 class TestFreezeEndToEnd:
     def _fake_assets(self, base: Path) -> Path:
         """Build a minimal fake assets/ tree the freezer can walk."""
         assets = base / "data" / "assets"
         assets.mkdir(parents=True)
         bridge = {
-            "schema_version": "v2",
+            "schema_version": 2,
             "symptom_clusters": {
                 "p1": {"source": "curated", "content_hash": "h1"},
                 "p2": {"source_tier": "C_MUSE_SYNTH", "content_hash": "h2"},
@@ -196,61 +181,69 @@ class TestFreezeEndToEnd:
         patterns = assets / "code_patterns"
         patterns.mkdir()
         (patterns / "p1.md").write_text("# p1", encoding="utf-8")
-        canary = {"schema_version": 1, "canaries": [{"name": "p1"}]}
-        (assets / "routing_canary.json").write_text(
-            json.dumps(canary), encoding="utf-8"
-        )
         return assets
 
-    def _fake_verify(self, base: Path) -> None:
-        scripts = base / "scripts"
-        scripts.mkdir(parents=True, exist_ok=True)
-        (scripts / "verify_frontier_eng.py").write_text(
-            'tasks = [{"task_id": "TASK_001"}, {"task_id": "TASK_W_001"}]',
-            encoding="utf-8",
-        )
-
-    def test_freeze_produces_manifest_and_sha(self, fb, tmp_path, monkeypatch):
-        # Stub config so freezer points at our fake tree.
+    def _patch_freeze(self, fb, tmp_path, monkeypatch):
         assets = self._fake_assets(tmp_path)
-        self._fake_verify(tmp_path)
         monkeypatch.setattr(fb.config, "ASSETS_DIR", assets)
         monkeypatch.setattr(fb.config, "CODE_PATTERNS_DIR", assets / "code_patterns")
         monkeypatch.setattr(fb.config, "PROJECT_ROOT", tmp_path)
         monkeypatch.setattr(fb.config, "DATA_DIR", tmp_path / "data")
         frozen_root = tmp_path / "data" / "frozen"
         monkeypatch.setattr(fb, "FROZEN_ROOT", frozen_root)
-        # Stub a fake how_root so _git_head returns an error (no real repo there)
-        fake_how = tmp_path / "fake_how_root"
+        monkeypatch.setattr(fb, "_git_head", _fake_git_head)
+        monkeypatch.setattr(fb, "_fetch_health", lambda base, timeout=5: _fake_health())
+        def _fake_run_panel(*, out_json, out_markdown, **kwargs):
+            report = {"summary": {"total": 2, "pass": 2, "fail": 0}, "results": []}
+            out_json.parent.mkdir(parents=True, exist_ok=True)
+            out_json.write_text(json.dumps(report), encoding="utf-8")
+            out_markdown.write_text("# Panel\n\nALL PASS\n", encoding="utf-8")
+            return report
+
+        monkeypatch.setattr(fb, "_run_panel", _fake_run_panel)
+        return frozen_root
+
+    def test_freeze_produces_manifest_and_sha(self, fb, tmp_path, monkeypatch):
+        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        panel = _fake_panel(tmp_path)
+        fake_how = tmp_path / "fake_how"
+        fake_how.mkdir()
 
         manifest = fb.freeze(
-            label="test_label", how_root=fake_how, notes="unit test", force=False
+            label="test_label",
+            how_base="http://127.0.0.1:8088",
+            how_root=fake_how,
+            panel=panel,
+            api_key="test-key",
+            policy_config=None,
+            notes="unit test",
+            force=False,
         )
         bundle = frozen_root / "test_label"
         assert bundle.exists()
-        # All expected files present
         for f in [
             "bridge_index.json",
-            "routing_canary.json",
-            "know_commit.txt",
-            "how_commit.txt",
-            "eval_panel.yaml",
-            "model_config.yaml",
+            "know_sha.txt",
+            "how_sha.txt",
+            "policy_config.yaml",
+            "healthz_snapshot.json",
+            "routing_panel.yaml",
+            "routing_panel_result.json",
+            "routing_panel_result.md",
             "bundle_manifest.json",
             "sha256sum.txt",
         ]:
             assert (bundle / f).exists(), f"missing {f}"
         assert (bundle / "code_patterns" / "p1.md").exists()
 
-        # Manifest content
         assert manifest["label"] == "test_label"
         assert manifest["cluster_count"] == 2
         assert manifest["curated_count"] == 1
         assert manifest["clusters_with_content_hash"] == 2
-        assert manifest["panel_home_count"] == 1  # TASK_001
-        assert manifest["panel_wild_count"] == 1  # TASK_W_001
+        assert manifest["panel_pass"] == 2
+        assert manifest["panel_total"] == 2
+        assert manifest["schema_version"] == 2
 
-        # sha256sum.txt actually verifies against the bundle's files
         sha_text = (bundle / "sha256sum.txt").read_text(encoding="utf-8").strip()
         for line in sha_text.splitlines():
             recorded, rel = line.split("  ", 1)
@@ -258,33 +251,110 @@ class TestFreezeEndToEnd:
             assert recorded == real, f"sha mismatch for {rel}"
 
     def test_freeze_refuses_overwrite_without_force(self, fb, tmp_path, monkeypatch):
-        assets = self._fake_assets(tmp_path)
-        self._fake_verify(tmp_path)
-        monkeypatch.setattr(fb.config, "ASSETS_DIR", assets)
-        monkeypatch.setattr(fb.config, "CODE_PATTERNS_DIR", assets / "code_patterns")
-        monkeypatch.setattr(fb.config, "PROJECT_ROOT", tmp_path)
-        monkeypatch.setattr(fb.config, "DATA_DIR", tmp_path / "data")
-        frozen_root = tmp_path / "data" / "frozen"
-        monkeypatch.setattr(fb, "FROZEN_ROOT", frozen_root)
+        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        panel = _fake_panel(tmp_path)
 
-        fb.freeze(label="existing", how_root=tmp_path, notes="", force=False)
+        fb.freeze(
+            label="existing",
+            how_base="http://127.0.0.1:8088",
+            how_root=tmp_path,
+            panel=panel,
+            api_key="test-key",
+            policy_config=None,
+            notes="",
+            force=False,
+        )
         with pytest.raises(SystemExit):
-            fb.freeze(label="existing", how_root=tmp_path, notes="", force=False)
+            fb.freeze(
+                label="existing",
+                how_base="http://127.0.0.1:8088",
+                how_root=tmp_path,
+                panel=panel,
+                api_key="test-key",
+                policy_config=None,
+                notes="",
+                force=False,
+            )
 
     def test_freeze_force_overwrites(self, fb, tmp_path, monkeypatch):
-        assets = self._fake_assets(tmp_path)
-        self._fake_verify(tmp_path)
-        monkeypatch.setattr(fb.config, "ASSETS_DIR", assets)
-        monkeypatch.setattr(fb.config, "CODE_PATTERNS_DIR", assets / "code_patterns")
-        monkeypatch.setattr(fb.config, "PROJECT_ROOT", tmp_path)
-        monkeypatch.setattr(fb.config, "DATA_DIR", tmp_path / "data")
-        frozen_root = tmp_path / "data" / "frozen"
-        monkeypatch.setattr(fb, "FROZEN_ROOT", frozen_root)
+        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        panel = _fake_panel(tmp_path)
 
-        fb.freeze(label="rw", how_root=tmp_path, notes="first", force=False)
-        m1 = json.loads((frozen_root / "rw" / "bundle_manifest.json").read_text(encoding="utf-8"))
+        fb.freeze(
+            label="rw",
+            how_base="http://127.0.0.1:8088",
+            how_root=tmp_path,
+            panel=panel,
+            api_key="test-key",
+            policy_config=None,
+            notes="first",
+            force=False,
+        )
+        m1 = json.loads(
+            (frozen_root / "rw" / "bundle_manifest.json").read_text(encoding="utf-8")
+        )
 
-        fb.freeze(label="rw", how_root=tmp_path, notes="second", force=True)
-        m2 = json.loads((frozen_root / "rw" / "bundle_manifest.json").read_text(encoding="utf-8"))
+        fb.freeze(
+            label="rw",
+            how_base="http://127.0.0.1:8088",
+            how_root=tmp_path,
+            panel=panel,
+            api_key="test-key",
+            policy_config=None,
+            notes="second",
+            force=True,
+        )
+        m2 = json.loads(
+            (frozen_root / "rw" / "bundle_manifest.json").read_text(encoding="utf-8")
+        )
         assert m1["notes"] == "first"
         assert m2["notes"] == "second"
+
+    def test_freeze_refuses_degraded_how(self, fb, tmp_path, monkeypatch):
+        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        panel = _fake_panel(tmp_path)
+        monkeypatch.setattr(
+            fb,
+            "_fetch_health",
+            lambda base, timeout=5: {
+                "status": "degraded",
+                "router_backend": "inmemory",
+                "assets_loaded": True,
+            },
+        )
+
+        with pytest.raises(SystemExit):
+            fb.freeze(
+                label="degraded",
+                how_base="http://127.0.0.1:8088",
+                how_root=tmp_path,
+                panel=panel,
+                api_key="test-key",
+                policy_config=None,
+                notes="",
+                force=False,
+            )
+
+    def test_freeze_refuses_panel_failures(self, fb, tmp_path, monkeypatch):
+        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        panel = _fake_panel(tmp_path)
+        monkeypatch.setattr(
+            fb,
+            "_run_panel",
+            lambda **kwargs: {
+                "summary": {"total": 2, "pass": 1, "fail": 1},
+                "results": [],
+            },
+        )
+
+        with pytest.raises(SystemExit):
+            fb.freeze(
+                label="panel_fail",
+                how_base="http://127.0.0.1:8088",
+                how_root=tmp_path,
+                panel=panel,
+                api_key="test-key",
+                policy_config=None,
+                notes="",
+                force=False,
+            )
