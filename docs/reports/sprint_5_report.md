@@ -2,7 +2,8 @@
 
 **Status**: COMPLETE — pipeline run, v1.1.0 bundle frozen, release report written  
 **Scope**: Sprint 5 from `know-how下一步建议06-13.md` §9 (full v1.1 validation & release)  
-**Know commit**: `f27e2095`  
+**Know release commit**: `18ff93d`  
+**Know code commit**: `f27e2095`  
 **How commit**: `9ae2e5d2`  
 **Frozen bundle**: `data/frozen/v1.1.0/`  
 **HOW server**: PID `1048400` on `http://127.0.0.1:8088`, `router_backend=seekdb`, `status=ok`
