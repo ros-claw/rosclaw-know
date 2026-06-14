@@ -218,6 +218,13 @@ def _to_curated_pattern(entry: CuratedRegistryEntry) -> CuratedPattern:
         cross_domain_hints=entry.body.cross_domain_hints,
         topic_group=entry.topic_group,
         topic_tag=entry.topic_tag,
+        robot_type=entry.robot_type,
+        status=entry.status,
+        runtime_eligible=entry.runtime_eligible,
+        source_tier=entry.source_tier,
+        routing_guard=entry.routing_guard.model_dump(),
+        evidence=entry.evidence.model_dump(),
+        demotion=entry.demotion.model_dump() if entry.demotion else None,
     )
 
 

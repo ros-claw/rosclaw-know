@@ -15,7 +15,8 @@ exact-match shortcut before falling back to vector search.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -35,7 +36,21 @@ class CuratedPattern:
     """Pre-baked cross-domain analogies — used when Muse hasn't yet produced
     organic ones for this safety label. Each dict has source_domain, insight,
     action_suggestion. neighbor_id can be omitted."""
+
+    # v2 governance fields — optional for legacy constants, populated from the
+    # YAML registry so the publisher can emit Bridge Schema v2.
     topic_group: str | None = None
+    topic_tag: str | None = None
+    robot_type: str | None = None
+    status: str = "active"
+    runtime_eligible: bool = True
+    source_tier: str | None = None
+    routing_guard: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
+    demotion: dict[str, Any] | None = None
+
+    # Backward-compat aliases so existing code that sets topic_group after the
+    # cross_domain_hints docstring still works. The real fields are above.
     """The runtime topic_group this curated cluster belongs to. iter4_p3
     (2026-06-10) — without this field, HOW's topic-filter routing
     (``topic_filter_path=top1``) excludes curated clusters entirely from the

@@ -23,8 +23,9 @@ from typing import Any
 SRC = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC))
 
-from rosclaw_know.curated_publisher import (  # noqa: E402
-    compute_cluster_content_hash,
+from rosclaw_know.bridge_schema import (  # noqa: E402
+    compute_content_hash,
+    compute_metadata_hash,
 )
 from rosclaw_know.curated_registry import (  # noqa: E402
     CuratedRegistryEntry,
@@ -126,7 +127,8 @@ def _build_cluster_entry(entry: CuratedRegistryEntry) -> dict[str, Any]:
     }
     # Strip None fields for a compact cluster that still hashes stably.
     cluster = {k: v for k, v in cluster.items() if v is not None}
-    cluster["content_hash"] = compute_cluster_content_hash(cluster)
+    cluster["content_hash"] = compute_content_hash(cluster)
+    cluster["metadata_hash"] = compute_metadata_hash(cluster)
     return cluster
 
 
@@ -148,7 +150,7 @@ def build_curated_assets(
         safety_lookup.setdefault(entry.safety_label, []).append(entry.id)
 
     bridge = {
-        "schema_version": "v2",
+        "schema_version": 2,
         "source": "curated_registry",
         "symptom_clusters": clusters,
         "safety_label_index": safety_lookup,

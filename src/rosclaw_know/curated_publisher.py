@@ -11,7 +11,6 @@ existing for exact-match safety routing.
 from __future__ import annotations
 
 import difflib
-import hashlib
 import json
 import logging
 import re
@@ -19,63 +18,22 @@ from pathlib import Path
 from typing import Any
 
 from . import config
+from .bridge_schema import (
+    ROUTING_CRITICAL_FIELDS,
+    compute_content_hash,
+    compute_metadata_hash,
+)
 from .curated_conflict_detector import detect_conflicts, format_report
 from .curated_patterns import CuratedPattern
 from .curated_registry import load_curated_patterns
+from .source_tier import S_CURATED_VERIFIED
 from .synth_overrides import infer_source_tier_with_overrides
 
 log = logging.getLogger("rosclaw_know.curated_publisher")
 
 
-# P0 Week-1 from docs/know-how下一步建议.md §4.1.1 — routing-critical fields
-# must trigger a content_hash change so that rosclaw-how's `/admin/reload`
-# can detect "this cluster needs re-embed" vs "metadata-only update".
-# Order doesn't matter; presence does.
-ROUTING_CRITICAL_FIELDS: tuple[str, ...] = (
-    "standard_name",
-    "domain",
-    "topic_group",
-    "topic_tag",
-    "matched_keywords",
-    "cross_domain_analogies",
-    "associated_patterns",
-    "source",
-    "source_tier",
-    "safety_label",
-    "priority",
-    "snippet_mode_hint",
-)
-
-
-def _normalize_for_hash(value: Any) -> Any:
-    """Canonicalize a value before hashing so order-insensitive lists hash stably."""
-    if isinstance(value, list):
-        # Sort list of primitives by string repr; list of dicts by JSON repr.
-        try:
-            return sorted(_normalize_for_hash(v) for v in value)
-        except TypeError:
-            return sorted(
-                (_normalize_for_hash(v) for v in value),
-                key=lambda v: json.dumps(v, sort_keys=True, ensure_ascii=False),
-            )
-    if isinstance(value, dict):
-        return {k: _normalize_for_hash(value[k]) for k in sorted(value)}
-    return value
-
-
-def compute_cluster_content_hash(cluster: dict[str, Any]) -> str:
-    """Deterministic sha256 over the routing-critical subset of a cluster.
-
-    The hash deliberately excludes ``content_hash`` itself and any
-    ephemeral observability fields (uplift counters, last-touched
-    timestamps, evidence rollups). Two clusters that produce the same
-    hash should be byte-equivalent from the runtime router's perspective.
-    """
-    payload = {
-        f: _normalize_for_hash(cluster.get(f)) for f in ROUTING_CRITICAL_FIELDS if f in cluster
-    }
-    blob = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    return hashlib.sha256(blob).hexdigest()
+# Re-exported from bridge_schema so tests and scripts can reference the same
+# routing-critical field list without duplicating it.
 
 
 def _build_unified_diff(p: CuratedPattern) -> str:
@@ -144,16 +102,28 @@ def _build_cluster_entry(p: CuratedPattern) -> dict[str, Any]:
             *[k.lower() for k in p.matched_keywords],
         }
     )
+
+    # Bridge Schema v2: source_tier, status, runtime_eligible, priority,
+    # robot_type, routing_guard, evidence, and demotion come from the curated
+    # registry (or legacy defaults for the old constant list).
+    source_tier = p.source_tier or S_CURATED_VERIFIED
+    status = p.status or "active"
+    runtime_eligible = bool(p.runtime_eligible)
+    if status == "demoted" or not runtime_eligible:
+        priority = -1
+    else:
+        priority = 1
+
     entry: dict[str, Any] = {
         "standard_name": p.standard_name,
         "domain": p.domain,
+        "robot_type": p.robot_type,
         "safety_label": p.safety_label,  # used by rosclaw-how for exact match
         "source": "curated",  # so the runtime can prefer these
-        # P0 Bridge-Schema v2 docs §5.3 — all 14 hand-curated patterns have
-        # passed n=30 paired A/B vs no-injection (see docs/REPORT_2026-06-09.md);
-        # they ship as S_CURATED_VERIFIED. Future drafts not yet validated
-        # would land as A_CURATED_REVIEWED.
-        "source_tier": "S_CURATED_VERIFIED",
+        "source_tier": source_tier,
+        "status": status,
+        "runtime_eligible": runtime_eligible,
+        "priority": priority,
         "matched_keywords": keyword_set,
         "cross_domain_analogies": [
             {
@@ -181,9 +151,20 @@ def _build_cluster_entry(p: CuratedPattern) -> dict[str, Any]:
     # query routes to. iter4_p3 was structurally incomplete without this.
     if p.topic_tag is not None:
         entry["topic_tag"] = p.topic_tag
+
+    # v2 governance fields — emitted only when present so the bridge stays
+    # backward-compatible with older consumers that ignore them.
+    if p.routing_guard:
+        entry["routing_guard"] = p.routing_guard
+    if p.evidence:
+        entry["evidence"] = p.evidence
+    if p.demotion:
+        entry["demotion"] = p.demotion
+
     # Compute deterministic content_hash AFTER all routing-critical fields
     # are populated; the hash itself is excluded from the payload.
-    entry["content_hash"] = compute_cluster_content_hash(entry)
+    entry["content_hash"] = compute_content_hash(entry)
+    entry["metadata_hash"] = compute_metadata_hash(entry)
     return entry
 
 
@@ -214,9 +195,10 @@ def publish_curated_assets() -> dict[str, int]:
         with open(bridge_path, encoding="utf-8") as fh:
             data = json.load(fh)
     else:
-        data = {"schema_version": "v2", "symptom_clusters": {}}
+        data = {"schema_version": 2, "symptom_clusters": {}}
     data.setdefault("symptom_clusters", {})
-    data.setdefault("schema_version", "v2")
+    # Bridge Schema v2 — numeric version for strong typing.
+    data["schema_version"] = 2
 
     # Optional top-level reverse-lookup table — populated regardless of which
     # Muse run produced the bridge; rosclaw-how can consult it for an O(1)
@@ -255,7 +237,8 @@ def publish_curated_assets() -> dict[str, int]:
         if tier_added or "content_hash" not in c:
             # Tier change OR hash missing → (re)compute. Existing hashes
             # over clusters whose tier was already correct are left untouched.
-            c["content_hash"] = compute_cluster_content_hash(c)
+            c["content_hash"] = compute_content_hash(c)
+            c["metadata_hash"] = compute_metadata_hash(c)
             backfilled += 1
 
     data["safety_label_index"] = safety_lookup
@@ -283,6 +266,5 @@ def publish_curated_assets() -> dict[str, int]:
 
 __all__ = [
     "publish_curated_assets",
-    "compute_cluster_content_hash",
     "ROUTING_CRITICAL_FIELDS",
 ]
