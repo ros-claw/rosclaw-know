@@ -2,7 +2,8 @@
 
 **Status**: COMPLETE — committed, live HOW restart verified
 **Scope**: `rosclaw-know` + `rosclaw-how` Sprint 2 from `know-how下一步建议06-13.md` §6
-**Know commits**: (to be filled after commit)
+**Know commits**: `7dc6633` (code + tests + tooling) + `33c1b50` (v2 bridge assets)
+**HOW commit**: `c49bec8`
 **HOW server**: PID `787952` on `http://127.0.0.1:8088`, `router_backend=seekdb`, `status=ok`
 
 ---
