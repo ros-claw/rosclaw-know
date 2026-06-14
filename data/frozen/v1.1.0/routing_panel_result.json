@@ -1,0 +1,1487 @@
+{
+  "panel": "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know/data/panels/routing_panel.yaml",
+  "panel_schema_version": 2,
+  "how_base": "http://127.0.0.1:8088",
+  "health": {
+    "status": "ok",
+    "version": "0.2.0",
+    "auth_enabled": true,
+    "seekdb_mode": "embedded",
+    "router_backend": "seekdb",
+    "cluster_count": 397,
+    "embedding_dim": 384,
+    "bridge_index_mtime": "2026-06-13T23:56:17.521610+00:00",
+    "last_reload_mtime": "2026-06-13T23:56:17.521610+00:00",
+    "reload_required": false,
+    "similarity_floor": 0.5,
+    "tier_aware_ranking": false,
+    "tier_tiebreak_eps": 0.005,
+    "blind_spot_count": 14,
+    "assets_loaded": true,
+    "missing_assets": [],
+    "outcomes_write_failures": {
+      "count": 45,
+      "last_ts": "2026-06-14T05:10:16+00:00",
+      "last_reason": "record_pending_injection: execute sql failed OB_ERR_PARSE_SQL(1064): %s near '%.*s' at line %d"
+    },
+    "topic_filter": {
+      "enabled": true,
+      "topic_group_count": 24,
+      "curated_total": 15,
+      "curated_covered": 15,
+      "curated_topic_coverage": "15/15",
+      "clusters_missing_topic_tag": 0,
+      "clusters_missing_topic_group": 0
+    },
+    "degraded_reasons": [],
+    "asset_load_stats": {
+      "demoted_skipped": 3,
+      "runtime_ineligible_skipped": 0
+    }
+  },
+  "metrics": {
+    "total": 18,
+    "passed": 18,
+    "failed": 0,
+    "unreachable": 0,
+    "accuracy": 1.0,
+    "adversarial_false_positive_rate": 0.0,
+    "collateral_false_injection_rate": 0.0,
+    "false_injection_rate": 0.0,
+    "positive_total": 16,
+    "positive_pass": 16,
+    "adversarial_total": 2,
+    "adversarial_pass": 2,
+    "collateral_guard_total": 4,
+    "collateral_guard_pass": 4
+  },
+  "results": [
+    {
+      "task_id": "TASK_001_PIDTuning",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "pid_joint_latency_oscillation",
+      "similarity": 0.7198,
+      "matched_symptom": "Robotic-arm joint feedback control diverges into sustained oscillation when sensor-to-actuator loop deadtime around 30 ms exceeds the inverse of the joint's mechanical bandwidth, with stale measurements compounding the tracking-error response each control cycle",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "pid_joint_latency_oscillation",
+        "anti_windup_pid"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 597.7313332259655,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "008cdd8be9035561",
+        "query_text_preview": "PID controller drives a robotic-arm joint into sustained oscillation when the integral term saturates. Latency from sensor to actuator is 30 ms.",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "robot-morphology-and-constraints",
+          "control-loop-stability"
+        ],
+        "actual_top1": {
+          "cluster_id": "pid_joint_latency_oscillation",
+          "pattern_id": "pid_joint_latency_oscillation",
+          "similarity": 0.7197524146212794,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "control-loop-stability"
+        },
+        "top_k": [
+          {
+            "cluster_id": "pid_joint_latency_oscillation",
+            "pattern_id": "pid_joint_latency_oscillation",
+            "similarity": 0.7197524146212794,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "anti_windup_pid",
+            "pattern_id": "anti_windup_pid",
+            "similarity": 0.6682178463840645,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "rl_locomotion_policy",
+            "pattern_id": "pattern_rl_locomotion_policy",
+            "similarity": 0.5820575079121502,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "output_saturation_clamp",
+            "pattern_id": "output_saturation_clamp",
+            "similarity": 0.5513021010991128,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "extreme_parkour_policy",
+            "pattern_id": "pattern_extreme_parkour_policy",
+            "similarity": 0.5476472012235872,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "pid_joint_latency_oscillation",
+          "pattern_id": "pid_joint_latency_oscillation",
+          "similarity": 0.7197524146212794,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Control_Locomotion",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "pid_joint_latency_oscillation",
+        "top1_similarity": 0.7197524146212794,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "anti_windup_pid",
+        "runner_up_similarity": 0.6682178463840645,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_002_QuadrupedGait",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "terrain_aware_locomotion",
+      "similarity": 0.8389,
+      "matched_symptom": "Legged-robot trot gait diverges on uneven or slippery terrain \u2014 foot-slip events compound center-of-mass tracking error each cycle until the robot falls",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "terrain_aware_locomotion"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 765.7701661810279,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "102bb6fab06f8618",
+        "query_text_preview": "A quadruped robot's trot-gait policy diverges on uneven terrain: foot slip events cause the center-of-mass tracking error to grow each cycle until the robot falls within ~3 seconds of stepping onto lo",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "robot-morphology-and-constraints",
+          "locomotion-and-manipulation"
+        ],
+        "actual_top1": {
+          "cluster_id": "terrain_aware_locomotion",
+          "pattern_id": "terrain_aware_locomotion",
+          "similarity": 0.838871542588105,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "locomotion-and-manipulation"
+        },
+        "top_k": [
+          {
+            "cluster_id": "terrain_aware_locomotion",
+            "pattern_id": "terrain_aware_locomotion",
+            "similarity": 0.838871542588105,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "extreme_parkour_robot",
+            "pattern_id": "pattern_extreme_parkour_robot",
+            "similarity": 0.634466348050808,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "terrain_aware_perceptive_locomotion",
+            "pattern_id": "pattern_terrain_aware_perceptive_locomotion",
+            "similarity": 0.6258080996256107,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "dynamic_multi_human_interactions",
+            "pattern_id": "pattern_dynamic_multi_human_interactions",
+            "similarity": 0.6257429643932924,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Planning_Decision",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "rl_locomotion_policy",
+            "pattern_id": "pattern_rl_locomotion_policy",
+            "similarity": 0.6230886425312784,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "terrain_aware_locomotion",
+          "pattern_id": "terrain_aware_locomotion",
+          "similarity": 0.838871542588105,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Control_Locomotion",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "terrain_aware_locomotion",
+        "top1_similarity": 0.838871542588105,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_extreme_parkour_robot",
+        "runner_up_similarity": 0.634466348050808,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_003_RobotArmCycleTime",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "time_optimal_path_blending",
+      "similarity": 0.739,
+      "matched_symptom": "Joint-space trajectories that decelerate to zero at every via-point inflate cycle time by 40-60 % even when via-points are colinear",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "time_optimal_path_blending"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [
+        "pid_joint_latency_oscillation"
+      ],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 527.2653996944427,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "ffa2033f24ecf098",
+        "query_text_preview": "A 6-DOF pick-and-place robot arm has a 4.2 s cycle time but the customer needs <=3.0 s. Profiling shows 60% of the cycle is joint- space motion that decelerates to zero between via-points, even when t",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "robot-morphology-and-constraints",
+          "locomotion-and-manipulation"
+        ],
+        "actual_top1": {
+          "cluster_id": "time_optimal_path_blending",
+          "pattern_id": "time_optimal_path_blending",
+          "similarity": 0.7389509480954873,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "locomotion-and-manipulation"
+        },
+        "top_k": [
+          {
+            "cluster_id": "time_optimal_path_blending",
+            "pattern_id": "time_optimal_path_blending",
+            "similarity": 0.7389509480954873,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "pid_joint_latency_oscillation",
+            "pattern_id": "pid_joint_latency_oscillation",
+            "similarity": 0.6659542505236571,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "rl_locomotion_policy",
+            "pattern_id": "pattern_rl_locomotion_policy",
+            "similarity": 0.6024731806309686,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "terrain_aware_locomotion",
+            "pattern_id": "terrain_aware_locomotion",
+            "similarity": 0.5733910768346413,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "extreme_parkour_robot",
+            "pattern_id": "pattern_extreme_parkour_robot",
+            "similarity": 0.5723865513356828,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "time_optimal_path_blending",
+          "pattern_id": "time_optimal_path_blending",
+          "similarity": 0.7389509480954873,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Control_Locomotion",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "time_optimal_path_blending",
+        "top1_similarity": 0.7389509480954873,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pid_joint_latency_oscillation",
+        "runner_up_similarity": 0.6659542505236571,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_005_AES128_Throughput",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "simd_aes_ni_hardware_crypto",
+      "similarity": 0.6263,
+      "matched_symptom": "Pure-software block-cipher round functions saturate CPU on SubBytes/MixColumns; throughput plateaus at <100 MB/s on x86_64",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "simd_aes_ni_hardware_crypto"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 708.1734128296375,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "ec3a4f798ba29912",
+        "query_text_preview": "An AES-128-CBC implementation in pure C achieves 80 MB/s on a modern x86_64 server, but the requirement is 1 GB/s. Profiling shows the inner SubBytes/MixColumns loop dominates.",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "hardware-accelerated-cryptography"
+        ],
+        "actual_top1": {
+          "cluster_id": "simd_aes_ni_hardware_crypto",
+          "pattern_id": "simd_aes_ni_hardware_crypto",
+          "similarity": 0.6263245257230287,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "hardware-accelerated-cryptography"
+        },
+        "top_k": [
+          {
+            "cluster_id": "simd_aes_ni_hardware_crypto",
+            "pattern_id": "simd_aes_ni_hardware_crypto",
+            "similarity": 0.6263245257230287,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "simd_aes_ni_hardware_crypto",
+          "pattern_id": "simd_aes_ni_hardware_crypto",
+          "similarity": 0.6263245257230287,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Systems_Compute",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "simd_aes_ni_hardware_crypto",
+        "top1_similarity": 0.6263245257230287,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_006_FlashAttention",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "flash_attention_tiled_softmax",
+      "similarity": 0.8203,
+      "matched_symptom": "Transformer self-attention layer materializes the full NxN matrix in HBM at long context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference throughput",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "flash_attention_tiled_softmax"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 655.8449789881706,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "7992f0fc92d4a1e1",
+        "query_text_preview": "A transformer's self-attention layer hits CUDA OOM at 8K context length because the NxN attention matrix is materialized in HBM. Inference throughput is also bandwidth-bound, not compute-bound.",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "llm-context-management",
+          "llm-inference-efficiency"
+        ],
+        "actual_top1": {
+          "cluster_id": "flash_attention_tiled_softmax",
+          "pattern_id": "flash_attention_tiled_softmax",
+          "similarity": 0.8202717102458221,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "llm-inference-efficiency"
+        },
+        "top_k": [
+          {
+            "cluster_id": "flash_attention_tiled_softmax",
+            "pattern_id": "flash_attention_tiled_softmax",
+            "similarity": 0.8202717102458221,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "sliding_window_kv_cache",
+            "pattern_id": "sliding_window_kv_cache",
+            "similarity": 0.5555456936035157,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Memory_Reasoning",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "deformable_cross_attention",
+            "pattern_id": "pattern_deformable_cross_attention",
+            "similarity": 0.5429348311218035,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Perception_Vision",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "flash_attention_tiled_softmax",
+          "pattern_id": "flash_attention_tiled_softmax",
+          "similarity": 0.8202717102458221,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Systems_Compute",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "flash_attention_tiled_softmax",
+        "top1_similarity": 0.8202717102458221,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "sliding_window_kv_cache",
+        "runner_up_similarity": 0.5555456936035157,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_007_BatteryFastCharging",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "multi_stage_cc_cv_fast_charging",
+      "similarity": 0.6534,
+      "matched_symptom": "Aggressive constant-current fast-charging accelerates capacity fade via lithium plating at high SOC on graphite or silicon anodes",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "multi_stage_cc_cv_fast_charging"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 574.5744705200195,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "398e88fff1d845f9",
+        "query_text_preview": "A Li-ion fast-charging profile that delivers 4C constant-current from 10%->80% SOC accelerates capacity fade to >2% per 100 cycles on graphite anodes, far above the 0.5%/100c spec.",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "battery-and-energy-management"
+        ],
+        "actual_top1": {
+          "cluster_id": "multi_stage_cc_cv_fast_charging",
+          "pattern_id": "multi_stage_cc_cv_fast_charging",
+          "similarity": 0.6533811983314389,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "battery-and-energy-management"
+        },
+        "top_k": [
+          {
+            "cluster_id": "multi_stage_cc_cv_fast_charging",
+            "pattern_id": "multi_stage_cc_cv_fast_charging",
+            "similarity": 0.6533811983314389,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "lithium_plating_induced_degradation_during_fast_charging_of_batteries_subjected_",
+            "pattern_id": "pattern_lithium_plating_induced_degradation_during_fast_charging_of_batteries_subjected",
+            "similarity": 0.5401854023029818,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "multi_stage_cc_cv_fast_charging",
+          "pattern_id": "multi_stage_cc_cv_fast_charging",
+          "similarity": 0.6533811983314389,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Systems_Compute",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "multi_stage_cc_cv_fast_charging",
+        "top1_similarity": 0.6533811983314389,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_lithium_plating_induced_degradation_during_fast_charging_of_batteries_subjected",
+        "runner_up_similarity": 0.5401854023029818,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_008_JobShop_abz",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "metaheuristic_combinatorial_escape",
+      "similarity": 0.6145,
+      "matched_symptom": "Greedy / local-search on combinatorial scheduling (job-shop, TSP, VRP) stagnates after the descent phase; objective plateaus well above the known optimum",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "metaheuristic_combinatorial_escape"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 607.285974547267,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "c5748b7b8293ad39",
+        "query_text_preview": "A job-shop scheduler on the abz5 benchmark instance produces makespans around 1400 (known optimum 1234) with a greedy dispatch rule and stagnates after 10K iterations of local search.",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "scheduling-optimization"
+        ],
+        "actual_top1": {
+          "cluster_id": "metaheuristic_combinatorial_escape",
+          "pattern_id": "metaheuristic_combinatorial_escape",
+          "similarity": 0.6145346903849362,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "scheduling-optimization"
+        },
+        "top_k": [
+          {
+            "cluster_id": "metaheuristic_combinatorial_escape",
+            "pattern_id": "metaheuristic_combinatorial_escape",
+            "similarity": 0.6145346903849362,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Planning_Decision",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "spot-on_a_checkpointing_framework_for_fault-tolerant_long-running_workloads_on_c",
+            "pattern_id": "pattern_spot-on_a_checkpointing_framework_for_fault-tolerant_long-running_workloads_on_c",
+            "similarity": 0.5425833574478112,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "metaheuristic_combinatorial_escape",
+          "pattern_id": "metaheuristic_combinatorial_escape",
+          "similarity": 0.6145346903849362,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Planning_Decision",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "metaheuristic_combinatorial_escape",
+        "top1_similarity": 0.6145346903849362,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_spot-on_a_checkpointing_framework_for_fault-tolerant_long-running_workloads_on_c",
+        "runner_up_similarity": 0.5425833574478112,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_010_UAVInspection",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "motion_blur_imu_aided_deblur",
+      "similarity": 0.718,
+      "matched_symptom": "Onboard RGB or monocular camera mounted on a moving aerial / mobile platform (UAV, quadrotor, drone, inspection robot) produces motion-blurred frames during fast relative velocity to the inspection target; downstream defect detection or object classification recall drops 40-60 % versus the stationary or hover baseline, because the blur extent within the exposure window exceeds the detector's invariance to blur, even when focal length and ISO are held fixed across the flyby phase",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "motion_blur_imu_aided_deblur",
+        "motion_blur_decomposition_with_cross-shutter_guidance"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 673.0974949896336,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "a9cdfeb1449d339b",
+        "query_text_preview": "A quadrotor inspecting a wind-turbine blade with an onboard RGB camera produces motion-blurred frames at the tip flyby (15 m/s relative velocity, 100 mm focal length, 1/120s shutter), so defect detect",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "motion-blur-deblur"
+        ],
+        "actual_top1": {
+          "cluster_id": "motion_blur_imu_aided_deblur",
+          "pattern_id": "motion_blur_imu_aided_deblur",
+          "similarity": 0.7180485458045888,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "motion-blur-deblur"
+        },
+        "top_k": [
+          {
+            "cluster_id": "motion_blur_imu_aided_deblur",
+            "pattern_id": "motion_blur_imu_aided_deblur",
+            "similarity": 0.7180485458045888,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Perception_Vision",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "pid_joint_latency_oscillation",
+            "pattern_id": "pid_joint_latency_oscillation",
+            "similarity": 0.503183596910911,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "motion_blur_imu_aided_deblur",
+          "pattern_id": "motion_blur_imu_aided_deblur",
+          "similarity": 0.7180485458045888,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Perception_Vision",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "motion_blur_imu_aided_deblur",
+        "top1_similarity": 0.7180485458045888,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pid_joint_latency_oscillation",
+        "runner_up_similarity": 0.503183596910911,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_W_001_KVCacheLongContext",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "sliding_window_kv_cache",
+      "similarity": 0.6434,
+      "matched_symptom": "Unbounded KV-cache growth during long-horizon LLM rollouts, multi-turn conversation history, and fixed context-window deployments causes CUDA OOM and rising per-turn latency; bounded accumulation is restored by sliding-window truncation of the oldest key/value rows, recent-turns retention policies, and summarization of older context instead of retaining every token",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "sliding_window_kv_cache"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 997.9135543107986,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "c8931408add825ad",
+        "query_text_preview": "A code-assistant LLM serving multi-turn programming sessions accumulates 32K tokens of conversation history after 20 turns, hitting the model's 16K context window. Per-turn latency grows from 800ms to",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "llm-context-management"
+        ],
+        "actual_top1": {
+          "cluster_id": "kv_cache_reuse",
+          "pattern_id": "pattern_kv_cache_reuse",
+          "similarity": 0.5206992025251279,
+          "source_tier": "C_MUSE_SYNTH",
+          "domain": "",
+          "topic_group": "llm-context-management"
+        },
+        "top_k": [
+          {
+            "cluster_id": "sliding_window_kv_cache",
+            "pattern_id": "sliding_window_kv_cache",
+            "similarity": 0.6434181609275328,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Memory_Reasoning",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "flash_attention_tiled_softmax",
+            "pattern_id": "flash_attention_tiled_softmax",
+            "similarity": 0.5406053357579481,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "kv_cache_reuse",
+            "pattern_id": "pattern_kv_cache_reuse",
+            "similarity": 0.5206992025251279,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Memory_Reasoning",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "sliding_window_kv_cache",
+          "pattern_id": "sliding_window_kv_cache",
+          "similarity": 0.6434181609275328,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Memory_Reasoning",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "pattern_kv_cache_reuse",
+        "top1_similarity": 0.5206992025251279,
+        "top1_source_tier": "C_MUSE_SYNTH",
+        "runner_up_pattern_id": "flash_attention_tiled_softmax",
+        "runner_up_similarity": 0.5406053357579481,
+        "curated_rescue": true,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_W_002_GradExplosionRL",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "SAFETY",
+      "injected": true,
+      "pattern_id": null,
+      "similarity": null,
+      "matched_symptom": null,
+      "safety_label": "Numerical_Instability",
+      "snippet_mode": null,
+      "expected_pattern_any": [
+        "gradient_clipping"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [
+        "Numerical_Instability"
+      ],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 2.2633401677012444,
+      "routing_trace": null
+    },
+    {
+      "task_id": "TASK_W_003_NetRetryStorm",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "exponential_backoff_retry",
+      "similarity": 0.724,
+      "matched_symptom": "Network, RPC, microservice, and HTTP API call timeout cascades cause thundering-herd request storms and exponential-retry amplification after partial upstream service degradation, backend unavailability, or transient HTTP 5xx errors; naive fixed-delay retry loops without jitter or exponential backoff compound the cascading load, overwhelm downstream capacity, and prolong the outage duration",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "exponential_backoff_retry"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 668.506445363164,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "0d8385d0cf202f00",
+        "query_text_preview": "A microservice fetching upstream API data sees 95% of calls succeed but 5% return 503. Naive retry-on-failure with 100ms fixed delay causes cascading load: when upstream is degraded, retries amplify t",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "reliability-engineering"
+        ],
+        "actual_top1": {
+          "cluster_id": "exponential_backoff_retry",
+          "pattern_id": "exponential_backoff_retry",
+          "similarity": 0.7239534338907094,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "reliability-engineering"
+        },
+        "top_k": [
+          {
+            "cluster_id": "exponential_backoff_retry",
+            "pattern_id": "exponential_backoff_retry",
+            "similarity": 0.7239534338907094,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "designing_an_adaptive_application-level_checkpoint_management_system_for_malleab",
+            "pattern_id": "pattern_designing_an_adaptive_application-level_checkpoint_management_system_for_malleab",
+            "similarity": 0.5093197392627998,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "exponential_backoff_retry",
+          "pattern_id": "exponential_backoff_retry",
+          "similarity": 0.7239534338907094,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Systems_Compute",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "exponential_backoff_retry",
+        "top1_similarity": 0.7239534338907094,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_designing_an_adaptive_application-level_checkpoint_management_system_for_malleab",
+        "runner_up_similarity": 0.5093197392627998,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_W_004_EntropyCollapsePPO",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "ppo_entropy_collapse_guard",
+      "similarity": 0.6636,
+      "matched_symptom": "PPO entropy crashes to zero and the policy fixates on a degenerate action",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "ppo_entropy_collapse_guard"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 616.3923852145672,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "3ac7894910424384",
+        "query_text_preview": "A PPO agent training on a stochastic environment converges to a deterministic policy by episode 5000. Action entropy drops to near zero, exploration ceases, and the policy gets stuck 30% below SOTA re",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "closed-loop-replanning",
+          "rl-training-stability"
+        ],
+        "actual_top1": {
+          "cluster_id": "ppo_entropy_collapse_guard",
+          "pattern_id": "ppo_entropy_collapse_guard",
+          "similarity": 0.6636058405679947,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "rl-training-stability"
+        },
+        "top_k": [
+          {
+            "cluster_id": "ppo_entropy_collapse_guard",
+            "pattern_id": "ppo_entropy_collapse_guard",
+            "similarity": 0.6636058405679947,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Learning_Training",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "dd_ppo_distributed_proximal_policy_optimization",
+            "pattern_id": "pattern_dd_ppo_distributed_proximal_policy_optimization",
+            "similarity": 0.6253320144152484,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Learning_Training",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "bootstrapping_language_guided_navigation_learning_with_self_refining_data_flywhe",
+            "pattern_id": "pattern_bootstrapping_language_guided_navigation_learning_with_self_refining_data_flywhe",
+            "similarity": 0.5606546187038375,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Learning_Training",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "dataset_aggregation_dagger",
+            "pattern_id": "pattern_dataset_aggregation_dagger",
+            "similarity": 0.5324928480837908,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Learning_Training",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "multi_expert_learning",
+            "pattern_id": "pattern_multi_expert_learning",
+            "similarity": 0.5308849567996778,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Learning_Training",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "ppo_entropy_collapse_guard",
+          "pattern_id": "ppo_entropy_collapse_guard",
+          "similarity": 0.6636058405679947,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Learning_Training",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "ppo_entropy_collapse_guard",
+        "top1_similarity": 0.6636058405679947,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_dd_ppo_distributed_proximal_policy_optimization",
+        "runner_up_similarity": 0.6253320144152484,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_W_005_ActuatorOvershoot",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "output_saturation_clamp",
+      "similarity": 0.7631,
+      "matched_symptom": "Commanded actuator output (force, torque, peak velocity, or position) overshoots the actuator's rated peak or diverges to \u00b1\u221e when the controller has no command-side saturation clamp; the command signal briefly exceeds rated limits before mechanical end-stops or safety interlocks (safety relays) trip",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "output_saturation_clamp",
+        "anti_windup_pid"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [
+        "pid_joint_latency_oscillation"
+      ],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 758.6050471290946,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "04e842ed3921ed0c",
+        "query_text_preview": "A linear voice-coil actuator commanded with PID + feedforward overshoots its rated 25 N peak force by 18% during fast setpoint changes, triggering the mechanical end-stops and dropping the position lo",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "control-loop-stability",
+          "motion-blur-deblur"
+        ],
+        "actual_top1": {
+          "cluster_id": "output_saturation_clamp",
+          "pattern_id": "output_saturation_clamp",
+          "similarity": 0.7630580571829648,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "control-loop-stability"
+        },
+        "top_k": [
+          {
+            "cluster_id": "output_saturation_clamp",
+            "pattern_id": "output_saturation_clamp",
+            "similarity": 0.7630580571829648,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "anti_windup_pid",
+            "pattern_id": "anti_windup_pid",
+            "similarity": 0.6177819910015676,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "pid_joint_latency_oscillation",
+            "pattern_id": "pid_joint_latency_oscillation",
+            "similarity": 0.5858650871432615,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "output_saturation_clamp",
+          "pattern_id": "output_saturation_clamp",
+          "similarity": 0.7630580571829648,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Control_Locomotion",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "output_saturation_clamp",
+        "top1_similarity": 0.7630580571829648,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "anti_windup_pid",
+        "runner_up_similarity": 0.6177819910015676,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_W_006_PlanningDivergence",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "closed_loop_replanning",
+      "similarity": 0.7043,
+      "matched_symptom": "Model-predictive control (MPC) and receding-horizon planning drift away from ground truth when the internal dynamics model mismatches real-world friction, terrain, or disturbance; the predicted state diverges from the measured state over the planning horizon, causing unbounded tracking error unless the plan is replanned in closed loop with online state feedback and shorter replan intervals",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "closed_loop_replanning"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [
+        "pid_joint_latency_oscillation"
+      ],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 895.3440114855766,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "41e0cd356642a5fd",
+        "query_text_preview": "A model-predictive controller running at 50 Hz computes a 2-second-horizon trajectory assuming nominal dynamics, but actual ground friction varies by 3x across the operating area. By the planning hori",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "closed-loop-replanning"
+        ],
+        "actual_top1": {
+          "cluster_id": "closed_loop_replanning",
+          "pattern_id": "closed_loop_replanning",
+          "similarity": 0.7043289181567945,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "closed-loop-replanning"
+        },
+        "top_k": [
+          {
+            "cluster_id": "closed_loop_replanning",
+            "pattern_id": "closed_loop_replanning",
+            "similarity": 0.7043289181567945,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Planning_Decision",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "model_free_learning",
+            "pattern_id": "pattern_model_free_learning",
+            "similarity": 0.5644034688875597,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Learning_Training",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "cache_enabled_execution",
+            "pattern_id": "pattern_cache_enabled_execution",
+            "similarity": 0.5622853312408177,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Planning_Decision",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "pid_joint_latency_oscillation",
+            "pattern_id": "pid_joint_latency_oscillation",
+            "similarity": 0.5393289290338893,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "proximal_alternating_minimization_network_pan",
+            "pattern_id": "pattern_proximal_alternating_minimization_network_pan",
+            "similarity": 0.5377715462386078,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Planning_Decision",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "closed_loop_replanning",
+          "pattern_id": "closed_loop_replanning",
+          "similarity": 0.7043289181567945,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Planning_Decision",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "closed_loop_replanning",
+        "top1_similarity": 0.7043289181567945,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_model_free_learning",
+        "runner_up_similarity": 0.5644034688875597,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_W_007_IntegrationWindup",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "anti_windup_pid",
+      "similarity": 0.7969,
+      "matched_symptom": "PID integral wind-up drives the actuator (torque, force, valve position, or flow rate) into prolonged saturation; after the demand transient ends, the integrator retains accumulated state and the controller takes a settling time to release it, causing overshoot past target as the actuator slowly retracts from saturation",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "anti_windup_pid",
+        "output_saturation_clamp"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [
+        "pid_joint_latency_oscillation"
+      ],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 575.524365529418,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "920f651a9a5cbf26",
+        "query_text_preview": "A flow-rate PID controller saturates its control valve fully open during a long demand transient. After the setpoint returns to normal, the controller takes 8 seconds to release accumulated integrator",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "control-loop-stability",
+          "closed-loop-replanning"
+        ],
+        "actual_top1": {
+          "cluster_id": "anti_windup_pid",
+          "pattern_id": "anti_windup_pid",
+          "similarity": 0.7969280775094667,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "control-loop-stability"
+        },
+        "top_k": [
+          {
+            "cluster_id": "anti_windup_pid",
+            "pattern_id": "anti_windup_pid",
+            "similarity": 0.7969280775094667,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "low_level_action_prediction",
+            "pattern_id": "pattern_low_level_action_prediction",
+            "similarity": 0.5355144749415773,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "output_saturation_clamp",
+            "pattern_id": "output_saturation_clamp",
+            "similarity": 0.5012264863956454,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Control_Locomotion",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "anti_windup_pid",
+          "pattern_id": "anti_windup_pid",
+          "similarity": 0.7969280775094667,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Control_Locomotion",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "anti_windup_pid",
+        "top1_similarity": 0.7969280775094667,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_low_level_action_prediction",
+        "runner_up_similarity": 0.5355144749415773,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_W_008_AttentionMemoryOOM",
+      "type": "positive",
+      "status": "pass",
+      "strategy": "CATALYST",
+      "injected": true,
+      "pattern_id": "flash_attention_tiled_softmax",
+      "similarity": 0.6052,
+      "matched_symptom": "Transformer self-attention layer materializes the full NxN matrix in HBM at long context length, causing CUDA OOM and HBM-bandwidth-bound (not compute-bound) inference throughput",
+      "safety_label": null,
+      "snippet_mode": "adaptive",
+      "expected_pattern_any": [
+        "flash_attention_tiled_softmax"
+      ],
+      "expected_strategy_any": [],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": false,
+      "fail_reason": null,
+      "latency_ms": 621.1739825084805,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "e9b24bc5f2c4b39b",
+        "query_text_preview": "A transformer model serving 4K-context inference on a 24 GB GPU hits OOM at batch size 8. Memory profiling shows the N\u00d7N attention probability matrix taking 12 GB just for the full sequence, scaling q",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [
+          "llm-inference-efficiency",
+          "llm-context-management"
+        ],
+        "actual_top1": {
+          "cluster_id": "flash_attention_tiled_softmax",
+          "pattern_id": "flash_attention_tiled_softmax",
+          "similarity": 0.6052124251544592,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "",
+          "topic_group": "llm-inference-efficiency"
+        },
+        "top_k": [
+          {
+            "cluster_id": "flash_attention_tiled_softmax",
+            "pattern_id": "flash_attention_tiled_softmax",
+            "similarity": 0.6052124251544592,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Systems_Compute",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "deformable_cross_attention",
+            "pattern_id": "pattern_deformable_cross_attention",
+            "similarity": 0.505990373030315,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "Perception_Vision",
+            "topic_group": ""
+          },
+          {
+            "cluster_id": "sliding_window_kv_cache",
+            "pattern_id": "sliding_window_kv_cache",
+            "similarity": 0.5042727984006931,
+            "source_tier": "A_CURATED_REVIEWED",
+            "domain": "Memory_Reasoning",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "flash_attention_tiled_softmax",
+          "pattern_id": "flash_attention_tiled_softmax",
+          "similarity": 0.6052124251544592,
+          "source_tier": "A_CURATED_REVIEWED",
+          "domain": "Systems_Compute",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "flash_attention_tiled_softmax",
+        "top1_similarity": 0.6052124251544592,
+        "top1_source_tier": "A_CURATED_REVIEWED",
+        "runner_up_pattern_id": "pattern_deformable_cross_attention",
+        "runner_up_similarity": 0.505990373030315,
+        "curated_rescue": false,
+        "curated_preference": false,
+        "synth_gate_passed": true,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive"
+      }
+    },
+    {
+      "task_id": "TASK_004_HighReliableSimulation",
+      "type": "adversarial",
+      "status": "pass",
+      "strategy": "ABSTAIN",
+      "injected": false,
+      "pattern_id": null,
+      "similarity": null,
+      "matched_symptom": null,
+      "safety_label": null,
+      "snippet_mode": null,
+      "expected_pattern_any": [],
+      "expected_strategy_any": [
+        "FREE",
+        "no_inject",
+        "ABSTAIN"
+      ],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": true,
+      "fail_reason": null,
+      "latency_ms": 585.1755803450942,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "2166e2940effead9",
+        "query_text_preview": "A reliability simulation of a redundant power-electronics inverter needs to estimate p(failure) ~ 1e-8 per operating hour. Naive Monte Carlo on 10^6 samples returns 0 failures and gives no useful esti",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [],
+        "actual_top1": {
+          "cluster_id": "subset_simulation_method_for_rare_event_estimation_an_introduction",
+          "pattern_id": "pattern_subset_simulation_method_for_rare_event_estimation_an_introduction",
+          "similarity": 0.7019082129759414,
+          "source_tier": "C_MUSE_SYNTH",
+          "domain": "World_Physics",
+          "topic_group": ""
+        },
+        "top_k": [
+          {
+            "cluster_id": "subset_simulation_method_for_rare_event_estimation_an_introduction",
+            "pattern_id": "pattern_subset_simulation_method_for_rare_event_estimation_an_introduction",
+            "similarity": 0.7019082129759414,
+            "source_tier": "C_MUSE_SYNTH",
+            "domain": "World_Physics",
+            "topic_group": ""
+          }
+        ],
+        "counterfactual_top1_no_topic_filter": {
+          "cluster_id": "subset_simulation_method_for_rare_event_estimation_an_introduction",
+          "pattern_id": "pattern_subset_simulation_method_for_rare_event_estimation_an_introduction",
+          "similarity": 0.7019082129759414,
+          "source_tier": "C_MUSE_SYNTH",
+          "domain": "World_Physics",
+          "topic_group": ""
+        },
+        "top1_pattern_id": "pattern_subset_simulation_method_for_rare_event_estimation_an_introduction",
+        "top1_similarity": 0.7019082129759414,
+        "top1_source_tier": "C_MUSE_SYNTH",
+        "curated_rescue": false,
+        "curated_preference": false,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive",
+        "abstain_reason": "low_confidence"
+      }
+    },
+    {
+      "task_id": "TASK_009_TopologyOptimization",
+      "type": "adversarial",
+      "status": "pass",
+      "strategy": "ABSTAIN",
+      "injected": false,
+      "pattern_id": null,
+      "similarity": null,
+      "matched_symptom": null,
+      "safety_label": null,
+      "snippet_mode": null,
+      "expected_pattern_any": [],
+      "expected_strategy_any": [
+        "FREE",
+        "no_inject",
+        "ABSTAIN"
+      ],
+      "expected_safety_label_any": [],
+      "must_not_top1": [],
+      "allow_abstain": true,
+      "fail_reason": null,
+      "latency_ms": 563.5289074853063,
+      "routing_trace": {
+        "backend": "seekdb",
+        "query_text_hash": "7fb275487871c0f5",
+        "query_text_preview": "A SIMP-based topology optimizer for a 2D cantilever-beam compliance problem produces checkerboard artifacts and mesh-dependent solutions: halving the element size doubles the apparent number of struts",
+        "state_router_strategy": "CATALYST",
+        "topic_group_admitted": [],
+        "top_k": [],
+        "curated_rescue": false,
+        "curated_preference": false,
+        "tier_aware_ranking": false,
+        "tier_would_change": false,
+        "snippet_mode": "adaptive",
+        "abstain_reason": "low_confidence"
+      }
+    }
+  ],
+  "summary": {
+    "total": 18,
+    "pass": 18,
+    "fail": 0,
+    "unreachable": 0
+  }
+}

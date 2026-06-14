@@ -1,0 +1,313 @@
+# Routing Panel — Doc §8 P0-W1 Sprint 4 (schema v2).
+#
+# Per-task retrieval-correctness contract for the 18 Frontier-Eng tasks
+# (10 wild TASK_0XX + 8 home-turf TASK_W_XXX) plus adversarial probes.
+# Mirrors verify_frontier_eng.py BENCHMARK_SUITE — each query is the task
+# symptom verbatim, posted to HOW /wiki/v1/prompt/build with
+# previous_scores=[0.10]*5, current_iteration=5 (forces CATALYST), and
+# inspected for {strategy, pattern_id, similarity, routing_trace}.
+#
+# Schema v2:
+#   - task_id: must match BENCHMARK_SUITE task_id
+#     type: positive | collateral | adversarial
+#     query: raw error_log POSTed to HOW
+#     expected_pattern_any: list of acceptable pattern_id values; passes if
+#       HOW returns one of them in CATALYST/preference/rescue path
+#     expected_strategy_any: optional override — when the task is supposed
+#       to ABSTAIN (no canonical curated, baseline saturated, etc.), set
+#       this to ["ABSTAIN", "no_inject", "FREE"]
+#     expected_safety_label_any: acceptable safety labels for SAFETY path
+#     must_not_top1: list of pattern_ids that MUST NOT be top-1 (collateral /
+#       adversarial guard). A task FAILS if top-1 is in this list.
+#     allow_abstain: for adversarial / no-canonical cases, ABSTAIN is a pass.
+#     expected_snippet_mode: "full" for curated, "lightweight" for synth
+#     collateral_protect: list of task_ids whose routing MUST stay
+#       byte-identical when this task's routing changes
+#     notes: short rationale / forensic history
+#
+# Verification: scripts/verify_routing_panel.py POSTs each query to live
+# HOW, asserts the contract, collects routing_trace, and refuses to launch
+# paired_ab if ANY entry fails. This is Gate A "Retrieval Correctness".
+
+schema_version: 2
+panel_id: routing_panel_v2
+bundle: iter5_p0
+generated_at: "2026-06-13"
+notes: |
+  Doc §8 hard gate. Queries are verbatim verify_frontier_eng symptoms so
+  routing_panel passes guarantee the next paired_ab will not hit silent
+  routing drift. v2 adds case types, adversarial probes, and routing_trace
+  collection.
+
+tasks:
+  # ─── Positive cases — should route to a canonical curated pattern ───
+
+  - task_id: TASK_001_PIDTuning
+    type: positive
+    query: >-
+      PID controller drives a robotic-arm joint into sustained oscillation
+      when the integral term saturates. Latency from sensor to actuator
+      is 30 ms.
+    expected_pattern_any:
+      - pid_joint_latency_oscillation
+      - anti_windup_pid
+    collateral_protect:
+      - TASK_W_005_ActuatorOvershoot
+      - TASK_W_006_PlanningDivergence
+      - TASK_W_007_IntegrationWindup
+    notes: |
+      iter4_p9 d502da9 added pid_joint_latency_oscillation as new curated
+      to surgically fix this task. Live-probe: top-1 flips 0.6419 → 0.7496.
+
+  - task_id: TASK_002_QuadrupedGait
+    type: positive
+    query: >-
+      A quadruped robot's trot-gait policy diverges on uneven terrain: foot
+      slip events cause the center-of-mass tracking error to grow each cycle
+      until the robot falls within ~3 seconds of stepping onto loose gravel.
+    expected_pattern_any:
+      - terrain_aware_locomotion
+    notes: |
+      HOW route history shows this task lands in CATALYST → curated
+      terrain_aware_locomotion at sim ≈ 0.64.
+
+  - task_id: TASK_003_RobotArmCycleTime
+    type: positive
+    query: >-
+      A 6-DOF pick-and-place robot arm has a 4.2 s cycle time but the
+      customer needs <=3.0 s. Profiling shows 60% of the cycle is joint-
+      space motion that decelerates to zero between via-points, even when
+      the via-points are colinear.
+    expected_pattern_any:
+      - time_optimal_path_blending
+    must_not_top1:
+      - pid_joint_latency_oscillation
+    notes: |
+      iter4_p8 was first to inject this (surprise direct top-1 sim=0.678).
+      Stays the canonical curated for this task.
+
+  - task_id: TASK_005_AES128_Throughput
+    type: positive
+    query: >-
+      An AES-128-CBC implementation in pure C achieves 80 MB/s on a modern
+      x86_64 server, but the requirement is 1 GB/s. Profiling shows the
+      inner SubBytes/MixColumns loop dominates.
+    expected_pattern_any:
+      - simd_aes_ni_hardware_crypto
+    notes: |
+      iter4_p4 moved this curated to its own
+      hardware-accelerated-cryptography topic_group + added topic_tag.
+
+  - task_id: TASK_006_FlashAttention
+    type: positive
+    query: >-
+      A transformer's self-attention layer hits CUDA OOM at 8K context
+      length because the NxN attention matrix is materialized in HBM.
+      Inference throughput is also bandwidth-bound, not compute-bound.
+    expected_pattern_any:
+      - flash_attention_tiled_softmax
+    notes: |
+      Routes correctly but LLM-saturated (control mean 9.7+).
+
+  - task_id: TASK_007_BatteryFastCharging
+    type: positive
+    query: >-
+      A Li-ion fast-charging profile that delivers 4C constant-current
+      from 10%->80% SOC accelerates capacity fade to >2% per 100 cycles
+      on graphite anodes, far above the 0.5%/100c spec.
+    expected_pattern_any:
+      - multi_stage_cc_cv_fast_charging
+    notes: |
+      Iter2 expansion curated. Stable routing across all iter4_pX.
+
+  - task_id: TASK_008_JobShop_abz
+    type: positive
+    query: >-
+      A job-shop scheduler on the abz5 benchmark instance produces
+      makespans around 1400 (known optimum 1234) with a greedy dispatch
+      rule and stagnates after 10K iterations of local search.
+    expected_pattern_any:
+      - metaheuristic_combinatorial_escape
+    notes: |
+      iter4_p8 — surprise direct top-1 sim=0.7943 once topic_tag was added.
+
+  - task_id: TASK_010_UAVInspection
+    type: positive
+    query: >-
+      A quadrotor inspecting a wind-turbine blade with an onboard RGB
+      camera produces motion-blurred frames at the tip flyby (15 m/s
+      relative velocity, 100 mm focal length, 1/120s shutter), so defect
+      detection recall drops from 0.9 (stationary) to 0.4 (flyby).
+    expected_pattern_any:
+      - motion_blur_imu_aided_deblur
+      - motion_blur_decomposition_with_cross-shutter_guidance
+    notes: |
+      Curated outranks a synth competitor by sim margin ~0.05 — HOW's
+      curated_preference rescue is the contract path.
+
+  - task_id: TASK_W_001_KVCacheLongContext
+    type: positive
+    query: >-
+      A code-assistant LLM serving multi-turn programming sessions
+      accumulates 32K tokens of conversation history after 20 turns,
+      hitting the model's 16K context window. Per-turn latency grows
+      from 800ms to 3.5s as the running state fills.
+    expected_pattern_any:
+      - sliding_window_kv_cache
+    notes: |
+      LLM-saturated control. Routing stable.
+
+  - task_id: TASK_W_002_GradExplosionRL
+    type: positive
+    query: >-
+      A PPO policy network training on a robotic manipulation task
+      shows the reward curve diverging to NaN around training step
+      50K. Loss values were stable until step 47K then spiked to 1e8
+      within 200 updates; gradient norms in the actor head are
+      unbounded.
+    expected_pattern_any:
+      - gradient_clipping
+    expected_safety_label_any:
+      - Numerical_Instability
+    notes: |
+      iter4_p1 winner. HOW often routes through SAFETY path; both
+      CATALYST → gradient_clipping and SAFETY → Numerical_Instability pass.
+
+  - task_id: TASK_W_003_NetRetryStorm
+    type: positive
+    query: >-
+      A microservice fetching upstream API data sees 95% of calls
+      succeed but 5% return 503. Naive retry-on-failure with 100ms
+      fixed delay causes cascading load: when upstream is degraded,
+      retries amplify traffic ~10x, prolonging the outage.
+    expected_pattern_any:
+      - exponential_backoff_retry
+    notes: |
+      Iter2 expansion. Stable, no regression cases recorded.
+
+  - task_id: TASK_W_004_EntropyCollapsePPO
+    type: positive
+    query: >-
+      A PPO agent training on a stochastic environment converges to a
+      deterministic policy by episode 5000. Action entropy drops to
+      near zero, exploration ceases, and the policy gets stuck 30%
+      below SOTA reward. Hyperparameters were copied from a
+      known-good benchmark.
+    expected_pattern_any:
+      - ppo_entropy_collapse_guard
+    notes: |
+      LLM-saturated. iter4_p7 confirmed routing stable at sim 0.6636.
+
+  - task_id: TASK_W_005_ActuatorOvershoot
+    type: positive
+    query: >-
+      A linear voice-coil actuator commanded with PID + feedforward
+      overshoots its rated 25 N peak force by 18% during fast
+      setpoint changes, triggering the mechanical end-stops and
+      dropping the position lock. The command signal itself briefly
+      exceeds the rated peak before the safety relay trips.
+    expected_pattern_any:
+      - output_saturation_clamp
+      - anti_windup_pid
+    must_not_top1:
+      - pid_joint_latency_oscillation
+    notes: |
+      Two-stage cluster augmentation fix (2026-06-06). MUST NOT regress
+      to pid_joint_latency_oscillation after iter4_p9.
+
+  - task_id: TASK_W_006_PlanningDivergence
+    type: positive
+    query: >-
+      A model-predictive controller running at 50 Hz computes a
+      2-second-horizon trajectory assuming nominal dynamics, but
+      actual ground friction varies by 3x across the operating area.
+      By the planning horizon's end, the predicted state differs from
+      the measured state by >20 cm, and tracking error accumulates
+      unboundedly between re-plans.
+    expected_pattern_any:
+      - closed_loop_replanning
+    must_not_top1:
+      - pid_joint_latency_oscillation
+    notes: |
+      HOW reports this routes via SAFETY path (Numerical_Instability
+      label). Currently meets the contract via curated either way.
+
+  - task_id: TASK_W_007_IntegrationWindup
+    type: positive
+    query: >-
+      A flow-rate PID controller saturates its control valve fully
+      open during a long demand transient. After the setpoint
+      returns to normal, the controller takes 8 seconds to release
+      accumulated integrator state, causing 25% overshoot past target
+      as the valve eventually closes.
+    expected_pattern_any:
+      - anti_windup_pid
+      - output_saturation_clamp
+    must_not_top1:
+      - pid_joint_latency_oscillation
+    notes: |
+      Iter4 preference-floor canary task — anti_windup_pid sim ~0.71.
+
+  - task_id: TASK_W_008_AttentionMemoryOOM
+    type: positive
+    query: >-
+      A transformer model serving 4K-context inference on a 24 GB GPU
+      hits OOM at batch size 8. Memory profiling shows the N×N
+      attention probability matrix taking 12 GB just for the full
+      sequence, scaling quadratically with context length.
+    expected_pattern_any:
+      - flash_attention_tiled_softmax
+    notes: |
+      LLM-saturated. iter4_p5 confirmed 10/10 ties.
+
+  # ─── Adversarial cases — should NOT inject a wrong-domain curated ───
+
+  - task_id: TASK_004_HighReliableSimulation
+    type: adversarial
+    query: >-
+      A reliability simulation of a redundant power-electronics inverter
+      needs to estimate p(failure) ~ 1e-8 per operating hour. Naive Monte
+      Carlo on 10^6 samples returns 0 failures and gives no useful estimate.
+    expected_strategy_any:
+      - FREE
+      - no_inject
+      - ABSTAIN
+    allow_abstain: true
+    notes: |
+      No canonical curated yet (importance sampling / subset sim / cross-
+      entropy is a known headroom candidate). Until then this task should
+      ABSTAIN or FREE_EXPLORATION.
+
+  - task_id: TASK_009_TopologyOptimization
+    type: adversarial
+    query: >-
+      A SIMP-based topology optimizer for a 2D cantilever-beam compliance
+      problem produces checkerboard artifacts and mesh-dependent
+      solutions: halving the element size doubles the apparent number
+      of struts.
+    expected_strategy_any:
+      - FREE
+      - no_inject
+      - ABSTAIN
+    allow_abstain: true
+    notes: |
+      No canonical curated. Heisenberg-density / sensitivity filtering is
+      a known headroom candidate.
+
+# ─── Pass / fail rules ────────────────────────────────────────────────────────
+#
+# A task PASSES when at least one of:
+#   1. type=positive AND response.strategy is CATALYST/preference/rescue AND
+#      response.pattern_id IN expected_pattern_any
+#   2. expected_strategy_any is set AND response.strategy IN that list
+#   3. expected_safety_label_any is set AND response.strategy=SAFETY AND
+#      response.symptom label IN expected_safety_label_any
+#   4. type=adversarial AND allow_abstain=true AND response.strategy IN
+#      (ABSTAIN, FREE_EXPLORATION, no_inject)
+#
+# A task FAILS when:
+#   - must_not_top1 is non-empty AND response.pattern_id IN must_not_top1
+#   - OR none of the pass rules apply
+#
+# verify_routing_panel.py exits non-zero on ANY fail. paired_ab launcher
+# refuses to start when verify_routing_panel.py fails.
