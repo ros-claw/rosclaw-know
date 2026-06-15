@@ -60,6 +60,10 @@ DEMOTE_REASON_VALUES = {
     "schema_invalid",
 }
 
+# Accepted schema_version declarations for a v2 bridge bundle.
+# All valid declarations are normalized to the canonical string "2.0".
+_SCHEMA_VERSION_VALUES = (2, "2", "2.0", "v2")
+
 
 class RoutingGuardV2(BaseModel):
     positive_queries: list[str] = Field(default_factory=list)
@@ -78,7 +82,9 @@ class EvidenceV2(BaseModel):
 
 
 class DemotionV2(BaseModel):
-    demote_reason: Literal["negative_transfer", "low_coverage", "superseded", "schema_invalid"] | None = None
+    demote_reason: (
+        Literal["negative_transfer", "low_coverage", "superseded", "schema_invalid"] | None
+    ) = None
     confidence_score: float | None = None
 
 
@@ -133,9 +139,23 @@ class BridgeClusterV2(BaseModel):
 
 
 class BridgeIndexV2(BaseModel):
-    schema_version: int = 2
+    schema_version: str = "2.0"
     symptom_clusters: dict[str, BridgeClusterV2]
     safety_label_index: dict[str, list[str]] | None = None
+
+    @field_validator("schema_version", mode="before")
+    @classmethod
+    def _canonicalize_schema_version(cls, v: object) -> object:
+        if v in _SCHEMA_VERSION_VALUES:
+            return "2.0"
+        return v
+
+    @field_validator("schema_version", mode="after")
+    @classmethod
+    def _enforce_canonical_schema_version(cls, v: str) -> str:
+        if v != "2.0":
+            raise ValueError(f"unsupported schema_version: {v!r}")
+        return v
 
     model_config = {"extra": "allow"}
 
@@ -170,14 +190,14 @@ def compute_content_hash(cluster: dict[str, Any]) -> str:
 
 def compute_metadata_hash(cluster: dict[str, Any]) -> str:
     """Deterministic sha256 over governance/lifecycle fields."""
-    payload = {
-        f: _normalize_for_hash(cluster.get(f)) for f in METADATA_FIELDS if f in cluster
-    }
+    payload = {f: _normalize_for_hash(cluster.get(f)) for f in METADATA_FIELDS if f in cluster}
     blob = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(blob).hexdigest()
 
 
-def validate_bridge_index(data: dict[str, Any], code_patterns_dir: Path | None = None) -> dict[str, Any]:
+def validate_bridge_index(
+    data: dict[str, Any], code_patterns_dir: Path | None = None
+) -> dict[str, Any]:
     """Validate a raw bridge_index dict and return a structured report.
 
     Supports a mixed v1/v2 bundle: clusters that declare ``source``,
@@ -193,7 +213,7 @@ def validate_bridge_index(data: dict[str, Any], code_patterns_dir: Path | None =
     schema_version = data.get("schema_version")
     if schema_version is None:
         errors.append("missing schema_version")
-    elif schema_version not in (2, "2", "v2"):
+    elif schema_version not in _SCHEMA_VERSION_VALUES:
         errors.append(f"unsupported schema_version: {schema_version!r}")
 
     clusters = data.get("symptom_clusters")
@@ -242,7 +262,9 @@ def validate_bridge_index(data: dict[str, Any], code_patterns_dir: Path | None =
                 if not cluster.routing_guard.positive_queries:
                     warnings.append(f"{prefix}: A/S tier cluster has no positive_queries")
                 if len(cluster.routing_guard.collateral_queries) < 2:
-                    warnings.append(f"{prefix}: A/S tier cluster has fewer than 2 collateral_queries")
+                    warnings.append(
+                        f"{prefix}: A/S tier cluster has fewer than 2 collateral_queries"
+                    )
 
             expected_content_hash = compute_content_hash(raw)
             if cluster.content_hash != expected_content_hash:
@@ -251,7 +273,10 @@ def validate_bridge_index(data: dict[str, Any], code_patterns_dir: Path | None =
                 )
 
             expected_metadata_hash = compute_metadata_hash(raw)
-            if cluster.metadata_hash is not None and cluster.metadata_hash != expected_metadata_hash:
+            if (
+                cluster.metadata_hash is not None
+                and cluster.metadata_hash != expected_metadata_hash
+            ):
                 warnings.append(
                     f"{prefix}: metadata_hash mismatch (expected {expected_metadata_hash}, got {cluster.metadata_hash})"
                 )

@@ -12,11 +12,25 @@ import pytest
 
 from rosclaw_know import config
 from rosclaw_know.bridge_schema import (
-    BridgeClusterV2,
+    BridgeIndexV2,
     compute_content_hash,
     compute_metadata_hash,
     validate_bridge_index,
 )
+
+
+class TestBridgeIndexV2Model:
+    @pytest.mark.parametrize("version", [2, "2", "2.0", "v2"])
+    def test_schema_version_normalizes_to_canonical_2_0(self, version):
+        bi = BridgeIndexV2(
+            schema_version=version,
+            symptom_clusters={},
+        )
+        assert bi.schema_version == "2.0"
+
+    def test_invalid_schema_version_rejected(self):
+        with pytest.raises(ValueError):
+            BridgeIndexV2(schema_version="1.0", symptom_clusters={})
 
 
 def _make_v2_cluster(**overrides: object) -> dict:
@@ -97,6 +111,33 @@ class TestValidateBridgeIndex:
     def test_valid_v2_bridge_passes(self):
         data = {
             "schema_version": 2,
+            "symptom_clusters": {"test_pattern": _make_v2_cluster()},
+        }
+        report = validate_bridge_index(data)
+        assert report["ok"] is True
+        assert not report["errors"]
+
+    def test_schema_version_string_2_0_passes(self):
+        data = {
+            "schema_version": "2.0",
+            "symptom_clusters": {"test_pattern": _make_v2_cluster()},
+        }
+        report = validate_bridge_index(data)
+        assert report["ok"] is True
+        assert not report["errors"]
+
+    def test_schema_version_v2_passes(self):
+        data = {
+            "schema_version": "v2",
+            "symptom_clusters": {"test_pattern": _make_v2_cluster()},
+        }
+        report = validate_bridge_index(data)
+        assert report["ok"] is True
+        assert not report["errors"]
+
+    def test_schema_version_string_2_passes(self):
+        data = {
+            "schema_version": "2",
             "symptom_clusters": {"test_pattern": _make_v2_cluster()},
         }
         report = validate_bridge_index(data)
