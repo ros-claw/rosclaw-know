@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rosclaw-know"
-version = "1.0.0"
+version = "1.0.1"
 description = "Physical-AI knowledge compiler — turns multi-source corpus + execution feedback into procedural engineering experience for ROSClaw agents."
 readme = "README.md"
 license = {text = "MIT"}
