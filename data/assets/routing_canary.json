@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T11:30:06Z",
+  "generated_at": "2026-06-15T14:08:54Z",
   "curated_count": 15,
   "default_min_similarity": 0.55,
   "canaries": [
@@ -17,7 +17,7 @@
     },
     {
       "name": "pid_joint_latency_oscillation",
-      "query": "pid joint latency oscillation robotic arm robotic-arm manipulator joint pid loop latency sensor-to-actuator sensor to actuator deadtime integral saturation sustained oscillation joint trajectory tracking 30 ms",
+      "query": "pid joint latency oscillation robotic arm robotic-arm manipulator joint pid loop latency sensor-to-actuator sensor to actuator deadtime integral saturation sustained oscillation joint trajectory tracking 30 ms anti-windup anti windup back-calculation derivative-on-measurement derivative on measurement gain scheduling gain margin",
       "expected_top1_any": [
         "pid_joint_latency_oscillation"
       ],
