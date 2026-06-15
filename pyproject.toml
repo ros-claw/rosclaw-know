@@ -1,11 +1,16 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "rosclaw-know"
 version = "1.5.0a1"
 description = "Physical-AI knowledge compiler — turns multi-source corpus + execution feedback into procedural engineering experience for ROSClaw agents."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "ROSClaw Team", email = "team@rosclaw.io"},
+]
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.6",
@@ -29,8 +34,30 @@ all = [
     "rosclaw-know[dev,api,compiler]",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.urls]
+Homepage = "https://rosclaw.io"
+Repository = "https://github.com/ros-claw/rosclaw-know"
+Documentation = "https://docs.rosclaw.io"
+"Bug Tracker" = "https://github.com/ros-claw/rosclaw-know/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rosclaw_know"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"data/assets" = "rosclaw_know/data/assets"
+"data/curated_registry" = "rosclaw_know/data/curated_registry"
+
+[tool.hatch.build.targets.sdist]
+ignore-vcs = true
+only-include = [
+    "/src",
+    "/data/assets",
+    "/data/curated_registry",
+    "/tests",
+    "/scripts",
+    "/README.md",
+    "/pyproject.toml",
+]
 
 [tool.ruff]
 line-length = 100

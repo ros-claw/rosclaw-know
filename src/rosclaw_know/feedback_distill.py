@@ -23,13 +23,14 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import statistics
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .config import ASSETS_DIR, PROJECT_ROOT
+from .config import ASSETS_DIR, RUNTIME_DATA_DIR
 
 logger = logging.getLogger("rosclaw_know.feedback_distill")
 
@@ -40,7 +41,9 @@ WIN_DELTA_THRESHOLD = 0.05
 # deprecation; small-sample noise must not promote or demote anything.
 MIN_SAMPLE_SIZE = 5
 
-DEFAULT_EXPORTS_DIR = PROJECT_ROOT.parent / "rosclaw-how" / "data" / "exports"
+DEFAULT_EXPORTS_DIR = Path(
+    os.environ.get("ROSCLAW_FEEDBACK_EXPORTS_DIR", str(RUNTIME_DATA_DIR / "exports"))
+)
 
 
 @dataclass(frozen=True)

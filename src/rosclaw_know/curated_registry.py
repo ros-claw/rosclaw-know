@@ -25,12 +25,12 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, field_validator
 
-from .config import PROJECT_ROOT
+from .config import CURATED_REGISTRY_DIR, PROJECT_ROOT
 from .curated_patterns import CuratedPattern
 
 log = logging.getLogger("rosclaw_know.curated_registry")
 
-DEFAULT_REGISTRY_ROOT = PROJECT_ROOT / "data" / "curated_registry"
+DEFAULT_REGISTRY_ROOT = CURATED_REGISTRY_DIR
 ENABLED_VAR = "ROSCLAW_KNOW_CURATED_REGISTRY_ENABLED"
 
 STATUS_VALUES = {"active", "demoted", "draft"}

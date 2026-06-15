@@ -72,9 +72,7 @@ class ResearchWorker:
         self.how_reload_url = how_reload_url or os.environ.get(
             "ROSCLAW_HOW_RELOAD_URL", "http://127.0.0.1:47820/wiki/v1/admin/reload"
         )
-        self.how_api_key = how_api_key or os.environ.get(
-            "ROSCLAW_HOW_API_KEY", "rw_sk_dev_local"
-        )
+        self.how_api_key = how_api_key or os.environ.get("ROSCLAW_HOW_API_KEY", "")
 
     # ── public API ───────────────────────────────────────────────────────
 

@@ -2,22 +2,67 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(PROJECT_ROOT / ".env")
+
+def _user_data_dir(name: str) -> Path:
+    """Cross-platform writable user data directory fallback."""
+    if sys.platform == "win32":
+        base = Path.home() / "AppData" / "Local"
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path.home() / ".local" / "share"
+    return base / name
+
+
+# Directory that contains the ``rosclaw_know`` package.
+# In a wheel this is ``site-packages/rosclaw_know``; in an editable install it
+# is ``repo/src/rosclaw_know``.
+_PACKAGE_DIR = Path(__file__).resolve().parents[0]
+
+
+def _resolve_bundled_data_dir() -> Path:
+    """Locate bundled data (assets + curated_registry).
+
+    Wheel: data is bundled inside the package (``rosclaw_know/data``).
+    Editable/legacy: data lives at the repository root.
+    """
+    wheel_data = _PACKAGE_DIR / "data"
+    if (wheel_data / "assets").is_dir():
+        return wheel_data
+    # Editable install: repo root is one level above the package directory.
+    return _PACKAGE_DIR.parents[1] / "data"
+
+
+BUNDLED_DATA_DIR = _resolve_bundled_data_dir()
+
+# Runtime-generated files (databases, caches, logs) go to a writable user dir.
+RUNTIME_DATA_DIR = _user_data_dir("rosclaw_know")
+RUNTIME_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# For backwards compatibility: PROJECT_ROOT points at the repository root in
+# editable installs and at the package parent directory in wheels.
+PROJECT_ROOT = BUNDLED_DATA_DIR.parent
+
+# Best-effort .env loading (dev editable installs). In wheels no .env exists.
+_env_file = PROJECT_ROOT / ".env"
+if _env_file.exists():
+    load_dotenv(_env_file, override=False)
 
 # Data paths
-DATA_DIR = PROJECT_ROOT / "data"
-ASSETS_DIR = DATA_DIR / "assets"
+DATA_DIR = RUNTIME_DATA_DIR
+ASSETS_DIR = BUNDLED_DATA_DIR / "assets"
 CODE_PATTERNS_DIR = ASSETS_DIR / "code_patterns"
+CURATED_REGISTRY_DIR = BUNDLED_DATA_DIR / "curated_registry"
 BENCHMARKS_DIR = DATA_DIR / "benchmarks"
 DB_PATH = DATA_DIR / "rosclaw_knowledge.db"
 
 # Wiki source — symlinked from the legacy rosclaw-wiki repo
-WIKI_DIR = PROJECT_ROOT / os.environ.get("WIKI_DIR", "wiki")
+WIKI_DIR = Path(os.environ.get("WIKI_DIR", RUNTIME_DATA_DIR / "wiki"))
 
 # DeepSeek API
 #
@@ -52,8 +97,8 @@ SEEKDB_AVAILABLE = bool(SEEKDB_HOST and SEEKDB_PORT)
 
 
 def ensure_dirs() -> None:
-    """Create all output directories. Idempotent."""
-    for path in (DATA_DIR, ASSETS_DIR, CODE_PATTERNS_DIR, BENCHMARKS_DIR):
+    """Create runtime output directories. Idempotent."""
+    for path in (DATA_DIR, BENCHMARKS_DIR):
         path.mkdir(parents=True, exist_ok=True)
 
 
