@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rosclaw-know"
-version = "1.5.0a1"
+version = "1.5.0a2"
 description = "Physical-AI knowledge compiler — turns multi-source corpus + execution feedback into procedural engineering experience for ROSClaw agents."
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
     {name = "ROSClaw Team", email = "team@rosclaw.io"},
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.6",
     "pyyaml>=6.0",
@@ -61,7 +61,7 @@ only-include = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP"]
