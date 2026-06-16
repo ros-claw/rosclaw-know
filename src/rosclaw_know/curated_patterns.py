@@ -358,11 +358,12 @@ CURATED_SAFETY_PATTERNS: list[CuratedPattern] = [
         topic_group="rl-training-stability",
         topic_tag="gradient-clipping-explosion-guard",
         safety_label="Numerical_Instability",
-        standard_name="NaN/Inf in loss or weights after a step explodes the gradient",
+        standard_name="Gradient magnitude explodes during backprop causing NaN/Inf in loss or weight overflow",
         domain="Learning_Training",
         matched_keywords=[
             "nan", "inf", "numerical instability", "loss explod",
             "gradient explod", "gradient clip", "learning rate",
+            "backprop", "backpropagation", "weight overflow", "gradient magnitude",
         ],
         fix_pattern=(
             "Apply `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)` "

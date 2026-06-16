@@ -5154,7 +5154,7 @@
       "metadata_hash": "57a02849db713ee0063490a37ee40f2bf97d1dc7803a1366b68ae5d4a0711ac6"
     },
     "gradient_clipping": {
-      "standard_name": "NaN/Inf in loss or weights after a step explodes the gradient",
+      "standard_name": "Gradient magnitude explodes during backprop causing NaN/Inf in loss or weight overflow",
       "domain": "Learning_Training",
       "robot_type": null,
       "safety_label": "Numerical_Instability",
@@ -5164,14 +5164,17 @@
       "runtime_eligible": true,
       "priority": 1,
       "matched_keywords": [
-        "gradient clip",
-        "gradient explod",
-        "inf",
-        "learning rate",
-        "loss explod",
         "nan",
+        "inf",
         "numerical instability",
-        "numerical_instability"
+        "loss explod",
+        "gradient explod",
+        "gradient clip",
+        "learning rate",
+        "backprop",
+        "backpropagation",
+        "weight overflow",
+        "gradient magnitude"
       ],
       "cross_domain_analogies": [
         {
@@ -5211,7 +5214,7 @@
         "demote_reason": null,
         "confidence_score": null
       },
-      "content_hash": "291427fee7fb0c369aa225f42be978639db94aa7fd54f54f0d0ede41a1669771",
+      "content_hash": "1829747cfa7922616360e285c26a7b3e3d9fbdc2efe4e8630c4b100780526412",
       "metadata_hash": "daea2409b1aaa2f1b961fd6cd0008052b4ad65faa2debac0f9e7758b61cc22af"
     },
     "output_saturation_clamp": {
