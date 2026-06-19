@@ -1,0 +1,13 @@
+expected_subtasks:
+  - detect_cup
+  - plan_grasp
+  - execute_grasp
+  - verify_grasp
+
+expected_constraints:
+  - workspace_boundary
+
+expected_failures:
+  - no_valid_grasp
+
+min_compile_confidence: 0.5

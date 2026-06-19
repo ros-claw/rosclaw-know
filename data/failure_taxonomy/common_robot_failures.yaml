@@ -1,0 +1,174 @@
+schema_version: "failure_taxonomy.v1"
+
+categories:
+  - id: perception_failure
+    name: "感知失败"
+    severity_default: "S1"
+    description: "视觉或传感器无法正确识别任务对象或状态"
+
+  - id: planning_failure
+    name: "规划失败"
+    severity_default: "S2"
+    description: "路径、姿态或动作计划不可达、不安全或不满足约束"
+
+  - id: control_failure
+    name: "控制失败"
+    severity_default: "S3"
+    description: "执行过程中出现轨迹偏差、接触失败、力矩异常或振荡"
+
+  - id: safety_failure
+    name: "安全失败"
+    severity_default: "S4"
+    description: "可能导致机器人摔倒、碰撞、人机风险或硬件损伤"
+
+failures:
+  - id: ball_not_detected
+    category: perception_failure
+    applies_to:
+      - perceive_ball
+    description: "视觉系统无法检测到足球"
+    observable_signals:
+      - "perception_confidence < 0.5"
+      - "ball_pose is null"
+    likely_causes:
+      - "光照不足"
+      - "足球被遮挡"
+      - "颜色/形状与训练分布不匹配"
+    severity: "S1"
+    recovery:
+      - "调整头部视角"
+      - "请求多视角观察"
+      - "调用 memory 检索相似场景"
+    how_trigger:
+      enabled: true
+      query_hint: "ball detection failure visual perception"
+    memory_write:
+      enabled: true
+      event_type: perception_failure
+
+  - id: ball_pose_drift
+    category: perception_failure
+    applies_to:
+      - perceive_ball
+      - align_for_kick
+    description: "足球位姿估计在接近或踢球前发生漂移"
+    observable_signals:
+      - "ball_pose_delta > 0.05m"
+      - "tracking_confidence drops"
+    likely_causes:
+      - "相机标定误差"
+      - "机器人移动导致视角变化"
+      - "足球滚动"
+    severity: "S2"
+    recovery:
+      - "踢球前重新检测"
+      - "降低动作速度"
+      - "进入 touch-probe 或视觉伺服模式"
+    how_trigger:
+      enabled: true
+      query_hint: "object pose drift before contact"
+    memory_write:
+      enabled: true
+      event_type: pose_uncertainty
+
+  - id: unstable_support
+    category: control_failure
+    applies_to:
+      - align_for_kick
+      - execute_kick
+    description: "支撑脚和重心关系不稳定"
+    observable_signals:
+      - "balance_margin < 0.2"
+      - "com_projection outside support polygon"
+    likely_causes:
+      - "站位过近或过远"
+      - "摆腿幅度过大"
+      - "地面摩擦不足"
+    severity: "S3"
+    recovery:
+      - "调整站位"
+      - "降低摆腿速度"
+      - "重新规划支撑脚位置"
+    how_trigger:
+      enabled: true
+      query_hint: "humanoid support polygon balance instability"
+    memory_write:
+      enabled: true
+      event_type: balance_failure
+
+  - id: torque_limit_violation
+    category: safety_failure
+    applies_to:
+      - execute_kick
+    description: "踢球腿或支撑腿关节力矩超过安全阈值"
+    observable_signals:
+      - "joint_torque > torque_limit"
+      - "motor_current spike"
+    likely_causes:
+      - "踢球速度过高"
+      - "接触时机错误"
+      - "足部被球或地面卡住"
+    severity: "S4"
+    recovery:
+      - "立即停止当前踢球动作"
+      - "降低动作幅度"
+      - "进入安全站立模式"
+    how_trigger:
+      enabled: true
+      expected_strategy: "SAFETY"
+      query_hint: "torque overflow humanoid leg swing"
+    memory_write:
+      enabled: true
+      event_type: safety_failure
+
+  - id: missed_ball
+    category: control_failure
+    applies_to:
+      - execute_kick
+    description: "脚部轨迹没有与足球有效接触"
+    observable_signals:
+      - "contact_event == false"
+      - "ball_displacement < 0.1m"
+    likely_causes:
+      - "足球位姿估计错误"
+      - "脚轨迹偏差"
+      - "站位距离不合适"
+    severity: "S2"
+    recovery:
+      - "重新估计 ball_pose"
+      - "调整 stance distance"
+      - "降低踢球动作速度并重试"
+    how_trigger:
+      enabled: true
+      query_hint: "missed ball foot trajectory contact timing"
+    memory_write:
+      enabled: true
+      event_type: skill_failure
+
+  - id: fall_risk
+    category: safety_failure
+    applies_to:
+      - approach_ball
+      - execute_kick
+      - recover_balance
+    description: "机器人出现跌倒风险"
+    observable_signals:
+      - "imu_pitch_roll exceeds threshold"
+      - "fall_detector warning"
+      - "balance_margin < 0"
+    likely_causes:
+      - "步态不稳定"
+      - "踢球动作过猛"
+      - "地面摩擦不足"
+    severity: "S4"
+    recovery:
+      - "停止任务"
+      - "进入安全支撑"
+      - "请求人工确认"
+    how_trigger:
+      enabled: true
+      expected_strategy: "SAFETY"
+      query_hint: "humanoid fall risk balance recovery"
+    memory_write:
+      enabled: true
+      event_type: safety_failure

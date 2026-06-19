@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rosclaw-know"
-version = "1.0.2"
+version = "1.1.0"
 description = "Physical-AI knowledge compiler — turns multi-source corpus + execution feedback into procedural engineering experience for ROSClaw agents."
 readme = "README.md"
 license = {text = "MIT"}
@@ -34,6 +34,9 @@ all = [
     "rosclaw-know[dev,api,compiler]",
 ]
 
+[project.scripts]
+rosclaw-know-taskcard = "rosclaw_know.taskcard.cli:main"
+
 [project.urls]
 Homepage = "https://rosclaw.io"
 Repository = "https://github.com/ros-claw/rosclaw-know"
@@ -46,6 +49,9 @@ packages = ["src/rosclaw_know"]
 [tool.hatch.build.targets.wheel.force-include]
 "data/assets" = "rosclaw_know/data/assets"
 "data/curated_registry" = "rosclaw_know/data/curated_registry"
+"data/taskcard_templates" = "rosclaw_know/data/taskcard_templates"
+"data/failure_taxonomy" = "rosclaw_know/data/failure_taxonomy"
+"data/physical_constraints" = "rosclaw_know/data/physical_constraints"
 
 [tool.hatch.build.targets.sdist]
 ignore-vcs = true
@@ -53,6 +59,9 @@ only-include = [
     "/src",
     "/data/assets",
     "/data/curated_registry",
+    "/data/taskcard_templates",
+    "/data/failure_taxonomy",
+    "/data/physical_constraints",
     "/tests",
     "/scripts",
     "/README.md",

@@ -1,0 +1,80 @@
+schema_version: "physical_constraints.v1"
+
+hard_constraints:
+  - id: no_human_in_kick_direction
+    type: human_safety
+    description: "踢球方向上不得有人"
+    applies_to:
+      - execute_kick
+    check:
+      method: scene_query
+      expression: "human_distance_in_target_direction > 2.0m"
+    violation_action: STOP
+    how_strategy: SAFETY
+
+  - id: torque_limit
+    type: hardware_safety
+    description: "任何关节力矩不得超过 G1 安全阈值"
+    applies_to:
+      - execute_kick
+      - recover_balance
+    check:
+      method: telemetry
+      expression: "joint_torque <= joint_torque_limit"
+    violation_action: STOP_AND_RECOVER
+    how_strategy: SAFETY
+
+  - id: no_full_power_kick_without_sandbox
+    type: validation_safety
+    description: "未经 sandbox 验证不得执行大幅度踢球"
+    applies_to:
+      - execute_kick
+    check:
+      method: runtime_policy
+      expression: "sandbox_passed == true or kick_power == low"
+    violation_action: BLOCK
+    how_strategy: ABSTAIN_OR_SAFETY
+
+soft_constraints:
+  - id: low_speed_first_trial
+    type: operation_policy
+    description: "首次真实机器人测试必须低速"
+    applies_to:
+      - execute_kick
+    recommended_value:
+      foot_swing_speed: low
+    violation_action: REQUIRE_CONFIRMATION
+
+  - id: maintain_balance_margin
+    type: control_stability
+    description: "踢球前 balance_margin 应大于 0.2"
+    applies_to:
+      - align_for_kick
+      - execute_kick
+    check:
+      method: telemetry
+      expression: "balance_margin >= 0.2"
+    violation_action: REQUEST_REPLAN
+
+operational_constraints:
+  - id: one_change_per_trial
+    description: "每次 auto 实验只改变一个关键变量"
+    applies_to:
+      - auto_hooks
+    violation_action: REJECT_EXPERIMENT
+
+  - id: preserve_recovery_path
+    description: "任何踢球动作必须包含恢复站立子动作"
+    applies_to:
+      - execute_kick
+    violation_action: REJECT_PLAN
+
+context_constraints:
+  - id: lab_scene_only
+    description: "当前 TaskCard 只适用于室内实验室平整地面"
+    applies_to:
+      - all
+    valid_context:
+      scene_type: indoor_lab
+      floor: flat
+    violation_action: REQUIRE_RECOMPILE

@@ -1,0 +1,14 @@
+expected_subtasks:
+  - navigate_to_meter
+  - select_viewpoint
+  - capture_image
+  - read_meter
+  - report_reading
+
+expected_constraints:
+  - keep_safe_distance
+
+expected_failures:
+  - ocr_failure
+
+min_compile_confidence: 0.5

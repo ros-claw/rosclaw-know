@@ -1,0 +1,27 @@
+expected_subtasks:
+  - perceive_ball
+  - plan_approach
+  - approach_ball
+  - align_for_kick
+  - execute_kick
+  - recover_balance
+
+expected_constraints:
+  - no_human_in_kick_direction
+  - torque_limit
+  - no_full_power_kick_without_sandbox
+  - low_speed_first_trial
+  - maintain_balance_margin
+  - one_change_per_trial
+  - preserve_recovery_path
+  - lab_scene_only
+
+expected_failures:
+  - ball_not_detected
+  - ball_pose_drift
+  - unstable_support
+  - torque_limit_violation
+  - missed_ball
+  - fall_risk
+
+min_compile_confidence: 0.7

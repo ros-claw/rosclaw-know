@@ -1,0 +1,16 @@
+scene_id: lab_soccer_area
+scene_type: indoor_lab
+objects:
+  - id: ball
+    type: soccer_ball
+    properties:
+      diameter: "0.22m"
+      movable: true
+  - id: target_zone
+    type: goal_region
+    properties:
+      distance: "1.5m"
+environmental_assumptions:
+  - "地面平整"
+  - "没有人类站在踢球方向"
+  - "足球附近无易碎物"
