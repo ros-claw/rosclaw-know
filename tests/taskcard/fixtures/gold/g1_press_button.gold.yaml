@@ -1,0 +1,16 @@
+expected_subtasks:
+  - perceive_button
+  - plan_approach
+  - approach_button
+  - align_hand
+  - execute_press
+  - recover_balance
+
+expected_constraints:
+  - force_limit_5n
+
+expected_failures:
+  - button_not_detected
+  - excessive_force
+
+min_compile_confidence: 0.5

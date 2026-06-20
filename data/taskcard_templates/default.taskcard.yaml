@@ -1,0 +1,85 @@
+schema_version: "taskcard.v1"
+
+metadata:
+  task_id: default
+  title: "Default TaskCard Template"
+  created_at: "2026-06-20T00:00:00Z"
+  created_by: rosclaw-know
+  compiler_version: "0.1.0"
+  confidence: 0.5
+  status: draft
+  tags: []
+
+task:
+  natural_language_goal: ""
+  normalized_goal: ""
+  task_type: physical_skill
+  task_family: unknown
+  domain: unknown
+  difficulty: medium
+  expected_outcome: []
+  success_criteria: []
+
+embodiment:
+  robot_id: unknown
+  robot_model: unknown
+  embodiment_type: unknown
+  relevant_body_parts: []
+  required_capabilities: []
+  unavailable_capabilities: []
+  assumptions: []
+
+scene:
+  scene_id: unknown
+  scene_type: unknown
+  objects: []
+  environmental_assumptions: []
+  uncertainty: []
+
+subtasks: []
+
+failure_taxonomy:
+  schema_version: "failure_taxonomy.v1"
+  categories: []
+  failures: []
+
+physical_constraints:
+  schema_version: "physical_constraints.v1"
+  hard_constraints: []
+  soft_constraints: []
+  operational_constraints: []
+  context_constraints: []
+
+engineering_priors: []
+
+memory_hooks:
+  queries: []
+  writeback:
+    enabled: true
+    write_events: []
+
+how_hooks:
+  intervention_triggers: []
+  expected_strategies:
+    - SAFETY
+    - CATALYST
+    - ABSTAIN
+
+auto_hooks:
+  experiment_candidates: []
+  prohibited_experiments: []
+
+cognitive_wiki:
+  enabled: false
+  query_terms: []
+  imported_cards: []
+
+evidence_trace: []
+
+quality:
+  schema_valid: true
+  subtask_coverage_score: 0.0
+  failure_taxonomy_coverage_score: 0.0
+  constraint_coverage_score: 0.0
+  evidence_coverage_score: 0.0
+  compile_confidence: 0.0
