@@ -7,7 +7,10 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
+from datetime import UTC, datetime
 from typing import Any
+
+_OUTCOMES_FAILURE_WINDOW_SECONDS = 5 * 60
 
 
 def fetch_healthz(base_url: str, api_key: str | None = None, timeout: float = 5.0) -> dict[str, Any]:
@@ -21,6 +24,23 @@ def fetch_healthz(base_url: str, api_key: str | None = None, timeout: float = 5.
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
+
+def _outcomes_failure_is_recent(health: dict[str, Any]) -> bool:
+    """Return True if HOW has recorded an outcomes write failure recently."""
+    failures = health.get("outcomes_write_failures") or {}
+    if not failures.get("count"):
+        return False
+    last_ts = failures.get("last_ts")
+    if not last_ts:
+        return False
+    try:
+        last = datetime.fromisoformat(last_ts)
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=UTC)
+        return (datetime.now(UTC) - last).total_seconds() <= _OUTCOMES_FAILURE_WINDOW_SECONDS
+    except ValueError:
+        return False
 
 
 def assert_how_healthy(base_url: str, api_key: str | None = None) -> dict[str, Any]:
@@ -49,6 +69,11 @@ def assert_how_healthy(base_url: str, api_key: str | None = None) -> dict[str, A
     if health.get("missing_assets"):
         raise RuntimeError(
             f"Formal experiment aborted: missing assets: {health}"
+        )
+
+    if _outcomes_failure_is_recent(health):
+        raise RuntimeError(
+            f"Formal experiment aborted: recent outcomes write failure: {health.get('outcomes_write_failures')}"
         )
 
     return health

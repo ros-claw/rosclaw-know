@@ -5154,27 +5154,22 @@
       "metadata_hash": "57a02849db713ee0063490a37ee40f2bf97d1dc7803a1366b68ae5d4a0711ac6"
     },
     "gradient_clipping": {
-      "standard_name": "Gradient magnitude explodes during backprop causing NaN/Inf in loss or weight overflow",
+      "standard_name": "NaN/Inf in loss or weights after a step explodes the gradient",
       "domain": "Learning_Training",
-      "robot_type": null,
       "safety_label": "Numerical_Instability",
       "source": "curated",
       "source_tier": "A_CURATED_REVIEWED",
       "status": "active",
       "runtime_eligible": true,
-      "priority": 1,
       "matched_keywords": [
-        "nan",
-        "inf",
-        "numerical instability",
-        "loss explod",
-        "gradient explod",
         "gradient clip",
+        "gradient explod",
+        "inf",
         "learning rate",
-        "backprop",
-        "backpropagation",
-        "weight overflow",
-        "gradient magnitude"
+        "loss explod",
+        "nan",
+        "numerical instability",
+        "numerical_instability"
       ],
       "cross_domain_analogies": [
         {
@@ -5189,6 +5184,11 @@
       ],
       "topic_group": "rl-training-stability",
       "topic_tag": "gradient-clipping-explosion-guard",
+      "log_signatures": [
+        "(numerical\\s+instability)",
+        "(loss\\s+explod)",
+        "(gradient\\s+explod)"
+      ],
       "routing_guard": {
         "positive_queries": [
           "TASK_W_002_GradExplosionRL"
@@ -5214,7 +5214,7 @@
         "demote_reason": null,
         "confidence_score": null
       },
-      "content_hash": "1829747cfa7922616360e285c26a7b3e3d9fbdc2efe4e8630c4b100780526412",
+      "content_hash": "636f272c380efe95575ae7900a84e5589ba183c12685249669018f188c9d0ac1",
       "metadata_hash": "daea2409b1aaa2f1b961fd6cd0008052b4ad65faa2debac0f9e7758b61cc22af"
     },
     "output_saturation_clamp": {
