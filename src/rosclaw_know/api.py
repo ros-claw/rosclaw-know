@@ -177,7 +177,7 @@ async def _lifespan(app: FastAPI):
 
 app = FastAPI(
     title="ROSClaw-Know — Research Service",
-    version="1.2.0",
+    version="1.2.1",
     description=(
         "Agent-callable deep-research and knowledge-mining service. "
         "Long-running research jobs run async; clients poll for completion."
