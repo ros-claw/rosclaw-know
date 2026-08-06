@@ -334,12 +334,9 @@ target
 # ── integration: compile all 8 Sprint-3 candidates ────────────────────
 
 
-SPRINT3_CATALOG = Path(
-    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know/data/assets/trajectory_patterns.yaml"
-)
-TAXONOMY = Path(
-    "/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know/data/assets/failure_taxonomy.yaml"
-)
+_REPO = Path(__file__).resolve().parents[1]
+SPRINT3_CATALOG = _REPO / "data/assets/trajectory_patterns.yaml"
+TAXONOMY = _REPO / "data/assets/failure_taxonomy.yaml"
 HAS_S3 = SPRINT3_CATALOG.is_file() and TAXONOMY.is_file()
 
 

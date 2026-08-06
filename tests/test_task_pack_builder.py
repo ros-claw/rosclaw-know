@@ -37,7 +37,7 @@ from rosclaw_know.task_pack_builder import (
 # ── fixtures ─────────────────────────────────────────────────────────────
 
 
-REPO = Path("/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know")
+REPO = Path(__file__).resolve().parents[1]
 TASK_CARDS = REPO / "data" / "assets" / "task_cards.yaml"
 PATTERN_CARDS = REPO / "data" / "assets" / "pattern_cards_v2.yaml"
 FAILURES = REPO / "data" / "assets" / "failure_taxonomy.yaml"

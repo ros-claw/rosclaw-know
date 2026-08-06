@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -204,7 +205,10 @@ def test_build_backend_unknown():
         build_backend("unknown")
 
 
-def test_cli_synthetic_smoke():
+def test_cli_synthetic_smoke(tmp_path):
+    runtime_data = tmp_path / "runtime-data"
+    env = os.environ.copy()
+    env["ROSCLAW_KNOW_DATA_DIR"] = str(runtime_data)
     result = subprocess.run(
         [
             sys.executable,
@@ -218,9 +222,10 @@ def test_cli_synthetic_smoke():
         ],
         capture_output=True,
         text=True,
+        env=env,
     )
     assert result.returncode == 0, result.stderr + result.stdout
-    out_dir = Path("data/benchmarks/phase9_real_agent/test_smoke")
+    out_dir = runtime_data / "benchmarks/phase9_real_agent/test_smoke"
     assert (out_dir / "summary.json").exists()
     summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
     true_rank = summary["arm_summaries"]["true_know"]["avg_rank"]

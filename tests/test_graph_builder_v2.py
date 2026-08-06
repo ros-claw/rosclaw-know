@@ -425,7 +425,7 @@ def test_empty_inputs_produce_only_domain_nodes() -> None:
 # ── integration: build from real assets ──────────────────────────────────
 
 
-REPO = Path("/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know")
+REPO = Path(__file__).resolve().parents[1]
 HAS_ASSETS = (
     (REPO / "data/assets/failure_taxonomy.yaml").is_file()
     and (REPO / "data/assets/task_cards.yaml").is_file()

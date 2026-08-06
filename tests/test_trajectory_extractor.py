@@ -25,12 +25,9 @@ from rosclaw_know.schemas import (
     TrajectoryStep,
 )
 
-BASELINE_ARCHIVE = Path(
-    "/root/workspace/rosclaw/rosclaw_wiki/Frontier-Engineering/baseline_archive"
-)
-BENCHMARKS = Path(
-    "/root/workspace/rosclaw/rosclaw_wiki/Frontier-Engineering/benchmarks"
-)
+_WORKSPACE = Path(__file__).resolve().parents[2]
+BASELINE_ARCHIVE = _WORKSPACE / "Frontier-Engineering" / "baseline_archive"
+BENCHMARKS = _WORKSPACE / "Frontier-Engineering" / "benchmarks"
 HAS_CORPUS = BASELINE_ARCHIVE.is_dir() and BENCHMARKS.is_dir()
 
 
