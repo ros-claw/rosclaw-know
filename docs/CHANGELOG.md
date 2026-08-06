@@ -3,6 +3,21 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.2] — 2026-08-06 · conservative feedback governance
+
+### Added
+
+- Explicit cached/stale/cache-age fields for ReferencePackV2 and matching
+  cache provenance in HowAdviceBundleV2.
+- FeedbackGovernanceRecordV1 plus durable signal, refresh, compatibility,
+  ranking and manual-review queues.
+- Filterable governance API and deterministic non-mutating verdict routing.
+
+### Safety
+
+- Every feedback consequence fixes automatic_mutation_allowed=false; feedback
+  cannot delete, rewrite, promote or override official constraints.
+
 ## [unreleased] — 2026-06-04 · multi-seed harness, snippet matrix, analogy QC, +43 clusters
 
 ### Added (analogy QC + bridge coverage — second commit pair this day)

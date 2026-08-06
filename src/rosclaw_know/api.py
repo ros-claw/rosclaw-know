@@ -23,7 +23,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 
@@ -36,6 +36,7 @@ from .contracts import (
     StrictContract,
     export_contract_schemas,
 )
+from .feedback_governance import governance_for_feedback
 from .research_store import ResearchStore
 from .research_worker import ResearchWorker
 from .retrieval import ReferencePackBuilder
@@ -409,9 +410,45 @@ async def v2_feedback(request: Request) -> JSONResponse:
     except ValidationError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     created = _get_v2_store().put_feedback(feedback)
+    governance = governance_for_feedback(feedback)
     return JSONResponse(
-        {"feedback_id": feedback.feedback_id, "created": created},
+        {
+            "feedback_id": feedback.feedback_id,
+            "created": created,
+            "governance": governance.model_dump(mode="json"),
+        },
         status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
+
+
+@app.get("/know/v2/feedback/governance", dependencies=[Depends(require_api_key)])
+async def v2_feedback_governance(
+    queue: Literal[
+        "usage_signals",
+        "query_ranking_signals",
+        "source_refresh",
+        "compatibility_review",
+        "ranking_review",
+        "manual_review",
+    ]
+    | None = None,
+    status_value: Literal["signal_recorded", "pending_review", "reviewed", "dismissed"]
+    | None = Query(default=None, alias="status"),
+    limit: int = 100,
+) -> JSONResponse:
+    if limit < 1 or limit > 1_000:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "limit must be between 1 and 1000"
+        )
+    records = _get_v2_store().list_feedback_governance(
+        queue=queue, status=status_value, limit=limit
+    )
+    return JSONResponse(
+        {
+            "count": len(records),
+            "automatic_mutation_allowed": False,
+            "records": [record.model_dump(mode="json") for record in records],
+        }
     )
 
 

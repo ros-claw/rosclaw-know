@@ -14,6 +14,7 @@ from .base import (
 from .knowledge_v2 import KnowledgeUnitV2, KnowledgeVectorsV2, ProjectCardV2
 from .reference_pack_v2 import (
     AdviceRecommendationV2,
+    FeedbackGovernanceRecordV1,
     HowAdviceBundleV2,
     KnowledgeUsageFeedbackV1,
     ReferenceComparisonV2,
@@ -34,12 +35,14 @@ PUBLIC_CONTRACTS = (
     ReferencePackV2,
     HowAdviceBundleV2,
     KnowledgeUsageFeedbackV1,
+    FeedbackGovernanceRecordV1,
 )
 
 __all__ = [
     "AdviceRecommendationV2",
     "ContractVersionError",
     "EvidenceRefV2",
+    "FeedbackGovernanceRecordV1",
     "HowAdviceBundleV2",
     "IntegrityV2",
     "KnowledgeUnitV2",

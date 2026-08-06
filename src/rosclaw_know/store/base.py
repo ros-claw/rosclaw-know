@@ -8,6 +8,7 @@ from typing import Any, Protocol
 
 from rosclaw_know.contracts import (
     EvidenceRefV2,
+    FeedbackGovernanceRecordV1,
     KnowledgeUnitV2,
     KnowledgeUsageFeedbackV1,
     ProjectCardV2,
@@ -94,6 +95,14 @@ class KnowStore(Protocol):
     def get_reference_pack(self, reference_pack_id: str) -> ReferencePackV2 | None: ...
 
     def put_feedback(self, feedback: KnowledgeUsageFeedbackV1) -> bool: ...
+
+    def get_feedback_governance(
+        self, governance_id: str
+    ) -> FeedbackGovernanceRecordV1 | None: ...
+
+    def list_feedback_governance(
+        self, *, queue: str | None = None, status: str | None = None, limit: int = 100
+    ) -> list[FeedbackGovernanceRecordV1]: ...
 
     def put_index_version(self, version: IndexVersionRecord) -> bool: ...
 

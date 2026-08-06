@@ -14,6 +14,7 @@ from typing import Any
 
 from rosclaw_know.contracts import (
     EvidenceRefV2,
+    FeedbackGovernanceRecordV1,
     KnowledgeUnitV2,
     KnowledgeUsageFeedbackV1,
     ProjectCardV2,
@@ -21,6 +22,7 @@ from rosclaw_know.contracts import (
     SourceRecordV2,
     SourceSnapshotV2,
 )
+from rosclaw_know.feedback_governance import governance_for_feedback
 
 from .base import ImmutableSnapshotError
 from .models import (
@@ -69,6 +71,7 @@ class InMemoryKnowStore:
         self.relations: dict[str, RelationRecord] = {}
         self.reference_packs: dict[str, ReferencePackV2] = {}
         self.feedback: dict[str, KnowledgeUsageFeedbackV1] = {}
+        self.feedback_governance: dict[str, FeedbackGovernanceRecordV1] = {}
         self.index_versions: dict[str, IndexVersionRecord] = {}
         self.embedding_hashes: dict[str, str] = {}
         self.embedding_writes = 0
@@ -331,7 +334,28 @@ class InMemoryKnowStore:
         existing = self.feedback.get(feedback.feedback_id)
         if existing is not None and existing != feedback:
             raise ValueError(f"feedback ID conflict: {feedback.feedback_id}")
-        return self._upsert(self.feedback, feedback.feedback_id, feedback)
+        created = self._upsert(self.feedback, feedback.feedback_id, feedback)
+        governance = governance_for_feedback(feedback)
+        self._upsert(self.feedback_governance, governance.governance_id, governance)
+        return created
+
+    def get_feedback_governance(
+        self, governance_id: str
+    ) -> FeedbackGovernanceRecordV1 | None:
+        return copy.deepcopy(self.feedback_governance.get(governance_id))
+
+    def list_feedback_governance(
+        self, *, queue: str | None = None, status: str | None = None, limit: int = 100
+    ) -> list[FeedbackGovernanceRecordV1]:
+        if limit <= 0:
+            return []
+        records = [
+            item
+            for item in self.feedback_governance.values()
+            if (queue is None or item.queue == queue) and (status is None or item.status == status)
+        ]
+        records.sort(key=lambda item: (item.created_at, item.governance_id), reverse=True)
+        return copy.deepcopy(records[:limit])
 
     def put_index_version(self, version: IndexVersionRecord) -> bool:
         existing = self.index_versions.get(version.index_version)
@@ -353,6 +377,7 @@ class InMemoryKnowStore:
             "knowledge_unit_count": len(self.units),
             "reference_pack_count": len(self.reference_packs),
             "feedback_count": len(self.feedback),
+            "feedback_governance_count": len(self.feedback_governance),
         }
 
     def close(self) -> None:
