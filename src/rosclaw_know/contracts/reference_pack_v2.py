@@ -66,6 +66,9 @@ class ReferencePackV2(StrictContract):
     truncated: bool = False
     continuation_cursor: str | None = None
     warnings: list[str] = Field(default_factory=list)
+    cached: bool = False
+    stale: bool = False
+    cache_age_seconds: int = Field(default=0, ge=0)
 
     @field_validator("generated_at")
     @classmethod
@@ -79,6 +82,10 @@ class ReferencePackV2(StrictContract):
             raise ValueError("item ranks must be unique")
         if self.truncated and not self.continuation_cursor:
             raise ValueError("truncated packs require a continuation_cursor")
+        if self.stale and not self.cached:
+            raise ValueError("stale Reference Packs must also be marked cached")
+        if (self.cached or self.stale) and not self.warnings:
+            raise ValueError("cached Reference Packs must explain degradation in warnings")
         return self
 
 
@@ -99,6 +106,9 @@ class HowAdviceBundleV2(StrictContract):
     mode: Literal["discover", "consult", "diagnose", "catalyze"]
     context_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     reference_pack_id: str | None = None
+    reference_pack_cached: bool = False
+    reference_pack_stale: bool = False
+    reference_pack_age_seconds: int = Field(default=0, ge=0)
     summary: str = Field(min_length=1)
     diagnosis: str | None = None
     recommendations: list[AdviceRecommendationV2] = Field(default_factory=list)
@@ -117,6 +127,8 @@ class HowAdviceBundleV2(StrictContract):
     def _abstention_is_explained(self) -> HowAdviceBundleV2:
         if self.abstained and not self.abstention_reason:
             raise ValueError("abstained advice requires abstention_reason")
+        if self.reference_pack_stale and not self.reference_pack_cached:
+            raise ValueError("stale advice must identify a cached Reference Pack")
         return self
 
 
@@ -142,4 +154,43 @@ class KnowledgeUsageFeedbackV1(StrictContract):
     @field_validator("created_at")
     @classmethod
     def _aware(cls, value: datetime) -> datetime:
+        return ensure_aware(value)  # type: ignore[return-value]
+
+
+class FeedbackGovernanceRecordV1(StrictContract):
+    """Auditable, non-mutating consequence of one usage-feedback verdict."""
+
+    SCHEMA_VERSION: ClassVar[str] = "rosclaw.feedback_governance.v1"
+
+    schema_version: Literal["rosclaw.feedback_governance.v1"] = SCHEMA_VERSION
+    governance_id: str = Field(min_length=1)
+    feedback_id: str = Field(min_length=1)
+    reference_pack_id: str = Field(min_length=1)
+    knowledge_unit_id: str = Field(min_length=1)
+    verdict: Literal["useful", "irrelevant", "stale", "incompatible", "misleading", "unknown"]
+    queue: Literal[
+        "usage_signals",
+        "query_ranking_signals",
+        "source_refresh",
+        "compatibility_review",
+        "ranking_review",
+        "manual_review",
+    ]
+    proposed_action: Literal[
+        "record_usage_signal",
+        "record_query_family_signal",
+        "refresh_source_candidate",
+        "compatibility_review_candidate",
+        "downweight_review_candidate",
+        "manual_review_candidate",
+    ]
+    status: Literal["signal_recorded", "pending_review", "reviewed", "dismissed"]
+    requires_human_review: bool
+    automatic_mutation_allowed: Literal[False] = False
+    rationale: str = Field(min_length=1)
+    created_at: datetime
+
+    @field_validator("created_at")
+    @classmethod
+    def _created_aware(cls, value: datetime) -> datetime:
         return ensure_aware(value)  # type: ignore[return-value]

@@ -16,6 +16,7 @@ from typing import Any
 
 from rosclaw_know.contracts import (
     EvidenceRefV2,
+    FeedbackGovernanceRecordV1,
     KnowledgeUnitV2,
     KnowledgeUsageFeedbackV1,
     ProjectCardV2,
@@ -23,6 +24,7 @@ from rosclaw_know.contracts import (
     SourceRecordV2,
     SourceSnapshotV2,
 )
+from rosclaw_know.feedback_governance import governance_for_feedback
 
 from .base import ImmutableSnapshotError, StoreConfigurationError
 from .isolation import guard_store_isolation
@@ -51,6 +53,7 @@ COLLECTIONS = {
     "relation": "know_relation_v2",
     "reference_pack": "know_reference_pack_v2",
     "feedback": "know_usage_feedback_v1",
+    "feedback_governance": "know_feedback_governance_v1",
     "index_version": "know_index_version_v2",
 }
 VECTOR_FIELDS = ("problem", "mechanism", "content", "code")
@@ -567,7 +570,42 @@ class SeekDBKnowStore:
         payload = feedback.model_dump(mode="json", exclude_none=False)
         if existing is not None and existing != payload:
             raise ValueError(f"feedback ID conflict: {feedback.feedback_id}")
-        return self._put_payload("feedback", feedback.feedback_id, feedback)
+        created = self._put_payload("feedback", feedback.feedback_id, feedback)
+        governance = governance_for_feedback(feedback)
+        self._put_payload(
+            "feedback_governance",
+            governance.governance_id,
+            governance,
+            metadata={
+                "queue": governance.queue,
+                "status": governance.status,
+                "requires_human_review": governance.requires_human_review,
+            },
+        )
+        return created
+
+    def get_feedback_governance(
+        self, governance_id: str
+    ) -> FeedbackGovernanceRecordV1 | None:
+        payload = self._get_payload("feedback_governance", governance_id)
+        return _parse(FeedbackGovernanceRecordV1, payload) if payload else None
+
+    def list_feedback_governance(
+        self, *, queue: str | None = None, status: str | None = None, limit: int = 100
+    ) -> list[FeedbackGovernanceRecordV1]:
+        if limit <= 0:
+            return []
+        records = [
+            _parse(FeedbackGovernanceRecordV1, value)
+            for value in self._iter_payloads("feedback_governance")
+        ]
+        records = [
+            item
+            for item in records
+            if (queue is None or item.queue == queue) and (status is None or item.status == status)
+        ]
+        records.sort(key=lambda item: (item.created_at, item.governance_id), reverse=True)
+        return records[:limit]
 
     def put_index_version(self, version: IndexVersionRecord) -> bool:
         existing = self._get_payload("index_version", version.index_version)
@@ -591,6 +629,7 @@ class SeekDBKnowStore:
             "knowledge_unit_count": "unit",
             "reference_pack_count": "reference_pack",
             "feedback_count": "feedback",
+            "feedback_governance_count": "feedback_governance",
         }
         return {
             label: sum(1 for _ in self._iter_payloads(logical))

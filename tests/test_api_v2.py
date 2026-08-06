@@ -75,8 +75,16 @@ def test_v2_capabilities_plan_reference_pack_and_feedback_contracts():
             first = client.post("/know/v2/feedback", json=feedback)
             second = client.post("/know/v2/feedback", json=feedback)
             assert first.status_code == 201, first.text
+            assert first.json()["governance"]["queue"] == "manual_review"
+            assert first.json()["governance"]["automatic_mutation_allowed"] is False
             assert second.status_code == 200, second.text
             assert second.json()["created"] is False
+            governance = client.get(
+                "/know/v2/feedback/governance", params={"status": "pending_review"}
+            )
+            assert governance.status_code == 200, governance.text
+            assert governance.json()["count"] == 1
+            assert governance.json()["automatic_mutation_allowed"] is False
 
             assert client.get("/know/v2/sources/missing").status_code == 404
             assert client.get("/know/v2/snapshots/missing").status_code == 404

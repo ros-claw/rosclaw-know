@@ -1,4 +1,117 @@
 {
+  "rosclaw.feedback_governance.v1": {
+    "additionalProperties": false,
+    "description": "Auditable, non-mutating consequence of one usage-feedback verdict.",
+    "properties": {
+      "automatic_mutation_allowed": {
+        "const": false,
+        "default": false,
+        "title": "Automatic Mutation Allowed",
+        "type": "boolean"
+      },
+      "created_at": {
+        "format": "date-time",
+        "title": "Created At",
+        "type": "string"
+      },
+      "feedback_id": {
+        "minLength": 1,
+        "title": "Feedback Id",
+        "type": "string"
+      },
+      "governance_id": {
+        "minLength": 1,
+        "title": "Governance Id",
+        "type": "string"
+      },
+      "knowledge_unit_id": {
+        "minLength": 1,
+        "title": "Knowledge Unit Id",
+        "type": "string"
+      },
+      "proposed_action": {
+        "enum": [
+          "record_usage_signal",
+          "record_query_family_signal",
+          "refresh_source_candidate",
+          "compatibility_review_candidate",
+          "downweight_review_candidate",
+          "manual_review_candidate"
+        ],
+        "title": "Proposed Action",
+        "type": "string"
+      },
+      "queue": {
+        "enum": [
+          "usage_signals",
+          "query_ranking_signals",
+          "source_refresh",
+          "compatibility_review",
+          "ranking_review",
+          "manual_review"
+        ],
+        "title": "Queue",
+        "type": "string"
+      },
+      "rationale": {
+        "minLength": 1,
+        "title": "Rationale",
+        "type": "string"
+      },
+      "reference_pack_id": {
+        "minLength": 1,
+        "title": "Reference Pack Id",
+        "type": "string"
+      },
+      "requires_human_review": {
+        "title": "Requires Human Review",
+        "type": "boolean"
+      },
+      "schema_version": {
+        "const": "rosclaw.feedback_governance.v1",
+        "default": "rosclaw.feedback_governance.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "status": {
+        "enum": [
+          "signal_recorded",
+          "pending_review",
+          "reviewed",
+          "dismissed"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "verdict": {
+        "enum": [
+          "useful",
+          "irrelevant",
+          "stale",
+          "incompatible",
+          "misleading",
+          "unknown"
+        ],
+        "title": "Verdict",
+        "type": "string"
+      }
+    },
+    "required": [
+      "governance_id",
+      "feedback_id",
+      "reference_pack_id",
+      "knowledge_unit_id",
+      "verdict",
+      "queue",
+      "proposed_action",
+      "status",
+      "requires_human_review",
+      "rationale",
+      "created_at"
+    ],
+    "title": "FeedbackGovernanceRecordV1",
+    "type": "object"
+  },
   "rosclaw.how.advice.v2": {
     "$defs": {
       "AdviceRecommendationV2": {
@@ -234,6 +347,17 @@
         "title": "Recommendations",
         "type": "array"
       },
+      "reference_pack_age_seconds": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Reference Pack Age Seconds",
+        "type": "integer"
+      },
+      "reference_pack_cached": {
+        "default": false,
+        "title": "Reference Pack Cached",
+        "type": "boolean"
+      },
       "reference_pack_id": {
         "anyOf": [
           {
@@ -245,6 +369,11 @@
         ],
         "default": null,
         "title": "Reference Pack Id"
+      },
+      "reference_pack_stale": {
+        "default": false,
+        "title": "Reference Pack Stale",
+        "type": "boolean"
       },
       "schema_version": {
         "const": "rosclaw.how.advice.v2",
@@ -1378,6 +1507,17 @@
     },
     "additionalProperties": false,
     "properties": {
+      "cache_age_seconds": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Cache Age Seconds",
+        "type": "integer"
+      },
+      "cached": {
+        "default": false,
+        "title": "Cached",
+        "type": "boolean"
+      },
       "comparison": {
         "$ref": "#/$defs/ReferenceComparisonV2"
       },
@@ -1442,6 +1582,11 @@
         "default": "rosclaw.know.reference_pack.v2",
         "title": "Schema Version",
         "type": "string"
+      },
+      "stale": {
+        "default": false,
+        "title": "Stale",
+        "type": "boolean"
       },
       "suggested_next_checks": {
         "items": {
