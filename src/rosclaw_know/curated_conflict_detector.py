@@ -35,8 +35,8 @@ What this module does NOT do:
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from .curated_patterns import CuratedPattern
 

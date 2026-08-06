@@ -36,7 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -125,7 +125,7 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     report = {
         "schema_version": 1,
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "thresholds": {
             "standard_name_overlap": args.standard_name_overlap,
             "keyword_overlap": args.keyword_overlap,

@@ -21,8 +21,9 @@ SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC))
 sys.path.insert(0, str(SCRIPTS))
 
-from rosclaw_know.config import ASSETS_DIR, BENCHMARKS_DIR, ensure_dirs  # noqa: E402
 from how_health import assert_how_healthy  # noqa: E402
+
+from rosclaw_know.config import ASSETS_DIR, BENCHMARKS_DIR, ensure_dirs  # noqa: E402
 
 # Frontier-Eng smoke suite — 10 tasks chosen to span the categories in
 # the test outline §5.2 (control, sim, systems-perf, high-reliability,
@@ -535,8 +536,8 @@ def _call_agent(
     #   on perfectly-formed requests (load-balancer rejection on busy
     #   shard). Retry with exponential backoff so a single bad routing
     #   decision doesn't kill a paired_ab seed.
-    import urllib.error
     import time as _time
+    import urllib.error
 
     last_err = "unknown"
     for budget_attempt in range(2):

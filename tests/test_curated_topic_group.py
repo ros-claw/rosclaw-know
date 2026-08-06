@@ -25,7 +25,6 @@ from rosclaw_know.curated_patterns import (
     CuratedPattern,
 )
 
-
 # These are the topic_groups currently emitted by Muse's autodraft pass on
 # the rosclaw-how bridge (~20 distinct values). Curated patterns MUST land
 # in one of these so they join the same topic-filtered candidate pool as

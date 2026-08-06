@@ -128,7 +128,7 @@ class ResearchWorker:
                 ),
                 timeout=_COLLECT_TIMEOUT,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             err = f"collect_sources timed out after {_COLLECT_TIMEOUT}s"
             logger.warning("Job %s: %s", job_id, err)
             self.store.update(job_id, status="failed", error=err)

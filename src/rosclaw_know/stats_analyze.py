@@ -22,7 +22,7 @@ import statistics
 import urllib.request
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -67,11 +67,11 @@ def snapshot_stats(
     """Persist a single stats payload with an ISO-timestamp filename."""
     history_dir = history_dir or STATS_HISTORY_DIR
     history_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     out = history_dir / f"stats-{ts}.json"
     out.write_text(
         json.dumps({
-            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "captured_at": datetime.now(UTC).isoformat(),
             "stats": payload,
         }, indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -168,7 +168,7 @@ def render_markdown_report(trends: dict[str, PatternTrend]) -> str:
         by_trend.setdefault(t.trend, []).append(t)
 
     out = ["# Pattern uplift trends\n"]
-    out.append(f"_Generated: {datetime.now(timezone.utc).isoformat()}_\n")
+    out.append(f"_Generated: {datetime.now(UTC).isoformat()}_\n")
     out.append(f"Patterns tracked: **{len(trends)}**\n")
 
     section_order = ["degrading", "improving", "flat", "insufficient"]
@@ -216,7 +216,7 @@ def run(
         json.dumps(
             {
                 "schema_version": 1,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
                 "snapshots_used": min(len(snaps), window),
                 "patterns": {pid: t.__dict__ for pid, t in trends.items()},
             },

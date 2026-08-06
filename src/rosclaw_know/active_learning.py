@@ -29,7 +29,7 @@ import json
 import logging
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -137,13 +137,13 @@ async def _draft_one(blind_spot: dict[str, Any], session: aiohttp.ClientSession)
 def _write_draft(prefix_hash: str, body: str, *, out_dir: Path | None = None) -> Path:
     out_dir = out_dir or AUTO_DRAFT_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    stamp = datetime.now(UTC).strftime("%Y%m%d")
     safe_hash = hashlib.sha1(prefix_hash.encode("utf-8")).hexdigest()[:10]
     out = out_dir / f"{stamp}_{safe_hash}.md"
     frontmatter = (
         "---\n"
         f"autodrafted_from: {prefix_hash}\n"
-        f"drafted_at: {datetime.now(timezone.utc).isoformat()}\n"
+        f"drafted_at: {datetime.now(UTC).isoformat()}\n"
         "phase: 7-active-learning\n"
         "priority: 0   # staging — review before promotion\n"
         "---\n\n"

@@ -35,7 +35,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -138,7 +138,7 @@ def _run_panel(
 def _generate_policy_config(health: dict[str, Any], label: str) -> str:
     cfg = {
         "label": label,
-        "frozen_at": datetime.now(timezone.utc).isoformat(),
+        "frozen_at": datetime.now(UTC).isoformat(),
         "runtime": {
             "router_backend": health.get("router_backend"),
             "similarity_floor": health.get("similarity_floor"),
@@ -266,7 +266,7 @@ def freeze(
     manifest = {
         "schema_version": 2,
         "label": label,
-        "frozen_at": datetime.now(timezone.utc).isoformat(),
+        "frozen_at": datetime.now(UTC).isoformat(),
         "notes": notes,
         "know_commit": know_head,
         "how_commit": how_head,

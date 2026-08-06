@@ -117,7 +117,7 @@ async def chat(
                 if not choices:
                     return None
                 return choices[0].get("message", {}).get("content")
-        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+        except (TimeoutError, aiohttp.ClientError) as exc:
             log.warning("LLM network error on attempt %s: %s", attempt, exc)
             if attempt == max_attempts:
                 return None

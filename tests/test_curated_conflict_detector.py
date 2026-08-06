@@ -1,8 +1,6 @@
 """Tests for the curated conflict detector."""
 from __future__ import annotations
 
-import pytest
-
 from rosclaw_know.curated_conflict_detector import (
     Conflict,
     detect_conflicts,

@@ -40,8 +40,7 @@ from __future__ import annotations
 
 from typing import Any, Final
 
-from .source_tier import F_DEMOTED, S_CURATED_VERIFIED, infer_source_tier
-
+from .source_tier import F_DEMOTED, infer_source_tier
 
 # (cluster_id → reason). Each reason must explain:
 #   (1) which curated cluster this synth competes with
