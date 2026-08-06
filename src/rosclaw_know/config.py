@@ -41,7 +41,11 @@ def _resolve_bundled_data_dir() -> Path:
 BUNDLED_DATA_DIR = _resolve_bundled_data_dir()
 
 # Runtime-generated files (databases, caches, logs) go to a writable user dir.
-RUNTIME_DATA_DIR = _user_data_dir("rosclaw_know")
+# The override is intentionally resolved before directory creation so tests,
+# containers, and offline bundles can keep all writes inside an isolated root.
+RUNTIME_DATA_DIR = Path(
+    os.environ.get("ROSCLAW_KNOW_DATA_DIR", str(_user_data_dir("rosclaw_know")))
+).expanduser()
 RUNTIME_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # For backwards compatibility: PROJECT_ROOT points at the repository root in

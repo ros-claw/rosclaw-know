@@ -18,7 +18,7 @@ import logging
 import threading
 import uuid
 from dataclasses import asdict, dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -32,7 +32,7 @@ DEFAULT_STORE_PATH = DATA_DIR / "research_jobs.jsonl"
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _new_id() -> str:

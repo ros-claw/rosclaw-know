@@ -10,8 +10,6 @@ The probe itself is a thin shell; what matters is that:
 from __future__ import annotations
 
 import importlib.util
-import json
-import sys
 from pathlib import Path
 
 import pytest
@@ -137,13 +135,13 @@ class TestProbeAggregation:
         )
         assert report["task_count"] == 2
         h = report["per_task"]["TASK_FAKE_HIGH"]
-        l = report["per_task"]["TASK_FAKE_LOW"]
+        low_result = report["per_task"]["TASK_FAKE_LOW"]
         assert h["control_mean"] == 10.0
         assert h["headroom"] == 0.0
         assert h["verdict"] == "SKIP_CURATED"  # LLM-saturated → don't author curated
-        assert l["control_mean"] == 5.0
-        assert l["headroom"] == 5.0
-        assert l["verdict"] == "AUTHOR_CURATED"  # gap big enough → worth authoring
+        assert low_result["control_mean"] == 5.0
+        assert low_result["headroom"] == 5.0
+        assert low_result["verdict"] == "AUTHOR_CURATED"  # gap big enough → worth authoring
 
     def test_skip_judge_returns_lengths_only(self, ph, monkeypatch):
         class FakeVerify:

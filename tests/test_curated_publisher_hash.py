@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from rosclaw_know.bridge_schema import ROUTING_CRITICAL_FIELDS, compute_content_hash
 
-
 _BASE = {
     "standard_name": "PID integral wind-up drives actuator into torque saturation",
     "domain": "Control_Locomotion",
@@ -119,9 +118,10 @@ def test_content_hash_itself_excluded():
 def test_publish_curated_assets_stamps_hashes(tmp_path, monkeypatch):
     """Smoke: the published bridge has content_hash + metadata_hash on every
     curated cluster and on any backfilled non-curated cluster."""
+    import json
+
     from rosclaw_know import config as _config
     from rosclaw_know import curated_publisher as _cp
-    import json
 
     monkeypatch.setattr(_config, "ASSETS_DIR", tmp_path)
     monkeypatch.setattr(_config, "CODE_PATTERNS_DIR", tmp_path / "code_patterns")

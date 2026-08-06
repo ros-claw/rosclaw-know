@@ -202,9 +202,9 @@ def main() -> int:
     # Distribution sanity-check.
     from collections import Counter
     group_counts = Counter(mapping.values())
-    print(f"\n=== Mapping summary ===")
+    print("\n=== Mapping summary ===")
     print(f"  distinct topic_group buckets: {len(group_counts)}")
-    print(f"  top-10 by tag count:")
+    print("  top-10 by tag count:")
     for grp, cnt in group_counts.most_common(10):
         print(f"    {cnt:>4}  {grp}")
     singletons = sum(1 for cnt in group_counts.values() if cnt == 1)
@@ -236,7 +236,7 @@ def main() -> int:
         c.get("topic_group") for c in clusters.values() if c.get("topic_group")
     )
     cluster_singletons = sum(1 for cnt in cluster_groups.values() if cnt == 1)
-    print(f"\nCluster-level distribution (cluster → group):")
+    print("\nCluster-level distribution (cluster → group):")
     print(f"  distinct topic_group buckets: {len(cluster_groups)}")
     print(f"  median cluster_per_group: {sorted(cluster_groups.values())[len(cluster_groups)//2]}")
     print(f"  singleton groups: {cluster_singletons} ({cluster_singletons/len(cluster_groups):.0%})")

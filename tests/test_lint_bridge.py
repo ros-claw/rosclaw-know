@@ -6,7 +6,7 @@ import os
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 os.environ.setdefault("ROSCLAW_KNOW_MOCK_LLM", "1")
@@ -110,7 +110,7 @@ class DuplicateNamesTest(unittest.TestCase):
 
 class StaleDemotionsTest(unittest.TestCase):
     def test_stale_old_demotion_flagged(self) -> None:
-        now = datetime(2026, 5, 17, tzinfo=timezone.utc)
+        now = datetime(2026, 5, 17, tzinfo=UTC)
         stale_iso = (now - timedelta(days=45)).isoformat()
         bridge = _bridge({
             "old_loser": {"priority": -1, "last_seen": stale_iso},
@@ -124,13 +124,13 @@ class StaleDemotionsTest(unittest.TestCase):
         self.assertNotIn("active_pattern", ids)
 
     def test_missing_timestamp_flagged(self) -> None:
-        now = datetime(2026, 5, 17, tzinfo=timezone.utc)
+        now = datetime(2026, 5, 17, tzinfo=UTC)
         bridge = _bridge({"no_ts": {"priority": -1}})
         stale = find_stale_demotions(bridge, stale_days=30, now=now)
         self.assertEqual([cid for cid, _ in stale], ["no_ts"])
 
     def test_z_suffix_iso_parses(self) -> None:
-        now = datetime(2026, 5, 17, tzinfo=timezone.utc)
+        now = datetime(2026, 5, 17, tzinfo=UTC)
         bridge = _bridge({
             "z_format": {
                 "priority": -1,

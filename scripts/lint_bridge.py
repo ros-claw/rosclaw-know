@@ -23,7 +23,7 @@ import json
 import logging
 import sys
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -107,7 +107,7 @@ def find_stale_demotions(
     operator can decide to archive).
     """
     if now is None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
     cutoff = now - timedelta(days=stale_days)
     stale: list[tuple[str, str | None]] = []
     for cid, cluster in bridge.get("symptom_clusters", {}).items():
@@ -123,7 +123,7 @@ def find_stale_demotions(
             stale.append((cid, str(ts_raw)))
             continue
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
         if ts < cutoff:
             stale.append((cid, ts.isoformat()))
     return stale

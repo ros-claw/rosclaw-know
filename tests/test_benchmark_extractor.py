@@ -26,9 +26,7 @@ from rosclaw_know.schemas import FRONTIER_DOMAINS, TaskCard
 
 # Real Frontier-Eng corpus.  Tests that read it are gated on its presence
 # so the suite still passes in a fresh checkout.
-FRONTIER_ROOT = Path(
-    "/root/workspace/rosclaw/rosclaw_wiki/Frontier-Engineering/benchmarks"
-)
+FRONTIER_ROOT = Path(__file__).resolve().parents[2] / "Frontier-Engineering" / "benchmarks"
 HAS_CORPUS = FRONTIER_ROOT.is_dir()
 
 

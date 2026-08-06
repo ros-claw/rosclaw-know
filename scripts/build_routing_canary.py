@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parent.parent / "src"
@@ -42,7 +42,6 @@ sys.path.insert(0, str(SRC))
 
 from rosclaw_know import config  # noqa: E402
 from rosclaw_know.curated_patterns import CURATED_SAFETY_PATTERNS  # noqa: E402
-
 
 # Sibling groups: when a query is generic enough that any of these is
 # an acceptable top-1, the canary will accept the whole set.
@@ -116,7 +115,7 @@ def main() -> int:
 
     out = {
         "schema_version": 1,
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "curated_count": len(CURATED_SAFETY_PATTERNS),
         "default_min_similarity": 0.55,
         "canaries": canaries,

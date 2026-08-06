@@ -248,8 +248,8 @@ def main() -> int:
 
     # ── Verdict against the -0.80 single-seed temp-0 baseline ──
     print("\n=== Verdict vs single-seed temp-0 baselines ===")
-    print(f"Pre-fix  (baseline, temp 0, 1 seed):   avg uplift = -0.80")
-    print(f"Post-fix (e2bd61d, temp 0, 1 seed):    avg uplift = +0.20")
+    print("Pre-fix  (baseline, temp 0, 1 seed):   avg uplift = -0.80")
+    print("Post-fix (e2bd61d, temp 0, 1 seed):    avg uplift = +0.20")
     print(f"Post-fix (e2bd61d, temp 0.3, {n} seeds): avg uplift = {mean_uplift:+.2f} "
           f"95% CI [{ci_lo:+.2f}, {ci_hi:+.2f}]")
     if ci_lo > 0:

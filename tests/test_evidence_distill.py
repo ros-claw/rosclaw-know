@@ -323,7 +323,7 @@ def test_write_stats_creates_valid_json(tmp_path: Path) -> None:
 # ── integration: distil the seed JSONL ──────────────────────────────────
 
 
-REPO = Path("/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know")
+REPO = Path(__file__).resolve().parents[1]
 SEED = REPO / "data" / "exports" / "evidence_traces_seed.jsonl"
 
 

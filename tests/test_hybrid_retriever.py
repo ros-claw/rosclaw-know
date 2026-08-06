@@ -385,7 +385,7 @@ def test_min_score_filter(mixed_catalog) -> None:
 # ── integration: load real Sprint-5 pattern manifest ─────────────────────
 
 
-REPO = Path("/root/workspace/rosclaw/rosclaw_wiki/rosclaw-know")
+REPO = Path(__file__).resolve().parents[1]
 MANIFEST = REPO / "data/assets/pattern_cards_v2.yaml"
 HAS_MANIFEST = MANIFEST.is_file()
 

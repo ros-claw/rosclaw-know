@@ -32,7 +32,7 @@ import json
 import logging
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .config import DATA_DIR
@@ -56,7 +56,7 @@ class SourceRecord:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
 
 def sha256_of(path: Path) -> str:

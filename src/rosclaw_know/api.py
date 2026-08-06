@@ -18,22 +18,34 @@ plumbing.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from .config import ASSETS_DIR
+from .contracts import (
+    PUBLIC_CONTRACTS,
+    KnowledgeUsageFeedbackV1,
+    ReferenceContextV2,
+    ResearchRequestV2,
+    StrictContract,
+    export_contract_schemas,
+)
 from .research_store import ResearchStore
 from .research_worker import ResearchWorker
+from .retrieval import ReferencePackBuilder
 from .schemas import (
     ArtifactType,
     ObjectiveDirection,
     TaskPackQuery,
 )
+from .sources import ResearchOrchestrator, build_research_plan, default_source_registry
+from .store import KnowStore, create_know_store
 from .task_pack_builder import TaskCardNotFoundError, build_task_pack
 
 logger = logging.getLogger("rosclaw_know.api")
@@ -41,6 +53,7 @@ logger = logging.getLogger("rosclaw_know.api")
 _store: ResearchStore | None = None
 _worker: ResearchWorker | None = None
 _task_pack_assets: dict | None = None
+_v2_store: KnowStore | None = None
 """Sprint 7 cache: ``{"tasks": list[TaskCard], "patterns": list[PatternCardV2],
 "failures": list[FailureMode]}``.  Populated by the lifespan hook so
 the task-pack endpoint doesn't pay the YAML parse cost per request."""
@@ -85,9 +98,60 @@ def _try_load_task_pack_assets() -> dict | None:
     return result
 
 
+def configure_v2_store(store: KnowStore | None) -> None:
+    """Inject a v2 store for an embedding host or deterministic API test."""
+
+    global _v2_store
+    _v2_store = store
+
+
+def _get_v2_store() -> KnowStore:
+    if _v2_store is None:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Know v2 store is disabled; configure ROSCLAW_KNOW_STORE_MODE",
+        )
+    return _v2_store
+
+
+def _build_v2_store_from_env() -> KnowStore | None:
+    mode = os.environ.get("ROSCLAW_KNOW_STORE_MODE", "disabled").casefold()
+    if mode == "disabled":
+        return None
+    common = {
+        "database": os.environ.get("ROSCLAW_KNOW_DATABASE", "rosclaw_know"),
+        "memory_database": os.environ.get("ROSCLAW_MEMORY_DATABASE"),
+        "practice_database": os.environ.get("ROSCLAW_PRACTICE_DATABASE"),
+        "memory_path": os.environ.get("ROSCLAW_MEMORY_SEEKDB_PATH"),
+        "practice_path": os.environ.get("ROSCLAW_PRACTICE_SEEKDB_PATH"),
+    }
+    if mode == "memory":
+        return create_know_store(
+            mode=mode,
+            allow_test_memory=os.environ.get("ROSCLAW_KNOW_ALLOW_TEST_MEMORY") == "1",
+        )
+    if mode == "embedded":
+        from .config import RUNTIME_DATA_DIR
+
+        path = os.environ.get(
+            "ROSCLAW_KNOW_SEEKDB_PATH", str(RUNTIME_DATA_DIR / "know" / "seekdb")
+        )
+        return create_know_store(mode=mode, path=path, **common)
+    return create_know_store(
+        mode=mode,
+        host=os.environ.get("SEEKDB_HOST", "127.0.0.1"),
+        port=int(os.environ.get("SEEKDB_PORT", "2881")),
+        tenant=os.environ.get("SEEKDB_TENANT", "sys"),
+        user=os.environ.get("SEEKDB_USER", "root"),
+        password=os.environ.get("SEEKDB_PASSWORD", ""),
+        **common,
+    )
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    global _store, _worker, _task_pack_assets
+    global _store, _worker, _task_pack_assets, _v2_store
+    owns_v2_store = False
     _store = ResearchStore.load()
     _worker = ResearchWorker(_store)
     _worker.start()
@@ -95,6 +159,9 @@ async def _lifespan(app: FastAPI):
     # ``rosclaw_know.config.ASSETS_DIR`` between FastAPI app
     # instantiations want the freshly-pointed path.
     _task_pack_assets = _try_load_task_pack_assets()
+    if _v2_store is None:
+        _v2_store = _build_v2_store_from_env()
+        owns_v2_store = _v2_store is not None
     logger.info(
         "rosclaw-know HTTP layer ready; %d jobs in store; task-pack assets %s",
         len(_store._jobs),
@@ -103,11 +170,14 @@ async def _lifespan(app: FastAPI):
     yield
     if _worker is not None:
         await _worker.stop()
+    if owns_v2_store and _v2_store is not None:
+        _v2_store.close()
+        _v2_store = None
 
 
 app = FastAPI(
     title="ROSClaw-Know — Research Service",
-    version="0.9.0",
+    version="1.2.1",
     description=(
         "Agent-callable deep-research and knowledge-mining service. "
         "Long-running research jobs run async; clients poll for completion."
@@ -150,27 +220,20 @@ class ResearchJobOut(BaseModel):
 # ── auth (very simple X-API-Key) ─────────────────────────────────────────
 
 
-def require_api_key():
-    """Phase 9 keeps auth optional — operator turns it on with env var.
+async def require_api_key(
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> str:
+    """Protect v2 content endpoints when an operator configures an allowlist."""
 
-    When ``ROSCLAW_KNOW_API_KEYS`` is unset, all requests pass. When set,
-    the comma-separated list of valid keys is checked against the
-    ``X-API-Key`` header.
-    """
-    import os
     raw = os.environ.get("ROSCLAW_KNOW_API_KEYS", "").strip()
-    keys = {k.strip() for k in raw.split(",") if k.strip()}
-
-    def _check(x_api_key: str | None = None) -> None:
-        if not keys:
-            return  # auth off
-        # FastAPI dependency injection puts header here only when the route
-        # declares it; the simpler path is to read it from request scope.
-        # We do the lazy thing: read from contextvar via a wrapper. For
-        # now: rely on per-route Header(...) hookup.
-        raise NotImplementedError  # routes set their own header check
-
-    return _check
+    keys = {key.strip() for key in raw.split(",") if key.strip()}
+    if not keys:
+        return x_api_key or ""
+    if not x_api_key:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing X-API-Key header")
+    if x_api_key not in keys:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Invalid API key")
+    return x_api_key
 
 
 # ── endpoints ─────────────────────────────────────────────────────────────
@@ -179,12 +242,177 @@ def require_api_key():
 @app.get("/healthz")
 async def healthz() -> JSONResponse:
     store = _get_store()
+    v2 = _v2_store
     return JSONResponse({
         "status": "ok",
         "version": app.version,
         "jobs_in_store": len(store._jobs),
         "bridge_index_exists": (ASSETS_DIR / "bridge_index.json").exists(),
+        "v2": {
+            "enabled": v2 is not None,
+            "capabilities": (
+                v2.capabilities.model_dump(mode="json") if v2 is not None else None
+            ),
+        },
     })
+
+
+class ReferencePackBuildRequest(StrictContract):
+    query: str = Field(min_length=1, max_length=20_000)
+    context: ReferenceContextV2
+    top_k: int = Field(default=10, ge=1, le=100)
+    token_budget: int = Field(default=8_000, ge=1, le=500_000)
+
+
+@app.get("/know/v2/capabilities")
+async def v2_capabilities() -> JSONResponse:
+    store = _get_v2_store()
+    return JSONResponse(
+        {
+            "schema_versions": sorted(
+                contract.SCHEMA_VERSION
+                for contract in PUBLIC_CONTRACTS
+                if contract.SCHEMA_VERSION is not None
+            ),
+            "store": store.capabilities.model_dump(mode="json"),
+        }
+    )
+
+
+@app.get("/know/v2/health")
+async def v2_health() -> JSONResponse:
+    store = _v2_store
+    if store is None:
+        return JSONResponse(
+            {
+                "status": "disabled",
+                "service_version": app.version,
+                "schema_version": "know.v2",
+                "seekdb_connected": False,
+            }
+        )
+    index = store.latest_index_version()
+    return JSONResponse(
+        {
+            "status": "ok",
+            "service_version": app.version,
+            "schema_version": "know.v2",
+            "seekdb_mode": store.capabilities.backend,
+            "seekdb_connected": True,
+            "index_version": index.index_version if index else "unversioned",
+            **store.statistics(),
+            "capabilities": store.capabilities.model_dump(mode="json"),
+        }
+    )
+
+
+@app.get("/know/v2/contracts")
+async def v2_contracts() -> JSONResponse:
+    return JSONResponse(export_contract_schemas(PUBLIC_CONTRACTS))
+
+
+@app.post("/know/v2/research/plan", dependencies=[Depends(require_api_key)])
+async def v2_research_plan(request: ResearchRequestV2) -> JSONResponse:
+    return JSONResponse(build_research_plan(request).model_dump(mode="json"))
+
+
+@app.post("/know/v2/research", dependencies=[Depends(require_api_key)])
+async def v2_research(request: ResearchRequestV2) -> JSONResponse:
+    store = _get_v2_store()
+    orchestrator = ResearchOrchestrator(store, default_source_registry())
+    result = await orchestrator.run(request)
+    return JSONResponse(result.model_dump(mode="json"))
+
+
+@app.post("/know/v2/reference-packs", dependencies=[Depends(require_api_key)])
+@app.post("/know/v2/reference-packs/build", dependencies=[Depends(require_api_key)])
+@app.post("/know/v2/retrieve", dependencies=[Depends(require_api_key)])
+async def v2_build_reference_pack(request: ReferencePackBuildRequest) -> JSONResponse:
+    pack = ReferencePackBuilder(_get_v2_store()).retrieve(
+        query=request.query,
+        context=request.context,
+        top_k=request.top_k,
+        token_budget=request.token_budget,
+    )
+    return JSONResponse(pack.model_dump(mode="json"))
+
+
+@app.get(
+    "/know/v2/reference-packs/{reference_pack_id}", dependencies=[Depends(require_api_key)]
+)
+async def v2_get_reference_pack(reference_pack_id: str) -> JSONResponse:
+    pack = _get_v2_store().get_reference_pack(reference_pack_id)
+    if pack is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "reference pack not found")
+    return JSONResponse(pack.model_dump(mode="json"))
+
+
+@app.get("/know/v2/sources/{source_id}", dependencies=[Depends(require_api_key)])
+async def v2_get_source(source_id: str) -> JSONResponse:
+    source = _get_v2_store().get_source(source_id)
+    if source is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "source not found")
+    return JSONResponse(source.model_dump(mode="json"))
+
+
+@app.get("/know/v2/snapshots/{snapshot_id}", dependencies=[Depends(require_api_key)])
+async def v2_get_snapshot(snapshot_id: str) -> JSONResponse:
+    snapshot = _get_v2_store().get_snapshot(snapshot_id)
+    if snapshot is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "snapshot not found")
+    return JSONResponse(snapshot.model_dump(mode="json"))
+
+
+@app.get("/know/v2/projects/{project_id}", dependencies=[Depends(require_api_key)])
+async def v2_get_project(project_id: str) -> JSONResponse:
+    card = _get_v2_store().get_project_card(project_id)
+    if card is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "project not found")
+    return JSONResponse(card.model_dump(mode="json"))
+
+
+@app.get("/know/v2/projects/{project_id}/wiki", dependencies=[Depends(require_api_key)])
+async def v2_get_project_wiki(project_id: str) -> JSONResponse:
+    store = _get_v2_store()
+    card = store.get_project_card(project_id)
+    if card is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "project not found")
+    return JSONResponse(
+        {
+            "project": card.model_dump(mode="json"),
+            "components": [item.model_dump(mode="json") for item in store.list_components(project_id)],
+            "pages": [item.model_dump(mode="json") for item in store.list_wiki_pages(project_id)],
+        }
+    )
+
+
+@app.get("/know/v2/wiki/pages/{page_id}", dependencies=[Depends(require_api_key)])
+async def v2_get_wiki_page(page_id: str) -> JSONResponse:
+    page = _get_v2_store().get_wiki_page(page_id)
+    if page is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "wiki page not found")
+    return JSONResponse(page.model_dump(mode="json"))
+
+
+@app.get("/know/v2/evidence/{evidence_id}", dependencies=[Depends(require_api_key)])
+async def v2_get_evidence(evidence_id: str) -> JSONResponse:
+    evidence = _get_v2_store().get_evidence(evidence_id)
+    if evidence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "evidence not found")
+    return JSONResponse(evidence.model_dump(mode="json"))
+
+
+@app.post("/know/v2/feedback", dependencies=[Depends(require_api_key)])
+async def v2_feedback(request: Request) -> JSONResponse:
+    try:
+        feedback = KnowledgeUsageFeedbackV1.model_validate_json(await request.body())
+    except ValidationError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+    created = _get_v2_store().put_feedback(feedback)
+    return JSONResponse(
+        {"feedback_id": feedback.feedback_id, "created": created},
+        status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
 
 
 @app.post("/know/v1/research", status_code=status.HTTP_202_ACCEPTED)
@@ -281,8 +509,6 @@ async def build_task_pack_endpoint(req: TaskPackRequest) -> JSONResponse:
 
 def run() -> None:
     """`rosclaw-know-server` console-script entry."""
-    import os
-
     import uvicorn
 
     logging.basicConfig(
@@ -294,4 +520,4 @@ def run() -> None:
     uvicorn.run("rosclaw_know.api:app", host=host, port=port, log_level="info")
 
 
-__all__ = ["app", "run"]
+__all__ = ["app", "configure_v2_store", "run"]

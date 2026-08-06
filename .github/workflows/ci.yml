@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +50,9 @@ jobs:
           version: 'latest'
 
       - name: Install dependencies
-        run: uv pip install -e ".[dev,api]" --system
+        # The suite covers legacy harvester/graph modules, but must not pull the
+        # heavyweight sentence-transformers/torch compiler stack into CI.
+        run: uv pip install -e ".[dev,api]" "aiohttp>=3.9" "networkx>=3.2" "tqdm>=4.66" --system
 
       - name: Run tests
         run: pytest -q

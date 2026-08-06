@@ -34,9 +34,9 @@ data/exports/*
 wiki/auto_drafted/
 wiki/awesome_corpus/
 
-# Legacy wiki source corpus — deployer mounts or symlinks it themselves
-wiki/
-/wiki
+# Legacy root-level wiki source corpus — deployer mounts or symlinks it themselves.
+# Keep this pattern root-anchored so the packaged rosclaw_know.wiki module is tracked.
+/wiki/
 
 # 测试生成文件
 .coverage

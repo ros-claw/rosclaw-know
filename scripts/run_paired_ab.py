@@ -32,11 +32,10 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -45,9 +44,9 @@ SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC))
 sys.path.insert(0, str(SCRIPTS))
 
-from rosclaw_know import config  # noqa: E402
-
 from how_health import assert_how_healthy  # noqa: E402
+
+from rosclaw_know import config  # noqa: E402
 
 FROZEN_ROOT = config.DATA_DIR / "frozen"
 HARNESS_ROOT = config.BENCHMARKS_DIR / "paired_ab"
@@ -205,7 +204,7 @@ def main() -> int:
 
     run_root.mkdir(parents=True)
 
-    start_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    start_ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # 1. snapshot server meta at start
     pre_meta = _capture_server_meta(args.how_base, args.how_api_key)
@@ -249,7 +248,7 @@ def main() -> int:
             f"({pre_meta.get('server_pid')} → {post_meta.get('server_pid')})."
         )
 
-    end_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    end_ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     harness_meta = {
         "schema_version": 1,

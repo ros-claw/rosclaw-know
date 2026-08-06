@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .config import WIKI_DIR
@@ -287,7 +287,7 @@ def _write_entry_md(
         f"title: {entry.title}\n"
         f"section: {entry.section}\n"
         f"awesome_list: {list_slug}\n"
-        f"fetched_at: {datetime.now(timezone.utc).isoformat()}\n"
+        f"fetched_at: {datetime.now(UTC).isoformat()}\n"
         f"fetch_kind: {fetch_kind}\n"
         f"phase: 8-awesome-ingest\n"
         "priority: 0   # staging — review before promotion\n"

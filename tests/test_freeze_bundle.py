@@ -15,7 +15,6 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -251,7 +250,7 @@ class TestFreezeEndToEnd:
             assert recorded == real, f"sha mismatch for {rel}"
 
     def test_freeze_refuses_overwrite_without_force(self, fb, tmp_path, monkeypatch):
-        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        self._patch_freeze(fb, tmp_path, monkeypatch)
         panel = _fake_panel(tmp_path)
 
         fb.freeze(
@@ -311,7 +310,7 @@ class TestFreezeEndToEnd:
         assert m2["notes"] == "second"
 
     def test_freeze_refuses_degraded_how(self, fb, tmp_path, monkeypatch):
-        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        self._patch_freeze(fb, tmp_path, monkeypatch)
         panel = _fake_panel(tmp_path)
         monkeypatch.setattr(
             fb,
@@ -336,7 +335,7 @@ class TestFreezeEndToEnd:
             )
 
     def test_freeze_refuses_panel_failures(self, fb, tmp_path, monkeypatch):
-        frozen_root = self._patch_freeze(fb, tmp_path, monkeypatch)
+        self._patch_freeze(fb, tmp_path, monkeypatch)
         panel = _fake_panel(tmp_path)
         monkeypatch.setattr(
             fb,

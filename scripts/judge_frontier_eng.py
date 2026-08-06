@@ -46,9 +46,9 @@ SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(SCRIPTS))
 
+
 from rosclaw_know.config import BENCHMARKS_DIR  # noqa: E402
 from rosclaw_know.llm import chat  # noqa: E402
-from how_health import assert_how_healthy  # noqa: E402
 
 logger = logging.getLogger("rosclaw_know.judge_frontier_eng")
 
@@ -190,7 +190,7 @@ async def _chat_seeded(
                                 continue
                         break  # non-transient or exhausted
                     data = await resp.json()
-            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            except (TimeoutError, aiohttp.ClientError) as exc:
                 logger.warning(
                     "seeded judge network error (retry %d): %s", transient_retry, exc
                 )
@@ -298,7 +298,7 @@ async def _chat_glm_seeded(
                             continue
                     return None
                 data = await resp.json()
-        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+        except (TimeoutError, aiohttp.ClientError) as exc:
             logger.warning(
                 "GLM fallback network error (retry %d): %s",
                 transient_retry,

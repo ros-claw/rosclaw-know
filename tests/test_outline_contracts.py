@@ -21,7 +21,6 @@ from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BRIDGE_PATH = REPO_ROOT / "data" / "assets" / "bridge_index.json"
 PATTERNS_DIR = REPO_ROOT / "data" / "assets" / "code_patterns"
@@ -179,6 +178,7 @@ class TestKCurated:
         the test before it breaks production.
         """
         import re
+
         from rosclaw_know import muse
 
         src = Path(muse.__file__).read_text()

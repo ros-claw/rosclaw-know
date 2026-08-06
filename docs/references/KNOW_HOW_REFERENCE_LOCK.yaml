@@ -1,0 +1,154 @@
+schema_version: rosclaw.know.reference_lock.v1
+locked_at: "2026-08-06T09:20:00Z"
+reference_root: /home/nvidia/workspace/rosclaw/_references/know-how-v2
+code_copied: false
+references:
+  - name: CodeWiki
+    url: https://github.com/FSoft-AI4Code/CodeWiki.git
+    commit: a7f7223cb72a5c4add3883fdbd8e6339c591e691
+    license: MIT
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - codewiki/src/be/dependency_analyzer/
+      - codewiki/src/be/cluster_modules.py
+      - codewiki/src/be/documentation_generator.py
+    ideas_to_reuse:
+      - bounded repository inventory and language-aware structural analysis
+      - token-threshold hierarchical decomposition
+      - leaf-first synthesis and completeness checks
+    ideas_not_to_reuse:
+      - eval-based model-output parsing
+      - unrestricted clone or code execution
+    code_copied: false
+  - name: RepoMaster
+    url: https://github.com/wanghuacan/RepoMaster.git
+    commit: null
+    license: unknown
+    studied_at: "2026-08-06"
+    status: unavailable_repository_not_found
+    relevant_modules: []
+    ideas_to_reuse:
+      - call-graph and progressive-exploration concepts from the implementation plan
+    ideas_not_to_reuse:
+      - any unverified implementation claim or substitute repository
+    code_copied: false
+  - name: STORM
+    url: https://github.com/stanford-oval/storm.git
+    commit: fb951af7744dab086e34962e9bc6fe878e145f83
+    license: MIT
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - knowledge_storm/storm_wiki/modules/
+      - knowledge_storm/collaborative_storm/
+      - knowledge_storm/dataclass.py
+    ideas_to_reuse:
+      - perspective-guided bounded subquestions
+      - outline before synthesis
+      - explicit citation map and cleanup
+    ideas_not_to_reuse:
+      - a general article generator as the runtime knowledge store
+    code_copied: false
+  - name: GitMCP
+    url: https://github.com/idosal/git-mcp.git
+    commit: c487a29895dcfcb5b672247e646426a56e2051c1
+    license: Apache-2.0
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - src/tools/
+      - src/services/
+      - src/utils/
+    ideas_to_reuse:
+      - small read-only repository tools and progressive disclosure
+      - cached, bounded document and code reads
+    ideas_not_to_reuse:
+      - using an MCP proxy as canonical storage
+    code_copied: false
+  - name: GitHub MCP Server
+    url: https://github.com/github/github-mcp-server.git
+    commit: e6e3a4e8414686d9763e5e4840e1e0d61db9a992
+    license: MIT
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - pkg/github/
+      - pkg/toolsets/
+    ideas_to_reuse:
+      - toolset-scoped repository, issue and pull-request reads
+      - pagination, API errors and explicit read-only boundaries
+    ideas_not_to_reuse:
+      - exposing write-capable GitHub tools to Know research workers
+    code_copied: false
+  - name: Context7
+    url: https://github.com/upstash/context7.git
+    commit: 903a057dcc6937ec53e4f7397b0bd18fce6b0b3c
+    license: MIT
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - packages/mcp/
+      - packages/api/
+    ideas_to_reuse:
+      - stable library identifiers and version-specific documentation queries
+      - bounded snippets rather than entire documentation sets
+    ideas_not_to_reuse:
+      - treating latest documentation as versionless truth
+    code_copied: false
+  - name: GraphRAG
+    url: https://github.com/microsoft/graphrag.git
+    commit: 14a00ad88fc33cf2b52f4f113f25807556f8e25e
+    license: MIT
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - packages/graphrag/graphrag/data_model/
+      - packages/graphrag/graphrag/query/
+    ideas_to_reuse:
+      - typed entities, relations, claims and evidence
+      - local/global/DRIFT-inspired query planning
+    ideas_not_to_reuse:
+      - a second graph or vector database
+    code_copied: false
+  - name: LightRAG
+    url: https://github.com/HKUDS/LightRAG.git
+    commit: b33c6b0812cddf39206e48a9810112e51f025274
+    license: MIT
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - lightrag/pipeline.py
+      - lightrag/chunker/
+      - lightrag/kg/
+    ideas_to_reuse:
+      - document status and incremental update lifecycle
+      - selectable chunking with provenance retained after splitting
+    ideas_not_to_reuse:
+      - replacing SeekDB storage with LightRAG stores
+    code_copied: false
+  - name: pyseekdb
+    url: https://github.com/oceanbase/pyseekdb.git
+    commit: 82e4989e2db54743f99e814ae77195df09b35348
+    license: Apache-2.0
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - src/pyseekdb/client/
+      - examples/hybrid_search_example.py
+      - tests/integration_tests/test_collection_hybrid_search.py
+      - tests/integration_tests/test_namespace_hybrid_search_fulltext.py
+    ideas_to_reuse:
+      - one Client factory for embedded and server modes
+      - metadata filters and full-text/vector branches fused with RRF
+      - explicit schema/index capability configuration
+    ideas_not_to_reuse:
+      - assuming every server feature exists in embedded mode
+      - hard-coded embedding dimensions
+    code_copied: false
+  - name: DeepWiki MCP
+    url: https://docs.devin.ai/work-with-devin/deepwiki-mcp
+    commit: null
+    license: external_service
+    studied_at: "2026-08-06"
+    relevant_modules:
+      - read_wiki_structure
+      - read_wiki_contents
+      - ask_question
+    ideas_to_reuse:
+      - structure/page/question progressive disclosure
+    ideas_not_to_reuse:
+      - treating an external generated wiki as source evidence without a pinned snapshot
+    code_copied: false

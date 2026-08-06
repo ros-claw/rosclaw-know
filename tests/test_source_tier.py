@@ -1,8 +1,6 @@
 """Unit tests for the source_tier ladder."""
 from __future__ import annotations
 
-import pytest
-
 from rosclaw_know.source_tier import (
     A_CURATED_REVIEWED,
     B_TIER_MIN_EVIDENCE_N,
