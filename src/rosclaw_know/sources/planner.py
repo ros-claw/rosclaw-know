@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field
 
 from rosclaw_know.contracts import ResearchRequestV2
@@ -23,6 +25,11 @@ class ResearchSubquestion(StrictContract):
     search_queries: list[str] = Field(min_length=1, max_length=4)
 
 
+class CoverageItem(StrictContract):
+    status: Literal["missing", "partial", "covered"]
+    reason: str
+
+
 class ResearchPlan(StrictContract):
     request_id: str
     perspectives: list[str] = Field(min_length=1, max_length=12)
@@ -32,6 +39,8 @@ class ResearchPlan(StrictContract):
     stop_conditions: list[str]
     max_sources: int
     token_budget: int
+    coverage: dict[str, CoverageItem]
+    research_sequence: list[Literal["broad_project_map", "local_evidence"]]
 
 
 _QUESTION_TEMPLATES = {
@@ -79,6 +88,30 @@ def build_research_plan(request: ResearchRequestV2) -> ResearchPlan:
                 )[:4],
             )
         )
+    has_compatibility_context = any(
+        (
+            request.constraints.robot_model,
+            request.constraints.simulator,
+            request.constraints.ros_distro,
+            request.constraints.language,
+            request.constraints.software_versions,
+        )
+    )
+    coverage = {
+        perspective: CoverageItem(
+            status=(
+                "partial"
+                if perspective == "compatibility" and has_compatibility_context
+                else "missing"
+            ),
+            reason=(
+                "request supplies compatibility constraints; primary-source verification remains"
+                if perspective == "compatibility" and has_compatibility_context
+                else "no pinned primary evidence has been acquired yet"
+            ),
+        )
+        for perspective in perspectives
+    }
     return ResearchPlan(
         request_id=request.request_id,
         perspectives=perspectives,
@@ -100,4 +133,6 @@ def build_research_plan(request: ResearchRequestV2) -> ResearchPlan:
         ],
         max_sources=request.max_sources,
         token_budget=request.token_budget,
+        coverage=coverage,
+        research_sequence=["broad_project_map", "local_evidence"],
     )

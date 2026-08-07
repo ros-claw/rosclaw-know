@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rosclaw-know"
-version = "1.2.2"
+version = "1.3.0"
 description = "Physical-AI knowledge compiler — turns multi-source corpus + execution feedback into procedural engineering experience for ROSClaw agents."
 readme = "README.md"
 license = {text = "MIT"}
@@ -20,8 +20,15 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5"]
-api = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "httpx>=0.27"]
-seekdb = ["pyseekdb>=1.3,<2"]
+api = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "httpx>=0.27",
+    # api.py imports the bounded legacy research worker at startup.
+    "aiohttp>=3.9",
+    "networkx>=3.2",
+]
+seekdb = ["pyseekdb>=1.3,<2", "pymysql>=1.1,<2"]
 # Compiler-side ingestion / harvesting / graph weaving — NOT needed by the
 # rosclaw runtime, which only consumes catalog assets + sim_ingest envelopes.
 compiler = [
@@ -36,6 +43,7 @@ all = [
 ]
 
 [project.scripts]
+rosclaw-know = "rosclaw_know.cli:main"
 rosclaw-know-taskcard = "rosclaw_know.taskcard.cli:main"
 rosclaw-know-server = "rosclaw_know.api:run"
 rosclaw-know-assets = "rosclaw_know.legacy.cli:main"

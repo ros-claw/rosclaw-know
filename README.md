@@ -76,6 +76,27 @@ python scripts/ingest_awesome.py \
     --then-ingest
 ```
 
+## World-knowledge operations (v1.3)
+
+The versioned world-knowledge path is additive to the legacy refinery. It
+keeps source snapshots, claims, Project Wikis, and Reference Packs in the Know
+store and exposes structured operational commands:
+
+```bash
+rosclaw-know --store-mode memory doctor
+rosclaw-know --store-mode server doctor
+rosclaw-know explain "Region of Interest Auto Ctrls error -5"
+rosclaw-know diff <project-id> --from <snapshot-a> --to <snapshot-b>
+rosclaw-know refresh <source-id>          # dry-run by default
+rosclaw-know refresh <source-id> --apply  # explicit mutation
+rosclaw-know review queue
+rosclaw-know freeze --label final-acceptance --output manifest.json
+```
+
+Use `ROSCLAW_RUN_LIVE_KNOWLEDGE=1` only in an acceptance environment to run
+the opt-in GitHub, arXiv, public MCP, and SeekDB server tests. Repository code
+is never executed by these tests.
+
 ## Architecture (Phase 1–7)
 
 ```

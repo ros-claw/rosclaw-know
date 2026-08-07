@@ -100,6 +100,16 @@ def test_wiki_compiler_has_real_paths_pinned_evidence_and_static_symbols():
     assert "torch" in src_component.dependencies
     assert store.get_project_card(result.project_card.project_id) == result.project_card
     assert len(store.list_wiki_pages(result.project_card.project_id)) == len(result.pages)
+    facts_evidence = next(
+        evidence
+        for evidence in result.evidence_refs
+        if evidence.path == ".rosclaw/repo_facts.json"
+    )
+    facts = store.get_document(facts_evidence.document_id)
+    assert facts is not None
+    assert facts.metadata["code_executed"] is False
+    assert '"component_count": 4' in facts.content
+    assert '"src"' in facts.content
 
 
 def test_incremental_diff_only_marks_pages_using_changed_document():

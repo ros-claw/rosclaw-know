@@ -59,6 +59,9 @@ def test_research_plan_is_bounded_and_structured():
     assert all(len(item.search_queries) <= 4 for item in plan.subquestions)
     assert any(item.perspective == "compatibility" for item in plan.subquestions)
     assert any("all_claims_have_pinned_evidence" in item for item in plan.stop_conditions)
+    assert plan.coverage["compatibility"].status == "partial"
+    assert plan.coverage["mechanism"].status == "missing"
+    assert plan.research_sequence == ["broad_project_map", "local_evidence"]
 
 
 @pytest.mark.asyncio
@@ -163,6 +166,23 @@ async def test_arxiv_adapter_returns_abstract_not_pdf():
 
 
 @pytest.mark.asyncio
+async def test_arxiv_adapter_pins_explicit_identifier():
+    xml = b"""<?xml version='1.0'?>
+    <feed xmlns='http://www.w3.org/2005/Atom'><entry>
+      <id>https://arxiv.org/abs/2606.11092v2</id><title>RoboNaldo</title>
+      <published>2026-06-09T00:00:00Z</published><summary>Motion curriculum on G1.</summary>
+      <author><name>A. Researcher</name></author>
+    </entry></feed>"""
+    url = "https://export.arxiv.org/api/query?id_list=2606.11092&max_results=1"
+    adapter = ArxivAdapter(transport=FakeTransport({url: xml}))
+    explicit = request().model_copy(update={"topic": "RoboNaldo arXiv 2606.11092"})
+
+    candidates = await adapter.discover(explicit)
+
+    assert candidates[0].snapshot_ref == "2606.11092v2"
+
+
+@pytest.mark.asyncio
 async def test_research_orchestrator_persists_snapshot_wiki_and_units():
     content = "Unitree G1 uses Isaac Lab with ROS Humble."
     digest = hashlib.sha256(content.encode()).hexdigest()
@@ -224,5 +244,108 @@ async def test_research_orchestrator_persists_snapshot_wiki_and_units():
     assert result.snapshots == 1
     assert result.project_wikis == 1
     assert result.knowledge_units >= 1
+    assert result.claims >= 1
     assert store.get_snapshot(snapshot.snapshot_id) == snapshot
     assert list(store.iter_units())
+    assert store.list_claims()
+    assert result.bytes_ingested == document.size_bytes
+    assert result.estimated_tokens_ingested <= request().token_budget
+
+
+@pytest.mark.asyncio
+async def test_research_orchestrator_enforces_total_token_budget_and_fetch_deadline():
+    base_request = request().model_copy(update={"token_budget": 1_000})
+    content = "x" * 4_100
+    digest = hashlib.sha256(content.encode()).hexdigest()
+    source = SourceRecordV2(
+        source_id="source-limits",
+        canonical_url="https://example.invalid/limits",
+        source_type="repository",
+        title="Limits",
+        repository="example/limits",
+        trust_tier="primary",
+        discovered_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    snapshot = SourceSnapshotV2(
+        snapshot_id="snapshot-limits",
+        source_id=source.source_id,
+        version_kind="git_commit",
+        version_value="c" * 40,
+        commit_sha="c" * 40,
+        fetched_at=datetime(2026, 1, 1, tzinfo=UTC),
+        content_hash=digest,
+        integrity=IntegrityV2(sha256=digest),
+    )
+    oversized = DocumentRecord(
+        document_id="document-limits",
+        snapshot_id=snapshot.snapshot_id,
+        document_type="documentation",
+        path="README.md",
+        title="README.md",
+        content=content,
+        content_hash=digest,
+        size_bytes=len(content),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+
+    class OversizedAdapter:
+        name = "oversized"
+
+        async def discover(self, research_request):
+            return [
+                SourceCandidate(
+                    source=source,
+                    adapter=self.name,
+                    authority_score=1.0,
+                    qualification_score=1.0,
+                )
+            ]
+
+        async def snapshot(self, candidate):
+            return snapshot
+
+        async def fetch_documents(self, source_snapshot):
+            yield oversized
+
+    result = await ResearchOrchestrator(
+        InMemoryKnowStore(), {"oversized": OversizedAdapter()}
+    ).run(base_request)
+    assert result.status == "degraded"
+    assert result.documents == 0
+    assert "token_budget_exhausted" in result.warnings
+
+    class HangingAdapter(OversizedAdapter):
+        name = "hanging"
+
+        async def fetch_documents(self, source_snapshot):
+            await __import__("asyncio").sleep(0.1)
+            yield oversized
+
+    timed_out = await ResearchOrchestrator(
+        InMemoryKnowStore(),
+        {"hanging": HangingAdapter()},
+        snapshot_timeout=0.01,
+        run_timeout=0.05,
+    ).run(base_request)
+    assert timed_out.status == "degraded"
+    assert any("adapter_ingest_failed:hanging" in item for item in timed_out.warnings)
+
+
+def test_github_tree_selection_is_bounded_for_huge_repos_and_ignores_non_blobs():
+    adapter = GitHubAdapter(max_documents=25)
+    tree = [
+        {"path": f"src/module_{index}.py", "type": "blob", "size": 100}
+        for index in range(10_000)
+    ]
+    tree.extend(
+        [
+            {"path": "vendor/submodule", "type": "commit", "size": 0},
+            {"path": "generated.bin", "type": "blob", "size": 10},
+            {"path": "huge.py", "type": "blob", "size": 500_001},
+        ]
+    )
+    selected = adapter._selected_tree_paths(tree)
+    assert len(selected) == 25
+    assert "vendor/submodule" not in selected
+    assert "generated.bin" not in selected
+    assert "huge.py" not in selected

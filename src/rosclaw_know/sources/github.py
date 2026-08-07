@@ -69,6 +69,7 @@ class GitHubAdapter:
         max_response_bytes: int = 5_000_000,
         max_documents: int = 200,
         max_document_bytes: int = 500_000,
+        max_repository_bytes: int = 50_000_000,
         max_issue_documents: int = 20,
     ) -> None:
         self.token = token if token is not None else os.environ.get("GITHUB_TOKEN", "")
@@ -77,6 +78,7 @@ class GitHubAdapter:
         self.max_response_bytes = max_response_bytes
         self.max_documents = max_documents
         self.max_document_bytes = max_document_bytes
+        self.max_repository_bytes = max_repository_bytes
         self.max_issue_documents = max_issue_documents
         self._snapshot_state: dict[str, dict[str, Any]] = {}
 
@@ -247,6 +249,7 @@ class GitHubAdapter:
             url=f"https://github.com/{full_name}/tree/{commit_sha}",
         )
 
+        fetched_bytes = len(metadata_text.encode())
         for path in self._selected_tree_paths(list((state["tree"] or {}).get("tree") or [])):
             encoded_path = urllib.parse.quote(path, safe="/")
             try:
@@ -260,6 +263,8 @@ class GitHubAdapter:
                 raw = base64.b64decode(payload.get("content") or "", validate=False)
                 if len(raw) > self.max_document_bytes or is_probably_binary(path, raw):
                     continue
+                if fetched_bytes + len(raw) > self.max_repository_bytes:
+                    break
                 text, signals = normalize_untrusted_text(raw.decode("utf-8", errors="replace"))
             except (SourceUnavailableError, SourceLimitError, ValueError):
                 continue
@@ -274,6 +279,7 @@ class GitHubAdapter:
                 url=f"https://github.com/{full_name}/blob/{commit_sha}/{encoded_path}",
                 prompt_injection_signals=signals,
             )
+            fetched_bytes += len(raw)
 
         endpoint_specs = (
             ("releases", "release", "releases?per_page=10"),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import re
 import urllib.parse
 from datetime import UTC, datetime
 from xml.etree import ElementTree as ET
@@ -40,14 +41,18 @@ class ArxivAdapter:
         self._candidates: dict[str, SourceCandidate] = {}
 
     async def discover(self, request: ResearchRequestV2) -> list[SourceCandidate]:
-        query = urllib.parse.urlencode(
-            {
+        arxiv_id = re.search(r"(?<!\d)(\d{4}\.\d{4,5})(?:v\d+)?(?!\d)", request.topic)
+        parameters = (
+            {"id_list": arxiv_id.group(1), "max_results": 1}
+            if arxiv_id
+            else {
                 "search_query": f"all:{request.topic}",
                 "max_results": min(request.max_sources, 50),
                 "sortBy": "relevance",
                 "sortOrder": "descending",
             }
         )
+        query = urllib.parse.urlencode(parameters)
         response = await asyncio.to_thread(
             self.transport.get,
             f"{_API}?{query}",

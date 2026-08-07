@@ -3,6 +3,38 @@
 All notable changes by phase. Most recent first. Format inspired by
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.0] — 2026-08-06 · real-world knowledge final acceptance
+
+### Added
+
+- Evidence-closed `KnowledgeClaimV1`, explicit S/A/B/C/D source authority,
+  temporal validity, supersession, contradiction review, and PROV-style
+  relations. Truth, utility, compatibility, and retrieval scores remain
+  independent.
+- Read-only DeepWiki Public, GitMCP, and Context7 Streamable HTTP adapters;
+  derived material is Tier B and requires pinned primary verification.
+- Native SeekDB server BENG/IK/NGRAM and HNSW indexes, SQL hybrid/RRF query,
+  generated-SQL trace, optional AI rerank capability, logical backup/restore,
+  and live acceptance tests.
+- Deterministic repository inventory, version-aware release claims, project
+  diff/refresh/audit/freeze, `rosclaw-know doctor`, and structured `explain`.
+- Coverage-map research planning and whole-run document, byte, token, and
+  deadline enforcement.
+
+### Validation
+
+- Seven pinned public repositories, ten critical claims each, plus the
+  versioned RoboNaldo paper were audited without executing third-party code.
+- Real SeekDB server migration, full-text, vector, hybrid/RRF, rollback, and
+  backup/restore paths were exercised.
+
+### Safety
+
+- Cross-source conflicts fail closed into a manual review queue; unresolved
+  claims cannot enter a Reference Pack.
+- Repository text remains untrusted data: tool allowlists, HTTPS, path and
+  symlink boundaries, response limits, and prompt-injection markers apply.
+
 ## [1.2.2] — 2026-08-06 · conservative feedback governance
 
 ### Added

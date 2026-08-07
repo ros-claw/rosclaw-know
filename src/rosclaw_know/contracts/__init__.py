@@ -11,11 +11,19 @@ from .base import (
     export_contract_schemas,
     negotiate_schema_version,
 )
+from .claim_v1 import (
+    CompatibilityScopeV1,
+    KnowledgeClaimV1,
+    SourceDisagreementV1,
+    TruthQualityV1,
+)
 from .knowledge_v2 import KnowledgeUnitV2, KnowledgeVectorsV2, ProjectCardV2
 from .reference_pack_v2 import (
+    AdviceCandidateDecisionV1,
     AdviceRecommendationV2,
     FeedbackGovernanceRecordV1,
     HowAdviceBundleV2,
+    HowExplanationV1,
     KnowledgeUsageFeedbackV1,
     ReferenceComparisonV2,
     ReferenceContextV2,
@@ -36,16 +44,22 @@ PUBLIC_CONTRACTS = (
     HowAdviceBundleV2,
     KnowledgeUsageFeedbackV1,
     FeedbackGovernanceRecordV1,
+    KnowledgeClaimV1,
+    SourceDisagreementV1,
 )
 
 __all__ = [
+    "AdviceCandidateDecisionV1",
     "AdviceRecommendationV2",
     "ContractVersionError",
+    "CompatibilityScopeV1",
     "EvidenceRefV2",
     "FeedbackGovernanceRecordV1",
     "HowAdviceBundleV2",
+    "HowExplanationV1",
     "IntegrityV2",
     "KnowledgeUnitV2",
+    "KnowledgeClaimV1",
     "KnowledgeUsageFeedbackV1",
     "KnowledgeVectorsV2",
     "ProjectCardV2",
@@ -57,8 +71,10 @@ __all__ = [
     "ResearchConstraintsV2",
     "ResearchRequestV2",
     "SourceRecordV2",
+    "SourceDisagreementV1",
     "SourceSnapshotV2",
     "StrictContract",
+    "TruthQualityV1",
     "export_contract_schemas",
     "negotiate_schema_version",
 ]

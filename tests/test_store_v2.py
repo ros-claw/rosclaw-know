@@ -184,5 +184,5 @@ def test_know_memory_database_and_path_isolation(tmp_path):
 
 def test_migrations_are_contiguous_and_have_rollbacks():
     migrations = load_migrations("migrations/seekdb")
-    assert [migration.version for migration in migrations] == [1, 2, 3, 4, 5, 6]
+    assert [migration.version for migration in migrations] == [1, 2, 3, 4, 5, 6, 7]
     assert all(migration.up_sql and migration.down_sql for migration in migrations)

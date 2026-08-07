@@ -24,6 +24,14 @@ class RepositoryInventory(StrictContract):
     has_examples: bool
     has_tests: bool
     unknowns: list[str] = Field(default_factory=list)
+    file_symbols: dict[str, list[str]] = Field(default_factory=dict)
+    file_imports: dict[str, list[str]] = Field(default_factory=dict)
+    entrypoints: list[str] = Field(default_factory=list)
+    versions: dict[str, str] = Field(default_factory=dict)
+    config_keys: dict[str, list[str]] = Field(default_factory=dict)
+    releases: list[dict[str, str]] = Field(default_factory=list)
+    issues: list[dict[str, str]] = Field(default_factory=list)
+    pull_requests: list[dict[str, str]] = Field(default_factory=list)
 
 
 class WikiCompilationResult(StrictContract):
