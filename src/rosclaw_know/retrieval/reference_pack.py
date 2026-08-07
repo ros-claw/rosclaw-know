@@ -15,7 +15,12 @@ from rosclaw_know.contracts import (
     ReferencePackItemV2,
     ReferencePackV2,
 )
-from rosclaw_know.store import KnowStore, SearchHit
+from rosclaw_know.store import (
+    KnowStore,
+    RetrievalCandidateTrace,
+    RetrievalTraceV1,
+    SearchHit,
+)
 
 from .planner import build_retrieval_plan
 
@@ -33,27 +38,61 @@ def _estimate_tokens(value: object) -> int:
     return max(1, len(json.dumps(value, ensure_ascii=False)) // 4)
 
 
-def _compatibility(unit: KnowledgeUnitV2, context: ReferenceContextV2) -> tuple[float, list[str]]:
+def _compatibility(
+    unit: KnowledgeUnitV2, context: ReferenceContextV2
+) -> tuple[float, str, list[str]]:
     warnings = []
+    compared = 0
+    matched = 0
     expected = dict(context.software_versions)
     if context.ros_distro:
         expected.setdefault("ros", context.ros_distro)
     if context.simulator:
         expected.setdefault("simulator", context.simulator)
     for name, requested in expected.items():
+        compared += 1
         available = unit.software_constraints.get(name)
         if available and available.casefold() != requested.casefold():
             warnings.append(f"{name} mismatch: context={requested}, reference={available}")
         elif not available:
             warnings.append(f"{name} compatibility unknown for requested={requested}")
+        else:
+            matched += 1
     if context.robot:
+        compared += 1
         if unit.robot_constraints and context.robot not in unit.robot_constraints:
             warnings.append(
                 f"robot mismatch: context={context.robot}, reference={','.join(unit.robot_constraints)}"
             )
         elif not unit.robot_constraints:
             warnings.append(f"robot compatibility unknown for requested={context.robot}")
-    return max(0.0, 1.0 - 0.25 * len(warnings)), warnings
+        else:
+            matched += 1
+    if any(" mismatch:" in warning for warning in warnings):
+        return 0.0, "incompatible", warnings
+    if compared == 0:
+        return 0.5, "unknown", warnings
+    if matched == compared:
+        return 1.0, "compatible", warnings
+    if matched:
+        return 0.65, "partially_compatible", warnings
+    return 0.5, "unknown", warnings
+
+
+def _claim_scores(
+    store: KnowStore, unit: KnowledgeUnitV2, *, as_of: datetime
+) -> tuple[float, float, list[str]]:
+    claims = store.list_claims(knowledge_unit_id=unit.knowledge_unit_id)
+    if not claims:
+        return unit.confidence, 0.5, []
+    active = [claim for claim in claims if claim.is_valid_at(as_of)]
+    if not active:
+        return 0.0, 0.5, ["all supporting claims are superseded, contradicted, or out of time"]
+    unresolved = [claim for claim in active if not claim.truth_quality.contradiction_resolved]
+    warnings = ["claim contradiction requires review"] if unresolved else []
+    truth = min(claim.truth_quality.score for claim in active)
+    utility = sum(claim.utility_score for claim in active) / len(active)
+    return truth, utility, warnings
 
 
 def _project_for(store: KnowStore, unit_id: str) -> str | None:
@@ -131,6 +170,7 @@ class ReferencePackBuilder:
         hits.sort(key=lambda item: (-item.score, item.knowledge_unit_id))
         warnings: list[str] = []
         units: list[tuple[SearchHit, KnowledgeUnitV2, list[str]]] = []
+        now = datetime.now(UTC)
         for hit in hits:
             unit = self.store.get_unit(hit.knowledge_unit_id)
             if unit is None:
@@ -143,15 +183,36 @@ class ReferencePackBuilder:
             ):
                 warnings.append(f"evidence_guard_dropped:{unit.knowledge_unit_id}")
                 continue
-            compatibility, incompatibilities = _compatibility(unit, context)
+            compatibility, compatibility_status, incompatibilities = _compatibility(unit, context)
+            truth_quality, utility_score, claim_warnings = _claim_scores(
+                self.store, unit, as_of=now
+            )
+            if truth_quality <= 0:
+                warnings.append(f"temporal_claim_guard_dropped:{unit.knowledge_unit_id}")
+                continue
+            if "claim contradiction requires review" in claim_warnings:
+                warnings.append(f"contradiction_guard_rejected_for_use:{unit.knowledge_unit_id}")
+                continue
+            if compatibility_status == "incompatible":
+                warnings.append(f"compatibility_guard_rejected_for_use:{unit.knowledge_unit_id}")
+            final_score = (
+                hit.score
+                * truth_quality
+                * compatibility
+                * (0.95 + 0.1 * utility_score)
+            )
             adjusted = hit.model_copy(
                 update={
-                    "score": hit.score * compatibility,
+                    "score": final_score,
                     "score_breakdown": {
                         **hit.score_breakdown,
+                        "retrieval": hit.score,
                         "compatibility": compatibility,
-                        "confidence": unit.confidence,
+                        f"compatibility_status_{compatibility_status}": 1.0,
+                        "truth_quality": truth_quality,
+                        "utility": utility_score,
                     },
+                    "warnings": [*hit.warnings, *claim_warnings],
                 }
             )
             units.append((adjusted, unit, incompatibilities))
@@ -258,3 +319,92 @@ class ReferencePackBuilder:
         )
         self.store.put_reference_pack(pack)
         return pack
+
+    def explain(
+        self,
+        *,
+        query: str,
+        context: ReferenceContextV2,
+        top_k: int = 10,
+    ) -> RetrievalTraceV1:
+        """Return structured ranking evidence, never private reasoning text."""
+
+        plan = build_retrieval_plan(query, context, requested_limit=top_k)
+        vectors = (
+            self.embedding_provider.embed(plan.semantic_queries)
+            if self.embedding_provider is not None
+            else None
+        )
+        hits = self.store.search(
+            query,
+            query_vectors=vectors,
+            filters=plan.filters,
+            limit=plan.recall_limit,
+        )
+        hits = _expand_relations(self.store, hits, plan.recall_limit)
+        now = datetime.now(UTC)
+        candidates: list[RetrievalCandidateTrace] = []
+        for hit in sorted(hits, key=lambda item: (-item.score, item.knowledge_unit_id)):
+            unit = self.store.get_unit(hit.knowledge_unit_id)
+            if unit is None:
+                continue
+            rejected: list[str] = []
+            if not unit.evidence_refs or any(
+                self.store.get_snapshot(item.snapshot_id) is None for item in unit.evidence_refs
+            ):
+                rejected.append("evidence_not_closed")
+            compatibility, compatibility_status, compatibility_warnings = _compatibility(
+                unit, context
+            )
+            if compatibility_status == "incompatible":
+                rejected.append("incompatible")
+            truth_quality, utility_score, claim_warnings = _claim_scores(
+                self.store, unit, as_of=now
+            )
+            if truth_quality <= 0:
+                rejected.append("superseded_or_invalid_claim")
+            if claim_warnings:
+                rejected.append("unresolved_contradiction")
+            final_score = (
+                hit.score
+                * truth_quality
+                * compatibility
+                * (0.95 + 0.1 * utility_score)
+            )
+            candidates.append(
+                RetrievalCandidateTrace(
+                    knowledge_unit_id=unit.knowledge_unit_id,
+                    title=unit.title,
+                    accepted=not rejected,
+                    rejected_reasons=list(dict.fromkeys(rejected)),
+                    matched_by=hit.matched_by,
+                    retrieval_score=max(0.0, hit.score),
+                    truth_quality=truth_quality,
+                    utility_score=utility_score,
+                    compatibility_score=compatibility,
+                    compatibility_status=compatibility_status,  # type: ignore[arg-type]
+                    final_score=max(0.0, final_score),
+                    score_breakdown={
+                        **hit.score_breakdown,
+                        "retrieval": hit.score,
+                        "truth_quality": truth_quality,
+                        "utility": utility_score,
+                        "compatibility": compatibility,
+                    },
+                    warnings=list(
+                        dict.fromkeys(
+                            [*hit.warnings, *compatibility_warnings, *claim_warnings]
+                        )
+                    ),
+                )
+            )
+        candidates.sort(key=lambda item: (not item.accepted, -item.final_score, item.knowledge_unit_id))
+        return RetrievalTraceV1(
+            query=query,
+            query_profile=plan.query_profile,
+            exact_terms=plan.exact_terms,
+            ngram_terms=plan.ngram_terms,
+            context=context.model_dump(mode="json"),
+            candidates=candidates[: max(top_k * 4, 20)],
+            generated_at=now,
+        )

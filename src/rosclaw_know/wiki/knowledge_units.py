@@ -6,7 +6,7 @@ import hashlib
 from datetime import UTC, datetime
 
 from rosclaw_know.contracts import KnowledgeUnitV2, KnowledgeVectorsV2
-from rosclaw_know.store import KnowStore
+from rosclaw_know.store import KnowStore, RelationRecord
 
 from .models import WikiCompilationResult
 
@@ -81,4 +81,20 @@ def compile_knowledge_units(
         with store.transaction():
             for unit in units:
                 store.upsert_unit(unit)
+                store.put_relation(
+                    RelationRecord(
+                        relation_id="relation_"
+                        + hashlib.sha256(
+                            f"{unit.knowledge_unit_id}:DOCUMENTS:{card.project_id}".encode()
+                        ).hexdigest()[:24],
+                        from_id=unit.knowledge_unit_id,
+                        from_type="knowledge_unit",
+                        relation_type="DOCUMENTS",
+                        to_id=card.project_id,
+                        to_type="project",
+                        confidence=1.0,
+                        evidence_id=unit.evidence_refs[0].evidence_id,
+                        created_at=now,
+                    )
+                )
     return units

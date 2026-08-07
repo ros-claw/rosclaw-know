@@ -9,7 +9,9 @@ from __future__ import annotations
 import ast
 import fnmatch
 import hashlib
+import json
 import re
+import tomllib
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
@@ -137,6 +139,71 @@ def build_inventory(documents: list[DocumentRecord]) -> RepositoryInventory:
         unknowns.append("supported robot model is not stated in indexed documents")
     if not simulators:
         unknowns.append("simulator is not stated in indexed documents")
+    file_symbols: dict[str, list[str]] = {}
+    file_imports: dict[str, list[str]] = {}
+    entrypoints: list[str] = []
+    versions: dict[str, str] = {}
+    config_keys: dict[str, list[str]] = {}
+    releases: list[dict[str, str]] = []
+    issues: list[dict[str, str]] = []
+    pull_requests: list[dict[str, str]] = []
+    for document in documents:
+        if document.language == "python":
+            symbols, imports, detected_entrypoints = _python_structure(document.content)
+            if symbols:
+                file_symbols[document.path] = symbols
+            if imports:
+                file_imports[document.path] = imports
+            entrypoints.extend(
+                f"{document.path}:{entrypoint}" for entrypoint in detected_entrypoints
+            )
+        if document.path.casefold() == "pyproject.toml":
+            try:
+                project = tomllib.loads(document.content).get("project") or {}
+                if project.get("requires-python"):
+                    versions["python"] = str(project["requires-python"])
+                for dependency in project.get("dependencies") or []:
+                    match = re.match(r"([A-Za-z0-9_.-]+)\s*([^;]*)", str(dependency))
+                    if match:
+                        versions[match.group(1).casefold()] = match.group(2).strip() or "unspecified"
+            except (tomllib.TOMLDecodeError, AttributeError):
+                pass
+        if document.path.casefold().endswith((".yaml", ".yml")):
+            try:
+                config = yaml.safe_load(document.content)
+                if isinstance(config, dict):
+                    config_keys[document.path] = sorted(str(key) for key in config)[:200]
+            except yaml.YAMLError:
+                pass
+        if document.path.startswith(".rosclaw/github/"):
+            try:
+                payload = json.loads(document.content)
+            except json.JSONDecodeError:
+                continue
+            rows = payload if isinstance(payload, list) else []
+            target = (
+                releases
+                if "releases.json" in document.path
+                else pull_requests
+                if "pull_requests.json" in document.path
+                else issues
+                if "issues.json" in document.path
+                else None
+            )
+            if target is not None:
+                for row in rows[:100]:
+                    if not isinstance(row, dict):
+                        continue
+                    target.append(
+                        {
+                            "id": str(row.get("number") or row.get("id") or row.get("tag_name") or ""),
+                            "title": str(row.get("title") or row.get("name") or ""),
+                            "state": str(row.get("state") or ("published" if row.get("published_at") else "")),
+                            "updated_at": str(row.get("updated_at") or row.get("published_at") or ""),
+                            "tag": str(row.get("tag_name") or ""),
+                            "body": str(row.get("body") or "")[:4000],
+                        }
+                    )
     return RepositoryInventory(
         paths=paths,
         languages=sorted({document.language for document in documents if document.language}),
@@ -152,6 +219,14 @@ def build_inventory(documents: list[DocumentRecord]) -> RepositoryInventory:
         has_examples=any(path.startswith("examples/") for path in paths),
         has_tests=any(path.startswith(("test/", "tests/")) for path in paths),
         unknowns=unknowns,
+        file_symbols=file_symbols,
+        file_imports=file_imports,
+        entrypoints=sorted(set(entrypoints)),
+        versions=dict(sorted(versions.items())),
+        config_keys=dict(sorted(config_keys.items())),
+        releases=releases,
+        issues=issues,
+        pull_requests=pull_requests,
     )
 
 
@@ -187,6 +262,10 @@ def build_components(
 ) -> list[ProjectComponentRecord]:
     grouped: dict[str, list[DocumentRecord]] = defaultdict(list)
     for document in documents:
+        # Acquisition metadata is evidence about the snapshot, not a project
+        # architecture component.
+        if document.path.startswith(".rosclaw/") or document.path == "repository_metadata.json":
+            continue
         root = document.path.split("/", 1)[0]
         grouped[root].append(document)
     components = []
@@ -258,6 +337,8 @@ def _page_content(
                 f"- Frameworks: {', '.join(inventory.frameworks) or 'unknown'}",
                 f"- Robots: {', '.join(inventory.robots) or 'unknown'}",
                 f"- Simulators: {', '.join(inventory.simulators) or 'unknown'}",
+                f"- Indexed files: {len(inventory.paths)}",
+                f"- Deterministic symbols: {sum(len(items) for items in inventory.file_symbols.values())}",
             )
         )
     else:
@@ -275,6 +356,57 @@ def _changed_paths(
     current = {document.path: document.content_hash for document in documents}
     previous = {document.path: document.content_hash for document in previous_documents}
     return sorted(path for path in current.keys() | previous.keys() if current.get(path) != previous.get(path))
+
+
+def _repo_facts_document(
+    *,
+    source: SourceRecordV2,
+    snapshot: SourceSnapshotV2,
+    inventory: RepositoryInventory,
+    components: list[ProjectComponentRecord],
+    documents: list[DocumentRecord],
+) -> DocumentRecord:
+    """Materialize deterministic Phase-A facts without executing source code."""
+
+    payload = {
+        "schema_version": "rosclaw.know.repo_facts.v1",
+        "source_id": source.source_id,
+        "snapshot_id": snapshot.snapshot_id,
+        "version": snapshot.version_value,
+        "component_count": len(components),
+        "component_paths": [component.path for component in components],
+        "inventory": inventory.model_dump(mode="json"),
+        "source_documents": [
+            {"path": document.path, "content_hash": document.content_hash}
+            for document in documents
+        ],
+        "code_executed": False,
+    }
+    content = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    content_hash = _hash(content)
+    return DocumentRecord(
+        document_id=_identifier(
+            "document", f"{snapshot.snapshot_id}:.rosclaw/repo_facts.json:{content_hash}"
+        ),
+        snapshot_id=snapshot.snapshot_id,
+        document_type="deterministic_fact_inventory",
+        path=".rosclaw/repo_facts.json",
+        title="repo_facts.json",
+        language="json",
+        content=content,
+        content_hash=content_hash,
+        size_bytes=len(content.encode()),
+        metadata={
+            "url": (
+                f"rosclaw-know://snapshot/{snapshot.snapshot_id}/"
+                ".rosclaw/repo_facts.json"
+            ),
+            "generated_by": "rosclaw_know.wiki.compiler:deterministic_facts",
+            "code_executed": False,
+            "source_document_hashes": [document.content_hash for document in documents],
+        },
+        created_at=datetime.now(UTC),
+    )
 
 
 def compile_project_wiki(
@@ -299,6 +431,14 @@ def compile_project_wiki(
         document.document_id: _evidence_for(source, snapshot, document) for document in selected
     }
     components = build_components(project_id, snapshot.snapshot_id, selected)
+    facts_document = _repo_facts_document(
+        source=source,
+        snapshot=snapshot,
+        inventory=inventory,
+        components=components,
+        documents=selected,
+    )
+    facts_evidence = _evidence_for(source, snapshot, facts_document)
     changed = _changed_paths(selected, previous_documents)
 
     pages = []
@@ -331,7 +471,7 @@ def compile_project_wiki(
             rebuilt.append(page_type)
 
     root_page = next(page.page_id for page in pages if page.page_type == "overview")
-    all_evidence = list(evidence_by_document.values())
+    all_evidence = [facts_evidence, *evidence_by_document.values()]
     issue_paths = [document.path for document in selected if "issues.json" in document.path]
     pull_paths = [document.path for document in selected if "pull_requests.json" in document.path]
     card = ProjectCardV2(
@@ -361,6 +501,7 @@ def compile_project_wiki(
         with store.transaction():
             for document in selected:
                 store.put_document(document)
+            store.put_document(facts_document)
             for evidence in all_evidence:
                 store.put_evidence(evidence)
             for component in components:

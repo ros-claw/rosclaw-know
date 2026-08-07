@@ -23,6 +23,12 @@ def test_v2_capabilities_plan_reference_pack_and_feedback_contracts():
             assert capabilities.status_code == 200
             assert capabilities.json()["store"]["backend"] == "memory"
             assert "rosclaw.know.reference_pack.v2" in capabilities.json()["schema_versions"]
+            assert "rosclaw.know.knowledge_claim.v1" in capabilities.json()["schema_versions"]
+
+            doctor = client.get("/know/v2/doctor")
+            assert doctor.status_code == 200, doctor.text
+            assert doctor.json()["migration_count"] == 7
+            assert doctor.json()["seekdb"]["mode"] == "memory"
 
             plan = client.post(
                 "/know/v2/research/plan",
@@ -62,6 +68,12 @@ def test_v2_capabilities_plan_reference_pack_and_feedback_contracts():
                 assert alias_response.json()["reference_pack_id"] == pack["reference_pack_id"]
             fetched = client.get(f"/know/v2/reference-packs/{pack['reference_pack_id']}")
             assert fetched.status_code == 200
+            explain = client.post(
+                "/know/v2/explain",
+                json={"query": "E42_TIMEOUT", "context": {"robot": "unitree_g1"}},
+            )
+            assert explain.status_code == 200, explain.text
+            assert explain.json()["query_profile"] == "PROFILE_ERROR"
 
             feedback = {
                 "feedback_id": "feedback-1",
@@ -85,6 +97,18 @@ def test_v2_capabilities_plan_reference_pack_and_feedback_contracts():
             assert governance.status_code == 200, governance.text
             assert governance.json()["count"] == 1
             assert governance.json()["automatic_mutation_allowed"] is False
+            governance_id = first.json()["governance"]["governance_id"]
+            reviewed = client.post(
+                f"/know/v2/feedback/governance/{governance_id}/review",
+                json={"decision": "reject"},
+            )
+            assert reviewed.status_code == 200, reviewed.text
+            assert reviewed.json()["knowledge_mutated"] is False
+            assert reviewed.json()["record"]["status"] == "dismissed"
+
+            frozen = client.post("/know/v2/freeze", json={"label": "fixture"})
+            assert frozen.status_code == 200, frozen.text
+            assert frozen.json()["schema_version"] == "rosclaw.know.index_manifest.v1"
 
             assert client.get("/know/v2/sources/missing").status_code == 404
             assert client.get("/know/v2/snapshots/missing").status_code == 404

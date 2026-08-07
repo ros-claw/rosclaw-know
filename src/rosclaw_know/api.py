@@ -27,6 +27,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, sta
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 
+from . import __version__
 from .config import ASSETS_DIR
 from .contracts import (
     PUBLIC_CONTRACTS,
@@ -37,6 +38,7 @@ from .contracts import (
     export_contract_schemas,
 )
 from .feedback_governance import governance_for_feedback
+from .operations import audit_project, doctor, freeze, project_diff, refresh_source
 from .research_store import ResearchStore
 from .research_worker import ResearchWorker
 from .retrieval import ReferencePackBuilder
@@ -178,7 +180,7 @@ async def _lifespan(app: FastAPI):
 
 app = FastAPI(
     title="ROSClaw-Know — Research Service",
-    version="1.2.1",
+    version=__version__,
     description=(
         "Agent-callable deep-research and knowledge-mining service. "
         "Long-running research jobs run async; clients poll for completion."
@@ -307,6 +309,11 @@ async def v2_health() -> JSONResponse:
     )
 
 
+@app.get("/know/v2/doctor")
+async def v2_doctor() -> JSONResponse:
+    return JSONResponse(doctor(_get_v2_store()))
+
+
 @app.get("/know/v2/contracts")
 async def v2_contracts() -> JSONResponse:
     return JSONResponse(export_contract_schemas(PUBLIC_CONTRACTS))
@@ -336,6 +343,16 @@ async def v2_build_reference_pack(request: ReferencePackBuildRequest) -> JSONRes
         token_budget=request.token_budget,
     )
     return JSONResponse(pack.model_dump(mode="json"))
+
+
+@app.post("/know/v2/explain", dependencies=[Depends(require_api_key)])
+async def v2_explain(request: ReferencePackBuildRequest) -> JSONResponse:
+    trace = ReferencePackBuilder(_get_v2_store()).explain(
+        query=request.query,
+        context=request.context,
+        top_k=request.top_k,
+    )
+    return JSONResponse(trace.model_dump(mode="json"))
 
 
 @app.get(
@@ -385,6 +402,33 @@ async def v2_get_project_wiki(project_id: str) -> JSONResponse:
             "pages": [item.model_dump(mode="json") for item in store.list_wiki_pages(project_id)],
         }
     )
+
+
+@app.get("/know/v2/projects/{project_id}/audit", dependencies=[Depends(require_api_key)])
+async def v2_audit_project(project_id: str) -> JSONResponse:
+    try:
+        return JSONResponse(audit_project(_get_v2_store(), project_id))
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@app.get("/know/v2/projects/{project_id}/diff", dependencies=[Depends(require_api_key)])
+async def v2_project_diff(
+    project_id: str,
+    from_snapshot: str = Query(alias="from"),
+    to_snapshot: str = Query(alias="to"),
+) -> JSONResponse:
+    try:
+        return JSONResponse(
+            project_diff(
+                _get_v2_store(),
+                project_id=project_id,
+                from_snapshot=from_snapshot,
+                to_snapshot=to_snapshot,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
 
 
 @app.get("/know/v2/wiki/pages/{page_id}", dependencies=[Depends(require_api_key)])
@@ -450,6 +494,51 @@ async def v2_feedback_governance(
             "records": [record.model_dump(mode="json") for record in records],
         }
     )
+class RefreshSourceRequest(StrictContract):
+    apply: bool = False
+
+
+@app.post("/know/v2/sources/{source_id}/refresh", dependencies=[Depends(require_api_key)])
+async def v2_refresh_source(source_id: str, request: RefreshSourceRequest) -> JSONResponse:
+    try:
+        result = await refresh_source(_get_v2_store(), source_id=source_id, apply=request.apply)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    return JSONResponse(result)
+
+
+class ReviewDecisionRequest(StrictContract):
+    decision: Literal["apply", "reject"]
+    resolution: str | None = None
+
+
+@app.post(
+    "/know/v2/feedback/governance/{governance_id}/review",
+    dependencies=[Depends(require_api_key)],
+)
+async def v2_review_feedback(
+    governance_id: str, request: ReviewDecisionRequest
+) -> JSONResponse:
+    record = _get_v2_store().review_feedback_governance(
+        governance_id, decision=request.decision
+    )
+    if record is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "governance record not found")
+    return JSONResponse(
+        {
+            "knowledge_mutated": False,
+            "record": record.model_dump(mode="json"),
+        }
+    )
+
+
+class FreezeRequest(StrictContract):
+    label: str = Field(min_length=1, max_length=200)
+
+
+@app.post("/know/v2/freeze", dependencies=[Depends(require_api_key)])
+async def v2_freeze(request: FreezeRequest) -> JSONResponse:
+    return JSONResponse(freeze(_get_v2_store(), label=request.label).model_dump(mode="json"))
 
 
 @app.post("/know/v1/research", status_code=status.HTTP_202_ACCEPTED)

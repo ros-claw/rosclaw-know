@@ -15,10 +15,12 @@ from typing import Any
 from rosclaw_know.contracts import (
     EvidenceRefV2,
     FeedbackGovernanceRecordV1,
+    KnowledgeClaimV1,
     KnowledgeUnitV2,
     KnowledgeUsageFeedbackV1,
     ProjectCardV2,
     ReferencePackV2,
+    SourceDisagreementV1,
     SourceRecordV2,
     SourceSnapshotV2,
 )
@@ -68,6 +70,8 @@ class InMemoryKnowStore:
         self.components: dict[str, ProjectComponentRecord] = {}
         self.wiki_pages: dict[str, WikiPageRecord] = {}
         self.units: dict[str, KnowledgeUnitV2] = {}
+        self.claims: dict[str, KnowledgeClaimV1] = {}
+        self.source_disagreements: dict[str, SourceDisagreementV1] = {}
         self.relations: dict[str, RelationRecord] = {}
         self.reference_packs: dict[str, ReferencePackV2] = {}
         self.feedback: dict[str, KnowledgeUsageFeedbackV1] = {}
@@ -87,6 +91,15 @@ class InMemoryKnowStore:
             multi_vector=True,
             transactions="copy_on_write",
             degraded=["persistent_storage", "native_seekdb", "ai_rerank"],
+            fulltext_analyzers=["deterministic_exact"],
+            query_profiles=[
+                "PROFILE_ERROR",
+                "PROFILE_CODE",
+                "PROFILE_CONCEPT",
+                "PROFILE_PROJECT",
+            ],
+            native_hybrid_sql=False,
+            rerank_unavailable_reason="memory backend has no SQL model service",
         )
 
     @contextmanager
@@ -112,6 +125,10 @@ class InMemoryKnowStore:
     def get_source(self, source_id: str) -> SourceRecordV2 | None:
         return copy.deepcopy(self.sources.get(source_id))
 
+    def iter_sources(self):
+        for source_id in sorted(self.sources):
+            yield copy.deepcopy(self.sources[source_id])
+
     def put_snapshot(self, snapshot: SourceSnapshotV2) -> bool:
         existing = self.snapshots.get(snapshot.snapshot_id)
         if existing is not None:
@@ -133,6 +150,10 @@ class InMemoryKnowStore:
         value = self.snapshots.get(snapshot_id)
         return copy.deepcopy(value)
 
+    def iter_snapshots(self):
+        for snapshot_id in sorted(self.snapshots):
+            yield copy.deepcopy(self.snapshots[snapshot_id])
+
     def put_document(self, document: DocumentRecord) -> bool:
         if document.snapshot_id not in self.snapshots:
             raise ValueError(f"unknown snapshot: {document.snapshot_id}")
@@ -142,6 +163,17 @@ class InMemoryKnowStore:
                 f"document {document.document_id!r} belongs to an immutable snapshot"
             )
         return self._upsert(self.documents, document.document_id, document)
+
+    def get_document(self, document_id: str) -> DocumentRecord | None:
+        return copy.deepcopy(self.documents.get(document_id))
+
+    def list_documents(self, snapshot_id: str) -> list[DocumentRecord]:
+        return copy.deepcopy(
+            sorted(
+                (item for item in self.documents.values() if item.snapshot_id == snapshot_id),
+                key=lambda item: (item.path, item.document_id),
+            )
+        )
 
     def put_evidence(self, evidence: EvidenceRefV2) -> bool:
         if evidence.snapshot_id not in self.snapshots:
@@ -230,6 +262,61 @@ class InMemoryKnowStore:
     def iter_units(self):
         for unit_id in sorted(self.units):
             yield copy.deepcopy(self.units[unit_id])
+
+    def put_claim(self, claim: KnowledgeClaimV1) -> bool:
+        for snapshot_id in claim.source_snapshot_ids:
+            if snapshot_id not in self.snapshots:
+                raise ValueError(f"unknown snapshot: {snapshot_id}")
+        for evidence in claim.evidence_refs:
+            if evidence.evidence_id not in self.evidence:
+                raise ValueError(f"unknown evidence: {evidence.evidence_id}")
+        if claim.knowledge_unit_id and claim.knowledge_unit_id not in self.units:
+            raise ValueError(f"unknown knowledge unit: {claim.knowledge_unit_id}")
+        return self._upsert(self.claims, claim.claim_id, claim)
+
+    def get_claim(self, claim_id: str) -> KnowledgeClaimV1 | None:
+        return copy.deepcopy(self.claims.get(claim_id))
+
+    def list_claims(
+        self,
+        *,
+        knowledge_unit_id: str | None = None,
+        snapshot_id: str | None = None,
+        status: str | None = None,
+    ) -> list[KnowledgeClaimV1]:
+        claims = [
+            item
+            for item in self.claims.values()
+            if (knowledge_unit_id is None or item.knowledge_unit_id == knowledge_unit_id)
+            and (snapshot_id is None or snapshot_id in item.source_snapshot_ids)
+            and (status is None or item.status == status)
+        ]
+        claims.sort(key=lambda item: (item.subject, item.predicate, item.claim_id))
+        return copy.deepcopy(claims)
+
+    def put_source_disagreement(self, disagreement: SourceDisagreementV1) -> bool:
+        for claim_id in disagreement.claim_ids:
+            if claim_id not in self.claims:
+                raise ValueError(f"unknown claim: {claim_id}")
+        return self._upsert(
+            self.source_disagreements, disagreement.disagreement_id, disagreement
+        )
+
+    def get_source_disagreement(self, disagreement_id: str) -> SourceDisagreementV1 | None:
+        return copy.deepcopy(self.source_disagreements.get(disagreement_id))
+
+    def list_source_disagreements(
+        self, *, status: str | None = None, limit: int = 100
+    ) -> list[SourceDisagreementV1]:
+        if limit <= 0:
+            return []
+        records = [
+            item
+            for item in self.source_disagreements.values()
+            if status is None or item.status == status
+        ]
+        records.sort(key=lambda item: (item.updated_at, item.disagreement_id), reverse=True)
+        return copy.deepcopy(records[:limit])
 
     def put_relation(self, relation: RelationRecord) -> bool:
         if relation.evidence_id not in self.evidence:
@@ -330,6 +417,10 @@ class InMemoryKnowStore:
     def get_reference_pack(self, reference_pack_id: str) -> ReferencePackV2 | None:
         return copy.deepcopy(self.reference_packs.get(reference_pack_id))
 
+    def iter_reference_packs(self):
+        for pack_id in sorted(self.reference_packs):
+            yield copy.deepcopy(self.reference_packs[pack_id])
+
     def put_feedback(self, feedback: KnowledgeUsageFeedbackV1) -> bool:
         existing = self.feedback.get(feedback.feedback_id)
         if existing is not None and existing != feedback:
@@ -357,6 +448,20 @@ class InMemoryKnowStore:
         records.sort(key=lambda item: (item.created_at, item.governance_id), reverse=True)
         return copy.deepcopy(records[:limit])
 
+    def review_feedback_governance(
+        self, governance_id: str, *, decision: str
+    ) -> FeedbackGovernanceRecordV1 | None:
+        if decision not in {"apply", "reject"}:
+            raise ValueError("decision must be 'apply' or 'reject'")
+        record = self.feedback_governance.get(governance_id)
+        if record is None:
+            return None
+        updated = record.model_copy(
+            update={"status": "reviewed" if decision == "apply" else "dismissed"}
+        )
+        self.feedback_governance[governance_id] = updated
+        return copy.deepcopy(updated)
+
     def put_index_version(self, version: IndexVersionRecord) -> bool:
         existing = self.index_versions.get(version.index_version)
         if existing is not None and existing != version:
@@ -375,6 +480,8 @@ class InMemoryKnowStore:
             "project_count": len(self.project_cards),
             "wiki_page_count": len(self.wiki_pages),
             "knowledge_unit_count": len(self.units),
+            "claim_count": len(self.claims),
+            "source_disagreement_count": len(self.source_disagreements),
             "reference_pack_count": len(self.reference_packs),
             "feedback_count": len(self.feedback),
             "feedback_governance_count": len(self.feedback_governance),

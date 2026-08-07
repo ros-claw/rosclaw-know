@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from pydantic import Field
 
@@ -18,6 +19,10 @@ _EXACT_RE = re.compile(
 
 class RetrievalPlan(StrictContract):
     query: str
+    query_profile: Literal[
+        "PROFILE_ERROR", "PROFILE_CODE", "PROFILE_CONCEPT", "PROFILE_PROJECT"
+    ]
+    retrieval_lanes: list[str] = Field(min_length=1)
     exact_terms: list[str] = Field(default_factory=list)
     ngram_terms: list[str] = Field(default_factory=list)
     semantic_queries: dict[str, str]
@@ -33,6 +38,21 @@ def build_retrieval_plan(
     ngrams = [
         term for term in re.findall(r"[A-Za-z0-9_./:-]{4,}", query) if term not in exact_terms
     ]
+    folded = f"{query} {context.current_failure or ''}".casefold()
+    if context.current_failure or exact_terms or re.search(r"\b(error|exception|failed|timeout)\b", folded):
+        profile = "PROFILE_ERROR"
+        lanes = ["exact", "ngram", "bm25", "compatibility", "vector", "relation"]
+    elif re.search(
+        r"\b(file|module|class|symbol|config|entrypoint|implementation|where)\b|[/\\]", folded
+    ):
+        profile = "PROFILE_CODE"
+        lanes = ["symbol", "path", "bm25", "code_vector", "component_relation"]
+    elif re.search(r"\b(project|repository|repo|paper|projects)\b|项目|论文", folded):
+        profile = "PROFILE_PROJECT"
+        lanes = ["project_metadata", "problem_vector", "wiki", "relation", "authority"]
+    else:
+        profile = "PROFILE_CONCEPT"
+        lanes = ["mechanism_vector", "content_vector", "bm25", "relation"]
     filters = SearchFilters(
         robot=context.robot,
         simulator=context.simulator,
@@ -42,6 +62,8 @@ def build_retrieval_plan(
     failure = f" Failure: {context.current_failure}." if context.current_failure else ""
     return RetrievalPlan(
         query=query,
+        query_profile=profile,  # type: ignore[arg-type]
+        retrieval_lanes=lanes,
         exact_terms=exact_terms,
         ngram_terms=ngrams[:20],
         semantic_queries={

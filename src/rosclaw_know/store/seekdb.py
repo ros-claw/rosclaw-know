@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -17,14 +19,17 @@ from typing import Any
 from rosclaw_know.contracts import (
     EvidenceRefV2,
     FeedbackGovernanceRecordV1,
+    KnowledgeClaimV1,
     KnowledgeUnitV2,
     KnowledgeUsageFeedbackV1,
     ProjectCardV2,
     ReferencePackV2,
+    SourceDisagreementV1,
     SourceRecordV2,
     SourceSnapshotV2,
 )
 from rosclaw_know.feedback_governance import governance_for_feedback
+from rosclaw_know.source_authority import source_authority
 
 from .base import ImmutableSnapshotError, StoreConfigurationError
 from .isolation import guard_store_isolation
@@ -40,6 +45,7 @@ from .models import (
     WikiPageRecord,
 )
 from .ranking import exact_score, reciprocal_rank_fusion
+from .server_native import NativeHybridDocument, NativeHybridQueryEngine, NativeHybridTrace
 
 COLLECTIONS = {
     "source": "know_source_v2",
@@ -50,10 +56,12 @@ COLLECTIONS = {
     "component": "know_project_component_v2",
     "wiki_page": "know_wiki_page_v2",
     "unit": "know_unit_v2",
+    "claim": "know_claim_v1",
     "relation": "know_relation_v2",
     "reference_pack": "know_reference_pack_v2",
     "feedback": "know_usage_feedback_v1",
     "feedback_governance": "know_feedback_governance_v1",
+    "source_disagreement": "know_source_disagreement_v1",
     "index_version": "know_index_version_v2",
 }
 VECTOR_FIELDS = ("problem", "mechanism", "content", "code")
@@ -154,6 +162,28 @@ class SeekDBKnowStore:
         self._vector_collections: dict[tuple[str, int], Any] = {}
         self._fulltext_collections: dict[str, Any] = {}
         self._degraded_features: set[str] = {"ai_rerank"}
+        self._native_connection: Any | None = None
+        self._native_engines: dict[int, NativeHybridQueryEngine] = {}
+        self._last_native_hybrid_trace: NativeHybridTrace | None = None
+        self._rerank_unavailable_reason = "AI_RERANK model service is not configured"
+        if mode == "server":
+            try:
+                import pymysql
+
+                self._native_connection = pymysql.connect(
+                    host=host,
+                    port=port,
+                    user=user,
+                    password=password,
+                    database=database,
+                    connect_timeout=10,
+                    autocommit=False,
+                )
+            except Exception as exc:  # noqa: BLE001 - explicit capability degradation
+                self._degraded_features.add("native_hybrid_sql")
+                self._rerank_unavailable_reason = (
+                    f"native SQL unavailable: {type(exc).__name__}"
+                )
         for analyzer in FULLTEXT_ANALYZERS:
             try:
                 schema = pyseekdb.Schema(
@@ -185,6 +215,19 @@ class SeekDBKnowStore:
             multi_vector=True,
             transactions="native" if server else "single_record",
             degraded=list(dict.fromkeys(degraded)),
+            fulltext_analyzers=sorted(self._fulltext_collections),
+            query_profiles=[
+                "PROFILE_ERROR",
+                "PROFILE_CODE",
+                "PROFILE_CONCEPT",
+                "PROFILE_PROJECT",
+            ],
+            native_hybrid_sql=server and self._native_connection is not None,
+            rerank_unavailable_reason=(
+                self._rerank_unavailable_reason
+                if "ai_rerank" in self._degraded_features
+                else None
+            ),
         )
 
     @contextmanager
@@ -246,6 +289,10 @@ class SeekDBKnowStore:
         payload = self._get_payload("source", source_id)
         return _parse(SourceRecordV2, payload) if payload else None
 
+    def iter_sources(self):
+        sources = [_parse(SourceRecordV2, value) for value in self._iter_payloads("source")]
+        yield from sorted(sources, key=lambda item: item.source_id)
+
     def put_snapshot(self, snapshot: SourceSnapshotV2) -> bool:
         existing = self._get_payload("snapshot", snapshot.snapshot_id)
         payload = snapshot.model_dump(mode="json", exclude_none=False)
@@ -277,6 +324,12 @@ class SeekDBKnowStore:
         payload = self._get_payload("snapshot", snapshot_id)
         return _parse(SourceSnapshotV2, payload) if payload else None
 
+    def iter_snapshots(self):
+        snapshots = [
+            _parse(SourceSnapshotV2, value) for value in self._iter_payloads("snapshot")
+        ]
+        yield from sorted(snapshots, key=lambda item: item.snapshot_id)
+
     def put_document(self, document: DocumentRecord) -> bool:
         if self.get_snapshot(document.snapshot_id) is None:
             raise ValueError(f"unknown snapshot: {document.snapshot_id}")
@@ -291,6 +344,20 @@ class SeekDBKnowStore:
             document.document_id,
             document,
             metadata={"snapshot_id": document.snapshot_id},
+        )
+
+    def get_document(self, document_id: str) -> DocumentRecord | None:
+        payload = self._get_payload("document", document_id)
+        return _parse(DocumentRecord, payload) if payload else None
+
+    def list_documents(self, snapshot_id: str) -> list[DocumentRecord]:
+        return sorted(
+            (
+                _parse(DocumentRecord, value)
+                for value in self._iter_payloads("document")
+                if value["snapshot_id"] == snapshot_id
+            ),
+            key=lambda item: (item.path, item.document_id),
         )
 
     def put_evidence(self, evidence: EvidenceRefV2) -> bool:
@@ -386,6 +453,36 @@ class SeekDBKnowStore:
             )
         return self._vector_collections[key]
 
+    def _native_engine(self, dimension: int) -> NativeHybridQueryEngine:
+        if self._native_connection is None:
+            raise StoreConfigurationError("native SeekDB SQL connection is unavailable")
+        if dimension not in self._native_engines:
+            engine = NativeHybridQueryEngine(
+                self._native_connection,
+                table=f"know_unit_hybrid_d{dimension}",
+                dimension=dimension,
+            )
+            engine.ensure_schema()
+            self._native_engines[dimension] = engine
+            model_key = os.environ.get("ROSCLAW_KNOW_RERANK_MODEL_KEY")
+            capability = engine.rerank_capability(model_key)
+            if capability["available"]:
+                self._degraded_features.discard("ai_rerank")
+            else:
+                self._rerank_unavailable_reason = str(capability["reason"])
+        return self._native_engines[dimension]
+
+    @staticmethod
+    def _surface_tokens(unit: KnowledgeUnitV2) -> tuple[str, str]:
+        text = "\n".join((unit.title, unit.problem, unit.mechanism, unit.implementation))
+        symbols = re.findall(
+            r"\b(?:[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)+|"
+            r"[A-Za-z_][A-Za-z0-9_]{3,}|[A-Z][A-Z0-9_]{2,})\b",
+            text,
+        )
+        api = [item for item in symbols if "::" in item or "_" in item]
+        return " ".join(dict.fromkeys(symbols)), " ".join(dict.fromkeys(api))
+
     def upsert_unit(self, unit: KnowledgeUnitV2) -> bool:
         for snapshot_id in unit.source_snapshot_ids:
             if self.get_snapshot(snapshot_id) is None:
@@ -429,6 +526,58 @@ class SeekDBKnowStore:
                     collection.refresh_index()
                 except Exception:  # noqa: BLE001 - base record remains usable
                     self._degraded_features.add(f"fulltext_{analyzer}")
+            native_vector = next(
+                (
+                    vector
+                    for vector in (
+                        unit.vectors.content,
+                        unit.vectors.problem,
+                        unit.vectors.code,
+                        unit.vectors.mechanism,
+                    )
+                    if vector is not None
+                ),
+                None,
+            )
+            if native_vector is not None and self._native_connection is not None:
+                try:
+                    symbols, api = self._surface_tokens(unit)
+                    authority = "D"
+                    if unit.evidence_refs:
+                        source = self.get_source(unit.evidence_refs[0].source_id)
+                        if source is not None:
+                            authority = source_authority(source)[0]
+                    self._native_engine(len(native_vector)).put(
+                        NativeHybridDocument(
+                            record_id=unit.knowledge_unit_id,
+                            content="\n".join(
+                                (unit.title, unit.problem, unit.mechanism, unit.implementation)
+                            ),
+                            zh_content="\n".join(
+                                value
+                                for value in (unit.title, unit.problem, unit.mechanism)
+                                if re.search(r"[\u3400-\u9fff]", value)
+                            ),
+                            error_surface="\n".join(
+                                (unit.title, unit.problem, *unit.contraindications)
+                            ),
+                            symbol_surface=symbols,
+                            path_surface=" ".join(
+                                dict.fromkeys(item.path for item in unit.evidence_refs)
+                            ),
+                            api_surface=api,
+                            source_authority=authority,  # type: ignore[arg-type]
+                            compatibility_status="unknown",
+                            status=unit.status,
+                            unit_type=unit.unit_type,
+                            embedding=native_vector,
+                        )
+                    )
+                except Exception as exc:  # noqa: BLE001 - collection path remains available
+                    self._degraded_features.add("native_hybrid_sql")
+                    self._rerank_unavailable_reason = (
+                        f"native hybrid write degraded: {type(exc).__name__}"
+                    )
         return self._put_payload(
             "unit",
             unit.knowledge_unit_id,
@@ -447,6 +596,75 @@ class SeekDBKnowStore:
     def iter_units(self):
         units = [_parse(KnowledgeUnitV2, value) for value in self._iter_payloads("unit")]
         yield from sorted(units, key=lambda unit: unit.knowledge_unit_id)
+
+    def put_claim(self, claim: KnowledgeClaimV1) -> bool:
+        for snapshot_id in claim.source_snapshot_ids:
+            if self.get_snapshot(snapshot_id) is None:
+                raise ValueError(f"unknown snapshot: {snapshot_id}")
+        for evidence in claim.evidence_refs:
+            if self._get_payload("evidence", evidence.evidence_id) is None:
+                raise ValueError(f"unknown evidence: {evidence.evidence_id}")
+        if claim.knowledge_unit_id and self.get_unit(claim.knowledge_unit_id) is None:
+            raise ValueError(f"unknown knowledge unit: {claim.knowledge_unit_id}")
+        return self._put_payload(
+            "claim",
+            claim.claim_id,
+            claim,
+            metadata={
+                "knowledge_unit_id": claim.knowledge_unit_id or "",
+                "status": claim.status,
+                "claim_type": claim.claim_type,
+            },
+        )
+
+    def get_claim(self, claim_id: str) -> KnowledgeClaimV1 | None:
+        payload = self._get_payload("claim", claim_id)
+        return _parse(KnowledgeClaimV1, payload) if payload else None
+
+    def list_claims(
+        self,
+        *,
+        knowledge_unit_id: str | None = None,
+        snapshot_id: str | None = None,
+        status: str | None = None,
+    ) -> list[KnowledgeClaimV1]:
+        claims = [_parse(KnowledgeClaimV1, value) for value in self._iter_payloads("claim")]
+        claims = [
+            item
+            for item in claims
+            if (knowledge_unit_id is None or item.knowledge_unit_id == knowledge_unit_id)
+            and (snapshot_id is None or snapshot_id in item.source_snapshot_ids)
+            and (status is None or item.status == status)
+        ]
+        return sorted(claims, key=lambda item: (item.subject, item.predicate, item.claim_id))
+
+    def put_source_disagreement(self, disagreement: SourceDisagreementV1) -> bool:
+        for claim_id in disagreement.claim_ids:
+            if self.get_claim(claim_id) is None:
+                raise ValueError(f"unknown claim: {claim_id}")
+        return self._put_payload(
+            "source_disagreement",
+            disagreement.disagreement_id,
+            disagreement,
+            metadata={"status": disagreement.status},
+        )
+
+    def get_source_disagreement(self, disagreement_id: str) -> SourceDisagreementV1 | None:
+        payload = self._get_payload("source_disagreement", disagreement_id)
+        return _parse(SourceDisagreementV1, payload) if payload else None
+
+    def list_source_disagreements(
+        self, *, status: str | None = None, limit: int = 100
+    ) -> list[SourceDisagreementV1]:
+        if limit <= 0:
+            return []
+        records = [
+            _parse(SourceDisagreementV1, value)
+            for value in self._iter_payloads("source_disagreement")
+        ]
+        records = [item for item in records if status is None or item.status == status]
+        records.sort(key=lambda item: (item.updated_at, item.disagreement_id), reverse=True)
+        return records[:limit]
 
     def put_relation(self, relation: RelationRecord) -> bool:
         if self._get_payload("evidence", relation.evidence_id) is None:
@@ -483,6 +701,66 @@ class SeekDBKnowStore:
         by_id = {unit.knowledge_unit_id: unit for unit in units}
         if not by_id:
             return []
+
+        if self._native_connection is not None and query_vectors:
+            for field in ("content", "problem", "code", "mechanism"):
+                vector = query_vectors.get(field)
+                if not vector:
+                    continue
+                try:
+                    folded = query.casefold()
+                    profile = (
+                        "PROFILE_ERROR"
+                        if re.search(r"\b(error|exception|failed|timeout)\b|(?<!\w)-\d+", folded)
+                        else "PROFILE_CODE"
+                        if re.search(r"\b(file|module|class|symbol|config|entrypoint|where)\b|[/\\]", folded)
+                        else "PROFILE_PROJECT"
+                        if re.search(r"\b(project|repository|repo|paper)\b|项目|论文", folded)
+                        else "PROFILE_CONCEPT"
+                    )
+                    native_filters = (
+                        {"status": filters.status[0]} if len(filters.status) == 1 else {}
+                    )
+                    trace = self._native_engine(len(vector)).query(
+                        query=query,
+                        embedding=vector,
+                        profile=profile,  # type: ignore[arg-type]
+                        filters=native_filters,
+                        limit=limit,
+                    )
+                    self._last_native_hybrid_trace = trace
+                    hits = []
+                    for result in trace.results:
+                        unit_id = str(result.get("record_id") or "")
+                        if unit_id not in by_id:
+                            continue
+                        keyword = float(result.get("_keyword_score") or 0.0)
+                        semantic = float(result.get("_semantic_score") or 0.0)
+                        score = float(result.get("_score") or 0.0)
+                        hits.append(
+                            SearchHit(
+                                knowledge_unit_id=unit_id,
+                                score=score,
+                                score_breakdown={
+                                    "native_rrf": score,
+                                    "native_keyword": keyword,
+                                    "native_semantic": semantic,
+                                },
+                                matched_by=["native_seekdb_hybrid", "rrf", field],
+                                warnings=[
+                                    "generated_sql_sha256="
+                                    + hashlib.sha256(trace.generated_sql.encode()).hexdigest()
+                                ],
+                            )
+                        )
+                    if hits:
+                        return hits
+                except Exception as exc:  # noqa: BLE001 - deterministic fallback below
+                    self._degraded_features.add("native_hybrid_sql")
+                    self._rerank_unavailable_reason = (
+                        f"native hybrid query degraded: {type(exc).__name__}"
+                    )
+                break
 
         exact_scores = {
             unit_id: exact_score(
@@ -565,6 +843,13 @@ class SeekDBKnowStore:
         payload = self._get_payload("reference_pack", reference_pack_id)
         return _parse(ReferencePackV2, payload) if payload else None
 
+    def iter_reference_packs(self):
+        packs = [
+            _parse(ReferencePackV2, value)
+            for value in self._iter_payloads("reference_pack")
+        ]
+        yield from sorted(packs, key=lambda item: item.reference_pack_id)
+
     def put_feedback(self, feedback: KnowledgeUsageFeedbackV1) -> bool:
         existing = self._get_payload("feedback", feedback.feedback_id)
         payload = feedback.model_dump(mode="json", exclude_none=False)
@@ -607,6 +892,29 @@ class SeekDBKnowStore:
         records.sort(key=lambda item: (item.created_at, item.governance_id), reverse=True)
         return records[:limit]
 
+    def review_feedback_governance(
+        self, governance_id: str, *, decision: str
+    ) -> FeedbackGovernanceRecordV1 | None:
+        if decision not in {"apply", "reject"}:
+            raise ValueError("decision must be 'apply' or 'reject'")
+        record = self.get_feedback_governance(governance_id)
+        if record is None:
+            return None
+        updated = record.model_copy(
+            update={"status": "reviewed" if decision == "apply" else "dismissed"}
+        )
+        self._put_payload(
+            "feedback_governance",
+            governance_id,
+            updated,
+            metadata={
+                "queue": updated.queue,
+                "status": updated.status,
+                "requires_human_review": updated.requires_human_review,
+            },
+        )
+        return updated
+
     def put_index_version(self, version: IndexVersionRecord) -> bool:
         existing = self._get_payload("index_version", version.index_version)
         payload = version.model_dump(mode="json", exclude_none=False)
@@ -627,9 +935,11 @@ class SeekDBKnowStore:
             "project_count": "project_card",
             "wiki_page_count": "wiki_page",
             "knowledge_unit_count": "unit",
+            "claim_count": "claim",
             "reference_pack_count": "reference_pack",
             "feedback_count": "feedback",
             "feedback_governance_count": "feedback_governance",
+            "source_disagreement_count": "source_disagreement",
         }
         return {
             label: sum(1 for _ in self._iter_payloads(logical))
@@ -637,4 +947,7 @@ class SeekDBKnowStore:
         }
 
     def close(self) -> None:
+        if self._native_connection is not None:
+            self._native_connection.close()
+            self._native_connection = None
         self._client.__exit__(None, None, None)

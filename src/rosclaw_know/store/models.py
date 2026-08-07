@@ -20,6 +20,10 @@ class StoreCapabilities(StrictContract):
     multi_vector: bool
     transactions: Literal["native", "single_record", "copy_on_write"]
     degraded: list[str] = Field(default_factory=list)
+    fulltext_analyzers: list[str] = Field(default_factory=list)
+    query_profiles: list[str] = Field(default_factory=list)
+    native_hybrid_sql: bool = False
+    rerank_unavailable_reason: str | None = None
 
 
 class DocumentRecord(StrictContract):
@@ -55,6 +59,13 @@ class RelationRecord(StrictContract):
         "VALIDATED_BY",
         "DOCUMENTS",
         "MENTIONS",
+        "SUPPORTS",
+        "DEPRECATED_BY",
+        "WAS_DERIVED_FROM",
+        "WAS_GENERATED_BY",
+        "WAS_ATTRIBUTED_TO",
+        "WAS_REVISION_OF",
+        "USED",
     ]
     to_id: str
     to_type: str
@@ -111,6 +122,7 @@ class SearchFilters(StrictContract):
     robot: str | None = None
     simulator: str | None = None
     ros_distro: str | None = None
+    as_of: datetime | None = None
 
 
 class SearchHit(StrictContract):
@@ -119,3 +131,56 @@ class SearchHit(StrictContract):
     score_breakdown: dict[str, float]
     matched_by: list[str]
     warnings: list[str] = Field(default_factory=list)
+
+
+class RetrievalCandidateTrace(StrictContract):
+    knowledge_unit_id: str
+    title: str
+    accepted: bool
+    rejected_reasons: list[str] = Field(default_factory=list)
+    matched_by: list[str] = Field(default_factory=list)
+    retrieval_score: float = Field(ge=0.0)
+    truth_quality: float = Field(ge=0.0, le=1.0)
+    utility_score: float = Field(ge=0.0, le=1.0)
+    compatibility_score: float = Field(ge=0.0, le=1.0)
+    compatibility_status: Literal[
+        "compatible", "partially_compatible", "incompatible", "unknown"
+    ]
+    final_score: float = Field(ge=0.0)
+    score_breakdown: dict[str, float] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class RetrievalTraceV1(StrictContract):
+    schema_version: Literal["rosclaw.know.retrieval_trace.v1"] = (
+        "rosclaw.know.retrieval_trace.v1"
+    )
+    query: str
+    query_profile: Literal[
+        "PROFILE_ERROR", "PROFILE_CODE", "PROFILE_CONCEPT", "PROFILE_PROJECT"
+    ]
+    exact_terms: list[str] = Field(default_factory=list)
+    ngram_terms: list[str] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
+    candidates: list[RetrievalCandidateTrace] = Field(default_factory=list)
+    generated_at: datetime
+
+
+class KnowledgeIndexManifestV1(StrictContract):
+    schema_version: Literal["rosclaw.know.index_manifest.v1"] = (
+        "rosclaw.know.index_manifest.v1"
+    )
+    manifest_id: str
+    label: str
+    schema_hash: str
+    migration_hash: str
+    source_snapshot_ids: list[str]
+    source_snapshot_hash: str
+    embedding_model: str
+    embedding_dimension: int = Field(ge=0)
+    index_version: str
+    wiki_hash: str
+    knowledge_unit_hash: str
+    claim_hash: str
+    compiler_version: str
+    created_at: datetime

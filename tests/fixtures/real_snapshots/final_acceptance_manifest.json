@@ -1,0 +1,125 @@
+{
+  "schema_version": "rosclaw.know.golden_real_snapshots.v1",
+  "generated_at": "2026-08-07T00:02:46.883738+00:00",
+  "safety": {
+    "fixed_commit_snapshots": true,
+    "repository_code_executed": false,
+    "untrusted_text_treated_as_data": true
+  },
+  "projects": [
+    {
+      "repository": "ros-claw/rosclaw",
+      "commit": "0e0a6bd8c022fa875d04bab1250d88c53b5d041c",
+      "snapshot_id": "snapshot_32e543e00c84f8a7589b85c3",
+      "indexed_documents": 26,
+      "expected_component_count": 13,
+      "facts_evidence": {
+        "path": ".rosclaw/repo_facts.json",
+        "content_hash": "a101dd3722bf4179437b0b0b08c5d485d0d036ad155693e6519e4c0c60c81962",
+        "excerpt": "{\n  \"code_executed\": false,\n  \"component_count\": 13,\n  \"component_paths\": [\n    \"Dockerfile\",\n    \"LICENSE\",\n    \"README.md\",\n    \"benchmarks\",\n    \"docs\",\n    \"e-urdf-zoo\",\n    \"examples\",\n    \"experiments\","
+      },
+      "critical_claims_checked": 10,
+      "passed": true
+    },
+    {
+      "repository": "unitreerobotics/unitree_rl_lab",
+      "commit": "4960b84732b0c2ec593dccbfe963fda1bcd7b1e3",
+      "snapshot_id": "snapshot_b511767a427d07108f3948a6",
+      "indexed_documents": 26,
+      "expected_component_count": 6,
+      "facts_evidence": {
+        "path": ".rosclaw/repo_facts.json",
+        "content_hash": "9132e78c0fdf3c6d67aaa42eba6696337023c2ee1444104454c207a60547818e",
+        "excerpt": "{\n  \"code_executed\": false,\n  \"component_count\": 6,\n  \"component_paths\": [\n    \"README.md\",\n    \"deploy\",\n    \"docker\",\n    \"pyproject.toml\",\n    \"scripts\",\n    \"source\"\n  ],\n  \"inventory\": {"
+      },
+      "critical_claims_checked": 10,
+      "passed": true
+    },
+    {
+      "repository": "realsenseai/realsense-ros",
+      "commit": "60c850958d651130fc2cc3d10efb37ff5be93da5",
+      "snapshot_id": "snapshot_26dbbd5cdfe69ef65cb06cf5",
+      "indexed_documents": 26,
+      "expected_component_count": 7,
+      "facts_evidence": {
+        "path": ".rosclaw/repo_facts.json",
+        "content_hash": "261e3522851ef2da02ce31f8295a6973be4af834ee7adfc24ced1db8ae103a97",
+        "excerpt": "{\n  \"code_executed\": false,\n  \"component_count\": 7,\n  \"component_paths\": [\n    \"LICENSE\",\n    \"README.md\",\n    \"realsense2_camera\",\n    \"realsense2_camera_msgs\",\n    \"realsense2_description\",\n    \"realsense2_rgbd_plugin\",\n    \"realsense2_ros_mqtt_bridge\"\n  ],"
+      },
+      "critical_claims_checked": 10,
+      "passed": true
+    },
+    {
+      "repository": "FSoft-AI4Code/CodeWiki",
+      "commit": "d94cacf678792ca4402311d4cb57ba8e3cb9b61a",
+      "snapshot_id": "snapshot_0d25097990be296b5748975f",
+      "indexed_documents": 26,
+      "expected_component_count": 5,
+      "facts_evidence": {
+        "path": ".rosclaw/repo_facts.json",
+        "content_hash": "b990474341415d602ab7460b26ba6347d8748f4b2c4180c005b41102f021efe3",
+        "excerpt": "{\n  \"code_executed\": false,\n  \"component_count\": 5,\n  \"component_paths\": [\n    \"README.md\",\n    \"docker\",\n    \"docs\",\n    \"pyproject.toml\",\n    \"requirements.txt\"\n  ],\n  \"inventory\": {"
+      },
+      "critical_claims_checked": 10,
+      "passed": true
+    },
+    {
+      "repository": "microsoft/graphrag",
+      "commit": "14a00ad88fc33cf2b52f4f113f25807556f8e25e",
+      "snapshot_id": "snapshot_b3c4ea4f19758b21d87dd2dd",
+      "indexed_documents": 26,
+      "expected_component_count": 5,
+      "facts_evidence": {
+        "path": ".rosclaw/repo_facts.json",
+        "content_hash": "d277c6238d1ff4df2ecec01229f7515ba641719bd19ea8faa7f6078f39f70b11",
+        "excerpt": "{\n  \"code_executed\": false,\n  \"component_count\": 5,\n  \"component_paths\": [\n    \"LICENSE\",\n    \"README.md\",\n    \"packages\",\n    \"pyproject.toml\",\n    \"unified-search-app\"\n  ],\n  \"inventory\": {"
+      },
+      "critical_claims_checked": 10,
+      "passed": true
+    },
+    {
+      "repository": "upstash/context7",
+      "commit": "8d52608e4e27557e6c1e807c8241cffb5544a9a3",
+      "snapshot_id": "snapshot_ee557d53388b79ded7803fbf",
+      "indexed_documents": 26,
+      "expected_component_count": 6,
+      "facts_evidence": {
+        "path": ".rosclaw/repo_facts.json",
+        "content_hash": "12d1a67cf82de3ef7eb300812e3f53183cdb5553fadd8fccc0cb546969ce3b71",
+        "excerpt": "{\n  \"code_executed\": false,\n  \"component_count\": 6,\n  \"component_paths\": [\n    \".changeset\",\n    \"LICENSE\",\n    \"README.md\",\n    \"docs\",\n    \"packages\",\n    \"plugins\"\n  ],\n  \"inventory\": {"
+      },
+      "critical_claims_checked": 10,
+      "passed": true
+    },
+    {
+      "repository": "stanford-oval/storm",
+      "commit": "fb951af7744dab086e34962e9bc6fe878e145f83",
+      "snapshot_id": "snapshot_11d2e0ce6c77deedd2f5f34b",
+      "indexed_documents": 26,
+      "expected_component_count": 7,
+      "facts_evidence": {
+        "path": ".rosclaw/repo_facts.json",
+        "content_hash": "3fc08d0c614dcdb60fab98a4ed08b2225fb4ffcbcd6dff287b811cf645239b74",
+        "excerpt": "{\n  \"code_executed\": false,\n  \"component_count\": 7,\n  \"component_paths\": [\n    \".github\",\n    \"LICENSE\",\n    \"README.md\",\n    \"examples\",\n    \"frontend\",\n    \"requirements.txt\",\n    \"setup.py\"\n  ],"
+      },
+      "critical_claims_checked": 10,
+      "passed": true
+    }
+  ],
+  "paper": {
+    "title": "RoboNaldo: Accurate, Stable and Powerful Humanoid Soccer Shooting via Motion-Guided Curriculum Reinforcement Learning",
+    "source_url": "http://arxiv.org/abs/2606.11092v3",
+    "snapshot_id": "snapshot_c8c4837e623d23655fc01d65",
+    "version": "2606.11092v3",
+    "document_hashes": [
+      "cbee4af7c9e3e1c9053790799c1559eba3bd75c52bb10e5da620228d4834d063"
+    ],
+    "term_checks": {
+      "motion": true,
+      "curriculum": true,
+      "g1": true,
+      "football_or_kick": true
+    },
+    "passed": true
+  }
+}

@@ -9,10 +9,12 @@ from typing import Any, Protocol
 from rosclaw_know.contracts import (
     EvidenceRefV2,
     FeedbackGovernanceRecordV1,
+    KnowledgeClaimV1,
     KnowledgeUnitV2,
     KnowledgeUsageFeedbackV1,
     ProjectCardV2,
     ReferencePackV2,
+    SourceDisagreementV1,
     SourceRecordV2,
     SourceSnapshotV2,
 )
@@ -47,11 +49,19 @@ class KnowStore(Protocol):
 
     def get_source(self, source_id: str) -> SourceRecordV2 | None: ...
 
+    def iter_sources(self) -> Iterator[SourceRecordV2]: ...
+
     def put_snapshot(self, snapshot: SourceSnapshotV2) -> bool: ...
 
     def get_snapshot(self, snapshot_id: str) -> SourceSnapshotV2 | None: ...
 
+    def iter_snapshots(self) -> Iterator[SourceSnapshotV2]: ...
+
     def put_document(self, document: DocumentRecord) -> bool: ...
+
+    def get_document(self, document_id: str) -> DocumentRecord | None: ...
+
+    def list_documents(self, snapshot_id: str) -> list[DocumentRecord]: ...
 
     def put_evidence(self, evidence: EvidenceRefV2) -> bool: ...
 
@@ -77,6 +87,26 @@ class KnowStore(Protocol):
 
     def iter_units(self) -> Iterator[KnowledgeUnitV2]: ...
 
+    def put_claim(self, claim: KnowledgeClaimV1) -> bool: ...
+
+    def get_claim(self, claim_id: str) -> KnowledgeClaimV1 | None: ...
+
+    def list_claims(
+        self,
+        *,
+        knowledge_unit_id: str | None = None,
+        snapshot_id: str | None = None,
+        status: str | None = None,
+    ) -> list[KnowledgeClaimV1]: ...
+
+    def put_source_disagreement(self, disagreement: SourceDisagreementV1) -> bool: ...
+
+    def get_source_disagreement(self, disagreement_id: str) -> SourceDisagreementV1 | None: ...
+
+    def list_source_disagreements(
+        self, *, status: str | None = None, limit: int = 100
+    ) -> list[SourceDisagreementV1]: ...
+
     def put_relation(self, relation: RelationRecord) -> bool: ...
 
     def related(self, entity_id: str, *, limit: int = 20) -> list[RelationRecord]: ...
@@ -94,6 +124,8 @@ class KnowStore(Protocol):
 
     def get_reference_pack(self, reference_pack_id: str) -> ReferencePackV2 | None: ...
 
+    def iter_reference_packs(self) -> Iterator[ReferencePackV2]: ...
+
     def put_feedback(self, feedback: KnowledgeUsageFeedbackV1) -> bool: ...
 
     def get_feedback_governance(
@@ -103,6 +135,10 @@ class KnowStore(Protocol):
     def list_feedback_governance(
         self, *, queue: str | None = None, status: str | None = None, limit: int = 100
     ) -> list[FeedbackGovernanceRecordV1]: ...
+
+    def review_feedback_governance(
+        self, governance_id: str, *, decision: str
+    ) -> FeedbackGovernanceRecordV1 | None: ...
 
     def put_index_version(self, version: IndexVersionRecord) -> bool: ...
 

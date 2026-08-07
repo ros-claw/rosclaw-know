@@ -8,6 +8,7 @@ from .base import (
     SourceUnavailableError,
     UnavailableAdapter,
 )
+from .external_mcp import Context7Adapter, DeepWikiPublicAdapter, GitMCPAdapter
 from .github import GitHubAdapter
 from .official_docs import OfficialDocsAdapter, OfficialDocumentSpec
 from .orchestrator import ResearchOrchestrator, ResearchRunResult
@@ -16,7 +17,10 @@ from .registry import default_source_registry
 
 __all__ = [
     "ArxivAdapter",
+    "Context7Adapter",
+    "DeepWikiPublicAdapter",
     "GitHubAdapter",
+    "GitMCPAdapter",
     "OfficialDocsAdapter",
     "OfficialDocumentSpec",
     "ResearchPlan",
